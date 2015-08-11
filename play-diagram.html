@@ -7,7 +7,69 @@
 	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
 </head>
 <body>
+	<svg></svg>
 </body>
 <script>
+	var rinkWidth = 200;
+	var rinkHeight = 85;
+	var ftPerCell = 5;
+	var cellSize = 20;
+
+	var margin = {top: 10, left: 10, right: 10, bottom: 10};
+
+
+	var x = d3.scale.ordinal()
+		.domain(d3.range(0, rinkWidth + ftPerCell, ftPerCell))
+		.rangePoints([0, (rinkWidth / ftPerCell) * cellSize], 0);
+	var y = d3.scale.ordinal()
+		.domain(d3.range(0, rinkHeight + ftPerCell, ftPerCell))
+		.rangePoints([0, (rinkHeight / ftPerCell) * cellSize], 0);
+
+	/*
+	*
+	* Initialize layout
+	*
+	*/
+
+	d3.select("svg")
+		.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
+		.style("width", (rinkWidth / ftPerCell) * cellSize + margin.left + margin.right + "px")
+		.style("margin", "20px")
+		.style("background", "#f2f2f2");
+
+	var rink = d3.select("svg").append("g")
+		.attr("id", "rink")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	rink.append("g")
+		.attr("id", "v-rules");
+	rink.append("g")
+		.attr("id", "h-rules");
+
+	/*
+	*
+	* Append grid
+	*
+	*/
+
+	rink.select("#v-rules").selectAll("line")
+		.data(x.domain())
+		.enter().append("line")
+			.attr("x1", function(d) { return x(d); })
+			.attr("x2", function(d) { return x(d); })
+			.attr("y1", function() { return d3.min(y.range()); })
+			.attr("y2", function() { return d3.max(y.range()); })
+			.attr("stroke", "#ddd")
+			.attr("x-coord", function(d) { return d; });
+
+	rink.select("#h-rules").selectAll("line")
+		.data(y.domain())
+		.enter().append("line")
+			.attr("x1", function() { return d3.min(x.range()); })
+			.attr("x2", function() { return d3.max(x.range()); })
+			.attr("y1", function(d) { return y(d); })
+			.attr("y2", function(d) { return y(d); })
+			.attr("stroke", "#ddd")
+			.attr("y-coord", function(d) { return d; });
+
 </script>
 </html>
