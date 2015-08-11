@@ -17,7 +17,6 @@
 
 	var margin = {top: 10, left: 10, right: 10, bottom: 10};
 
-
 	var x = d3.scale.ordinal()
 		.domain(d3.range(0, rinkWidth + ftPerCell, ftPerCell))
 		.rangePoints([0, (rinkWidth / ftPerCell) * cellSize], 0);
@@ -35,31 +34,24 @@
 		.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
 		.style("width", (rinkWidth / ftPerCell) * cellSize + margin.left + margin.right + "px")
 		.style("margin", "20px")
-		.style("background", "#f2f2f2");
+		.style("background", "#fff")
+		.style("font-family", "Roboto")
+		.style("font-size", "14px");
 
 	var rink = d3.select("svg").append("g")
 		.attr("id", "rink")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 	rink.append("g")
-		.attr("id", "v-rules");
-	rink.append("g")
 		.attr("id", "h-rules");
+	rink.append("g")
+		.attr("id", "v-rules");
+
 
 	/*
 	*
 	* Append grid
 	*
 	*/
-
-	rink.select("#v-rules").selectAll("line")
-		.data(x.domain())
-		.enter().append("line")
-			.attr("x1", function(d) { return x(d); })
-			.attr("x2", function(d) { return x(d); })
-			.attr("y1", function() { return d3.min(y.range()); })
-			.attr("y2", function() { return d3.max(y.range()); })
-			.attr("stroke", "#ddd")
-			.attr("x-coord", function(d) { return d; });
 
 	rink.select("#h-rules").selectAll("line")
 		.data(y.domain())
@@ -69,7 +61,111 @@
 			.attr("y1", function(d) { return y(d); })
 			.attr("y2", function(d) { return y(d); })
 			.attr("stroke", "#ddd")
+			.attr("stroke-width", 1)
 			.attr("y-coord", function(d) { return d; });
+
+	rink.select("#v-rules").selectAll("line")
+		.data(x.domain())
+		.enter().append("line")
+			.attr("x1", function(d) { return x(d); })
+			.attr("x2", function(d) { return x(d); })
+			.attr("y1", function() { return d3.min(y.range()); })
+			.attr("y2", function() { return d3.max(y.range()); })
+			.attr("stroke-width", 1)
+			.attr("stroke", function(d) {
+				if (d === 100 || d === 10 || d === 190) {
+					return "#aaa";
+				} else if (d === 65 || d === 135 ) {
+					return "#aaa"
+				} else {
+					return "#ddd";
+				}
+			})
+			.attr("x-coord", function(d) { return d; });
+
+
+
+	/*
+	*
+	* Add players
+	*
+	*/
+
+	var playerData = [];
+
+	playerData.push({
+		player: "81",
+		waypoints: [[0,20,80],[1.5,30,60],[3,10,30],[5,60,30],[7,150,60],[10,160,30]]
+	});
+
+	playerData.push({
+		player: "42",
+		waypoints: [[0,10,40],[2,20,20],[10,180,80]]
+	});
+
+	playerData.push({
+		player: "21",
+		waypoints: [[0,10,20],[1,15,10],[10,180,30]]
+	});
+
+
+	var lineFunction = d3.svg.line()
+		.x(function(coord) { return x(coord[0]); })
+		.y(function(coord) { return y(coord[1]); })
+		.interpolate("linear");
+		//.interpolate("cardinal");
+
+
+	var paths = rink.selectAll("path")
+			.data(playerData)
+			.enter().append("path")
+				.attr("d", function(d) {
+					var points = d.waypoints.map(function(w) { return [w[1], w[2]]; });
+					return lineFunction(points);
+				})
+				.style("stroke-width", 1)
+				.style("stroke", "red")
+				.style("stroke-opacity", 0.8)
+				.style("fill", "none");
+
+
+	var labels = rink.selectAll("text")
+		.data(playerData)
+		.enter().append("text")
+			.attr("r", 5)
+			//.attr("transform", function(d) { return "translate(" + x(d.waypoints[0][1]) + "," + y(d.waypoints[0][2]) + ")"; })
+			.attr("x", function(d) { return x(d.waypoints[0][1]); })
+			.attr("y", function(d) { return y(d.waypoints[0][2]); })
+			.text(function(d) { return d.player; });
+
+
+	labels.transition()
+		.duration(function(d) { return 1000 * (d.waypoints[1][0] - d.waypoints[0][0]); })
+		.ease("linear")
+		.attr("x", function(d) { return x(d.waypoints[1][1]); })
+		.attr("y", function(d) { return y(d.waypoints[1][2]); })
+		.style("alignment-baseline", "middle")
+		.style("text-anchor", "middle")
+		.each("end", function(d) {
+			slide(d3.select(this), d, 1);
+		});
+
+	function slide(element, data, idx) {
+		if (idx < data.waypoints.length - 1) {
+			idx += 1;
+			element.transition()
+				.duration(function(d) { return 1000 * (d.waypoints[idx][0] - d.waypoints[idx-1][0]); })
+				.ease("linear")
+				.attr("x", function(d) { return x(d.waypoints[idx][1]); })
+				.attr("y", function(d) { return y(d.waypoints[idx][2]); })
+				.each("end", function(d) {
+					slide(d3.select(this), d, idx);
+				});
+		}
+	}
+
+
+
 
 </script>
 </html>
