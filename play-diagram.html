@@ -17,12 +17,12 @@
 
 	var margin = {top: 10, left: 10, right: 10, bottom: 10};
 
-	var x = d3.scale.ordinal()
-		.domain(d3.range(0, rinkWidth + ftPerCell, ftPerCell))
-		.rangePoints([0, (rinkWidth / ftPerCell) * cellSize], 0);
-	var y = d3.scale.ordinal()
-		.domain(d3.range(0, rinkHeight + ftPerCell, ftPerCell))
-		.rangePoints([0, (rinkHeight / ftPerCell) * cellSize], 0);
+	var x = d3.scale.linear()
+		.domain([0, rinkWidth])
+		.range([0, (rinkWidth / ftPerCell) * cellSize]);
+	var y = d3.scale.linear()
+		.domain([0, rinkHeight])
+		.range([(rinkHeight / ftPerCell) * cellSize, 0]);
 
 	/*
 	*
@@ -34,7 +34,7 @@
 		.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
 		.style("width", (rinkWidth / ftPerCell) * cellSize + margin.left + margin.right + "px")
 		.style("margin", "20px")
-		.style("background", "#fff")
+		.style("background", "#f2f2f2")
 		.style("font-family", "Roboto")
 		.style("font-size", "14px");
 
@@ -54,7 +54,7 @@
 	*/
 
 	rink.select("#h-rules").selectAll("line")
-		.data(y.domain())
+		.data(d3.range(y.domain()[0], y.domain()[1] + ftPerCell, ftPerCell))
 		.enter().append("line")
 			.attr("x1", function() { return d3.min(x.range()); })
 			.attr("x2", function() { return d3.max(x.range()); })
@@ -65,7 +65,7 @@
 			.attr("y-coord", function(d) { return d; });
 
 	rink.select("#v-rules").selectAll("line")
-		.data(x.domain())
+		.data(d3.range(x.domain()[0], x.domain()[1] + ftPerCell, ftPerCell))
 		.enter().append("line")
 			.attr("x1", function(d) { return x(d); })
 			.attr("x2", function(d) { return x(d); })
