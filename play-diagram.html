@@ -36,7 +36,7 @@ d3.select("svg")
 	.style("margin", "20px")
 	.style("background", "#f2f2f2")
 	.style("font-family", "Roboto, sans-serif")
-	.style("font-size", "14px");
+	.style("font-size", "12px");
 
 var rink = d3.select("svg").append("g")
 	.attr("id", "rink")
@@ -110,17 +110,31 @@ var playerData = [];
 
 playerData.push({
 	player: "81",
+	colour: "red",
 	waypoints: [[0,20,80],[1.5,30,60],[3,10,30],[5,60,30],[7,150,60],[10,160,30]]
 });
 
 playerData.push({
 	player: "42",
-	waypoints: [[0,10,40],[2,20,20],[10,180,80]]
+	colour: "red",
+	waypoints: [[0,10,42],[2,20,23],[10,180,80]]
 });
 
 playerData.push({
 	player: "21",
-	waypoints: [[0,10,20],[1,15,10],[10,180,30]]
+	colour: "blue",
+	waypoints: [[0,12,22],[1,15,10],[10,180,30]]
+});
+
+// Convert waypoint array elements into properties
+playerData.forEach(function(p) {
+	p.waypoints = p.waypoints.map(function(w) {
+		return {
+			t: w[0],
+			x: w[1],
+			y: w[2]
+		};
+	});
 });
 
 /*
@@ -130,20 +144,17 @@ playerData.push({
 */
 
 var lineFunction = d3.svg.line()
-	.x(function(coord) { return x(coord[0]); })
-	.y(function(coord) { return y(coord[1]); })
+	.x(function(d) { return x(d.x); })
+	.y(function(d) { return y(d.y); })
 	.interpolate("linear");
 
 var paths = rink.selectAll("path")
 		.data(playerData)
 		.enter().append("path")
-			.attr("d", function(d) {
-				var points = d.waypoints.map(function(w) { return [w[1], w[2]]; });
-				return lineFunction(points);
-			})
+			.attr("d", function(d) { return lineFunction(d.waypoints); })
 			.style("stroke-width", 1)
-			.style("stroke", "red")
-			.style("stroke-opacity", 0.8)
+			.style("stroke", function(d) { return d.colour; })
+			.style("stroke-opacity", 0.3)
 			.style("fill", "none");
 
 var labels = rink.selectAll("text.player")
@@ -151,10 +162,11 @@ var labels = rink.selectAll("text.player")
 	.enter().append("text")
 		.attr("class", "player")
 		.attr("r", 5)
-		.attr("x", function(d) { return x(d.waypoints[0][1]); })
-		.attr("y", function(d) { return y(d.waypoints[0][2]); })
+		.attr("x", function(d) { return x(d.waypoints[0].x); })
+		.attr("y", function(d) { return y(d.waypoints[0].y); })
 		.style("alignment-baseline", "middle")
 		.style("text-anchor", "middle")
+		.style("fill", function(d) { return d.colour; })
 		.text(function(d) { return d.player; });
 
 /*
@@ -171,10 +183,10 @@ function slide(element, data, idx) {
 	if (idx < data.waypoints.length - 1) {
 		idx += 1;
 		element.transition()
-			.duration(function(d) { return 1000 * (d.waypoints[idx][0] - d.waypoints[idx-1][0]); })
+			.duration(function(d) { return 1000 * (d.waypoints[idx].t - d.waypoints[idx-1].t); })
 			.ease("linear")
-			.attr("x", function(d) { return x(d.waypoints[idx][1]); })
-			.attr("y", function(d) { return y(d.waypoints[idx][2]); })
+			.attr("x", function(d) { return x(d.waypoints[idx].x); })
+			.attr("y", function(d) { return y(d.waypoints[idx].y); })
 			.each("end", function(d) {
 				slide(d3.select(this), d, idx);
 			});
