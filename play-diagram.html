@@ -85,11 +85,11 @@ gridlines.append("line")
 	.attr("stroke-width", 1)
 	.attr("stroke", function(d) {
 		if (d === 100 || d === 10 || d === 190) {
-			return "#ccc";
+			return "#aaa";
 		} else if (d === 65 || d === 135 ) {
-			return "#ccc"
+			return "#aaa"
 		} else {
-			return "#eee";
+			return "#ddd";
 		}
 	})
 	.attr("x-coord", function(d) { return d; });
@@ -158,8 +158,7 @@ var paths = rink.selectAll("path")
 		.enter().append("path")
 			.attr("d", function(d) { return lineFunction(d.waypoints); })
 			.style("stroke-width", 1)
-			.style("stroke", function(d) { return d.colour; })
-			.style("stroke-opacity", 0.3)
+			.style("stroke", function(d) { return "#faa"; })
 			.style("fill", "none");
 
 var markers = rink.selectAll("g.player")
@@ -233,7 +232,7 @@ function setPassTimer(idx) {
 				.attr("x2", targetPos[0])
 				.attr("y2", targetPos[1])
 				.style("stroke", "blue")
-				.style("opacity", 0.6)
+				.style("opacity", 1)
 				.style("stroke-dasharray", "2,3")
 				.transition().duration(duration)
 					.attr("opacity", 0)
@@ -246,7 +245,7 @@ function setPassTimer(idx) {
 
 		circles.filter(function(d) { return d.player === targets[idx]; })
 			.transition()
-				.style("fill-opacity", "0.1")
+				.style("fill-opacity", "0")
 				.style("stroke-opacity", "1");
 
 		if (idx < targets.length - 1) {
