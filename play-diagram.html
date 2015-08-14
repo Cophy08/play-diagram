@@ -118,7 +118,7 @@ playerData.push({
 playerData.push({
 	player: "42",
 	colour: "red",
-	waypoints: [[0,10,42],[2,20,23],[10,180,80]]
+	waypoints: [[0,10,42],[2,20,23],[8,160,75],[10,160,85]]
 });
 
 playerData.push({
@@ -187,42 +187,57 @@ var paths = players.selectAll("path")
 
 				var delta = 10;
 
-				// Ignore cases where: slope === 0, slope == Number.POSITIVE_INFINITY, or slope == Number.NEGATIVE_INFINITY
-				if (slope !== 0 && slope != Number.POSITIVE_INFINITY && slope != Number.NEGATIVE_INFINITY) {
-					if (slope > 0) {
-						if (run >= 0) {
-							// If player will skate up and right, then ctrlPt is down and left
-							ctrlPt[0] = ctrlPt[0] - delta;
-							ctrlPt[1] = ctrlPt[1] + delta * slope;
 
-							// For bigger curves, use:
-							// ctrlPt[0] = ctrlPt[0] - delta / slope;
-							// ctrlPt[1] = ctrlPt[1] + delta;
-						} else {
-							// If player will skate down and left, then ctrlPt is up and right
-							ctrlPt[0] = ctrlPt[0] + delta;
-							ctrlPt[1] = ctrlPt[1] - delta * slope;
-						}
-					} else if (slope < 0) {
-						if (run >= 0) {
-							// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
-							ctrlPt[0] = ctrlPt[0] + delta / slope;
-							ctrlPt[1] = ctrlPt[1] - delta;
+				if (slope === 0) {
+					console.log("A");
+					if (run >= 0) {
+						// If player will skate right, then ctrlPt is left
+						ctrlPt[0] = ctrlPt[0] - delta;
+					} else {
+						// If player will skate left, then ctrlPt is right
+						ctrlPt[0] = ctrlPt[0] + delta;
+					}
+				} else if (slope == Number.POSITIVE_INFINITY || slope == Number.NEGATIVE_INFINITY) {
+					if (rise >= 0) {
+						// If player skates up, then ctrlPt is down
+						ctrlPt[1] = ctrlPt[1] + delta;
+					} else {
+						// If player skates down, then ctrlPt is up
+						ctrlPt[1] = ctrlPt[1] - delta;
+					}
+				} else if (slope > 0) {
+					if (run >= 0) {
+						// If player will skate up and right, then ctrlPt is down and left
+						ctrlPt[0] = ctrlPt[0] - delta;
+						ctrlPt[1] = ctrlPt[1] + delta * slope;
 
-							// For bigger curves, use:
-							// ctrlPt[0] = ctrlPt[0] - delta;
-							// ctrlPt[1] = ctrlPt[1] + delta * slope;
-						} else {
-							// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
-							ctrlPt[0] = ctrlPt[0] - delta / slope;
-							ctrlPt[1] = ctrlPt[1] + delta;
-						}
+						// For bigger curves, use:
+						// ctrlPt[0] = ctrlPt[0] - delta / slope;
+						// ctrlPt[1] = ctrlPt[1] + delta;
+					} else {
+						// If player will skate down and left, then ctrlPt is up and right
+						ctrlPt[0] = ctrlPt[0] + delta;
+						ctrlPt[1] = ctrlPt[1] - delta * slope;
+					}
+				} else if (slope < 0) {
+					if (run >= 0) {
+						// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
+						ctrlPt[0] = ctrlPt[0] + delta / slope;
+						ctrlPt[1] = ctrlPt[1] - delta;
+
+						// For bigger curves, use:
+						// ctrlPt[0] = ctrlPt[0] - delta;
+						// ctrlPt[1] = ctrlPt[1] + delta * slope;
+					} else {
+						// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
+						ctrlPt[0] = ctrlPt[0] - delta / slope;
+						ctrlPt[1] = ctrlPt[1] + delta;
 					}
 				}
 
-				// Set rise and run to 0 to turn off curved paths
-				//rise = 0;
-				//run = 0;
+
+				// To turn off curved paths
+				//ctrlPt = [x(d.end[0]), y(d.end[1])];
 
 				// To check where the smoother is located
 				rink.append("circle")
