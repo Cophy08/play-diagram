@@ -136,6 +136,24 @@ playerData.forEach(function(p) {
 			y: w[2]
 		};
 	});
+
+	paths = [];
+	for (var i = 0; i < p.waypoints.length - 1; i++) {
+
+		var nextPoint = [];
+		if (i < p.waypoints.length - 2) {
+			nextPoint = [p.waypoints[i + 2].x, p.waypoints[i + 2].y];
+		}
+
+		paths.push({
+			order: i,
+			start: [p.waypoints[i].x, p.waypoints[i].y],
+			end: [p.waypoints[i + 1].x, p.waypoints[i + 1].y],
+			next: nextPoint,
+			duration: p.waypoints[i + 1].t - p.waypoints[i].t
+		});
+	}
+	p.paths = paths;
 });
 
 // Player with puck
@@ -153,18 +171,63 @@ var lineFunction = d3.svg.line()
 	.y(function(d) { return y(d.y); })
 	.interpolate("linear");
 
-var paths = rink.selectAll("path")
-		.data(playerData)
-		.enter().append("path")
-			.attr("d", function(d) { return lineFunction(d.waypoints); })
-			.style("stroke-width", 1)
-			.style("stroke", function(d) { return "#faa"; })
-			.style("fill", "none");
-
-var markers = rink.selectAll("g.player")
+var players = rink.selectAll("g.player")
 	.data(playerData)
 	.enter().append("g")
-		.attr("class", "player")
+		.attr("class", "player");
+
+var paths = players.selectAll("path")
+	.data(function(d) { return d.paths; })
+	.enter().append("path")
+		.attr("d", function(d) {
+			var start = x(d.start[0]) + "," + y(d.start[1]);
+			var end = x(d.end[0]) + "," + y(d.end[1]);
+			var smoother = [x(d.end[0]), y(d.end[1])];
+
+			if (d.next.length === 2) {
+
+				var rise = y(d.next[1]) - y(d.end[1]);
+				var run = x(d.next[0]) - x(d.end[0]);
+				//console.log(rise, run);
+
+				var maxFactor = 0.05;
+				var maxDelta = 40000;
+
+				rise = maxFactor * rise;
+				rise = d3.min([maxDelta, rise]);
+				rise = d3.max([-maxDelta, rise]);
+
+				run = maxFactor * run;
+				run = d3.min([maxDelta, run]);
+				run = d3.max([-maxDelta, run]);
+				//console.log(rise, run);
+
+				smoother[1] = y(d.end[1]) - rise;
+				smoother[0] = x(d.end[0]) - run;
+
+				rink.append("circle")
+					.attr("cx", smoother[0])
+					.attr("cy", smoother[1])
+					.attr("r", 5)
+					.attr("fill", "pink");
+			}
+
+			return "M" + start + " S" + smoother[0] + "," + smoother[1] + " " + end;
+		})
+		.style("stroke", "red")
+		.style("fill", "none");
+
+var points = players.selectAll("circle.waypoint")
+	.data(function(d) { return d.waypoints; })
+	.enter().append("circle")
+		.attr("class", "waypoint")
+		.attr("cx", function(d) { return x(d.x); })
+		.attr("cy", function(d) { return y(d.y); })
+		.attr("r", 2)
+		.style("fill", function(d) { return d.colour; });
+
+var markers = players.append("g")
+		.attr("class", "marker")
 		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
 
 var circles = markers.append("circle")
@@ -255,16 +318,31 @@ function setPassTimer(idx) {
 }
 
 function slide(element, data, idx) {
+
 	if (idx < data.waypoints.length - 1) {
-		idx += 1;
-		element.transition()
-			.duration(function(d) { return 1000 * (d.waypoints[idx].t - d.waypoints[idx-1].t); })
+		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.player === data.player; });
+		var animMarker = animPlayerGroup.select("g.marker");
+		var animPath = animPlayerGroup.selectAll("path").filter(function(d) { return d.order === idx; });
+
+		animMarker.transition()
+			.duration(function(d) { return d.paths[idx].duration * 1000; })
 			.ease("linear")
-			.attr("transform", function(d) { return "translate(" + x(d.waypoints[idx].x) + "," + y(d.waypoints[idx].y) + ")"; })
+			.attrTween("transform", translateAlong(animPath.node()))
 			.each("end", function(d) {
-				slide(d3.select(this), d, idx);
+				slide(d3.select(this), d, idx + 1);
 			});
 	}
+}
+
+// Returns an attrTween for translating along the specified path element.
+function translateAlong(path) {
+	var l = path.getTotalLength();
+	return function(d, i, a) {
+		return function(t) {
+		  var p = path.getPointAtLength(t * l);
+		  return "translate(" + p.x + "," + p.y + ")";
+		};
+	};
 }
 
 </script>
