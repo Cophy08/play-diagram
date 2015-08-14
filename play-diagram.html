@@ -247,9 +247,8 @@ var circles = markers.append("circle")
 	.attr("cx", 0)
 	.attr("cy", -1) // To better center circle on player number
 	.attr("r", 10)
-	.style("stroke", function(d) { return d.colour; })
-	.style("fill", function(d) { return d.colour; })
-	.style("fill-opacity", 0)
+	.style("stroke", "red")
+	.style("fill", "none")
 	.style("stroke-opacity", 0);
 
 markers.append("text")
