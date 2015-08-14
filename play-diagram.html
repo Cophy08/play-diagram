@@ -124,7 +124,7 @@ playerData.push({
 playerData.push({
 	player: "21",
 	colour: "red",
-	waypoints: [[0,12,22],[1,15,10],[10,180,30]]
+	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,170,10]]
 });
 
 // Convert waypoint array elements into properties
@@ -175,57 +175,68 @@ var paths = players.selectAll("path")
 	.data(function(d) { return d.paths; })
 	.enter().append("path")
 		.attr("d", function(d) {
-			var start = x(d.start[0]) + "," + y(d.start[1]);
-			var end = x(d.end[0]) + "," + y(d.end[1]);
-			var smoother = [x(d.end[0]), y(d.end[1])];
+
+			var ctrlPt = [x(d.end[0]), y(d.end[1])];
 
 			if (d.next.length === 2) {
 
 				var rise = y(d.next[1]) - y(d.end[1]);
+				rise *= -1; // Adjust rise since higher y values are plotted lower
 				var run = x(d.next[0]) - x(d.end[0]);
 				var slope = rise / run;
 
-				var maxFactor = 0.1;
-				var maxDelta = 40000;
+				var delta = 10;
 
-				var isRisePositive = true;
-				if (rise < 0) isRisePositive = false;
+				// Ignore cases where: slope === 0, slope == Number.POSITIVE_INFINITY, or slope == Number.NEGATIVE_INFINITY
+				if (slope !== 0 && slope != Number.POSITIVE_INFINITY && slope != Number.NEGATIVE_INFINITY) {
+					if (slope > 0) {
+						if (run >= 0) {
+							// If player will skate up and right, then ctrlPt is down and left
+							ctrlPt[0] = ctrlPt[0] - delta;
+							ctrlPt[1] = ctrlPt[1] + delta * slope;
 
-				var isRunPositive = true;
-				if (run < 0) isRunPositive = false;
+							// For bigger curves, use:
+							// ctrlPt[0] = ctrlPt[0] - delta / slope;
+							// ctrlPt[1] = ctrlPt[1] + delta;
+						} else {
+							// If player will skate down and left, then ctrlPt is up and right
+							ctrlPt[0] = ctrlPt[0] + delta;
+							ctrlPt[1] = ctrlPt[1] - delta * slope;
+						}
+					} else if (slope < 0) {
+						if (run >= 0) {
+							// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
+							ctrlPt[0] = ctrlPt[0] + delta / slope;
+							ctrlPt[1] = ctrlPt[1] - delta;
 
-
-				if (slope >= 1) {
-					rise = 10;
-					run = rise / slope;
-				} else {
-					run = 10;
-					rise = run * slope;
-
-					if (!isRisePositive) rise = rise * -1;
+							// For bigger curves, use:
+							// ctrlPt[0] = ctrlPt[0] - delta;
+							// ctrlPt[1] = ctrlPt[1] + delta * slope;
+						} else {
+							// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
+							ctrlPt[0] = ctrlPt[0] - delta / slope;
+							ctrlPt[1] = ctrlPt[1] + delta;
+						}
+					}
 				}
-
-				if (slope < 0) rise *= -1;
-
-				if (!isRunPositive) run *= -1;
 
 				// Set rise and run to 0 to turn off curved paths
 				//rise = 0;
 				//run = 0;
 
-				smoother[1] = y(d.end[1]) - rise;
-				smoother[0] = x(d.end[0]) - run;
-
 				// To check where the smoother is located
-				// rink.append("circle")
-				// 	.attr("class", "smoother")
-				// 	.attr("cx", smoother[0])
-				// 	.attr("cy", smoother[1])
-				// 	.attr("r", 2)
-				// 	.attr("fill", "#ccc");
+				rink.append("circle")
+					.attr("class", "ctrlPt")
+					.attr("cx", ctrlPt[0])
+					.attr("cy", ctrlPt[1])
+					.attr("r", 2)
+					.attr("fill", "#ccc");
 			}
 
-			return "M" + start + " S" + smoother[0] + "," + smoother[1] + " " + end;
+			var dString = "M" + x(d.start[0]) + "," + y(d.start[1]);
+			dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
+			dString += " " + x(d.end[0]) + "," + y(d.end[1]);
+			return dString;
 		})
 		.style("stroke", "pink")
 		.style("fill", "none");
