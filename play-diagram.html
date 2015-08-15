@@ -5,6 +5,8 @@
 	<title>Play Diagram</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
+	<script type="text/javascript" src="js/rinkPlot.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/rink-style.css">
 </head>
 <body>
 	<svg></svg>
@@ -42,12 +44,40 @@ d3.select("svg")
 var rink = d3.select("svg").append("g")
 	.attr("id", "rink")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var rinkDiagram = rink.append("g")
+	.attr("id", "rink-diagram");
 rink.append("g")
 	.attr("id", "h-rules");
 rink.append("g")
 	.attr("id", "v-rules");
 
+var fullHorzPlot = new RINK_MAP({parent: rinkDiagram, fullRink: true, desiredWidth: 340, horizontal: true});
+fullHorzPlot();
+d3.select("g.zones")
+	.attr("transform", "");
 
+d3.select("g.zones").selectAll("rect")
+	.style("fill", "#f2f2f2")
+
+d3.select("g.zones").selectAll("rect.red-line")
+	.style("fill", "#ccc")
+
+d3.select("g.zones").selectAll("path, line, circle")
+	.style("stroke", "#ccc");
+
+d3.select("g.zones").selectAll("circle.red-line")
+	.style("stroke", "none")
+	.style("fill", "#f2f2f2");
+
+d3.select("g.zones").selectAll("path.goal-crease")
+	.style("stroke", "#ccc")
+	.style("fill", "none");
+
+d3.selectAll("path.rink-face")
+	.style("fill", "none");
+
+// d3.selectAll("rect.center-line")
+// 	.style("display", "none");
 /*
 *
 * Append grid
@@ -64,6 +94,7 @@ gridlines.append("line")
 	.attr("y2", function(d) { return y(d); })
 	.attr("stroke", "#ddd")
 	.attr("stroke-width", 1)
+	.style("opacity", 0)
 	.attr("y-coord", function(d) { return d; });
 gridlines.append("text")
 	.attr("y", function(d) { return y(d); })
@@ -72,6 +103,7 @@ gridlines.append("text")
 	.style("text-anchor", "end")
 	.style("font-size", "8px")
 	.style("fill", "#aaa")
+	.style("opacity", 0)
 	.text(function(d) { return d; });
 
 gridlines = rink.select("#v-rules").selectAll("g")
@@ -92,6 +124,7 @@ gridlines.append("line")
 			return "#ddd";
 		}
 	})
+	.style("opacity", 0)
 	.attr("x-coord", function(d) { return d; });
 gridlines.append("text")
 	.attr("y", y.range()[0] + 20)
@@ -99,6 +132,7 @@ gridlines.append("text")
 	.style("text-anchor", "middle")
 	.style("font-size", "8px")
 	.style("fill", "#aaa")
+	.style("opacity", 0)
 	.text(function(d) { return d; });
 
 /*
@@ -112,19 +146,19 @@ var playerData = [];
 playerData.push({
 	player: "81",
 	colour: "red",
-	waypoints: [[0,20,80],[1.5,30,60],[3,10,30],[5,60,30],[7,150,60],[10,160,30]]
+	waypoints: [[0,20,80],[1.5,30,60],[3,10,30],[5,60,30],[7,150,60],[10,160,40]]
 });
 
 playerData.push({
 	player: "42",
 	colour: "red",
-	waypoints: [[0,10,42],[2,20,23],[8,160,75],[10,160,85]]
+	waypoints: [[0,10,42],[2,20,23],[8,160,75],[10,180,75]]
 });
 
 playerData.push({
 	player: "21",
 	colour: "red",
-	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,170,10]]
+	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,180,10]]
 });
 
 // Convert waypoint array elements into properties
@@ -189,7 +223,6 @@ var paths = players.selectAll("path")
 
 
 				if (slope === 0) {
-					console.log("A");
 					if (run >= 0) {
 						// If player will skate right, then ctrlPt is left
 						ctrlPt[0] = ctrlPt[0] - delta;
@@ -240,12 +273,12 @@ var paths = players.selectAll("path")
 				//ctrlPt = [x(d.end[0]), y(d.end[1])];
 
 				// To check where the smoother is located
-				rink.append("circle")
-					.attr("class", "ctrlPt")
-					.attr("cx", ctrlPt[0])
-					.attr("cy", ctrlPt[1])
-					.attr("r", 2)
-					.attr("fill", "#ccc");
+				// rink.append("circle")
+				// 	.attr("class", "ctrlPt")
+				// 	.attr("cx", ctrlPt[0])
+				// 	.attr("cy", ctrlPt[1])
+				// 	.attr("r", 2)
+				// 	.attr("fill", "#ccc");
 			}
 
 			var dString = "M" + x(d.start[0]) + "," + y(d.start[1]);
@@ -253,7 +286,7 @@ var paths = players.selectAll("path")
 			dString += " " + x(d.end[0]) + "," + y(d.end[1]);
 			return dString;
 		})
-		.style("stroke", "pink")
+		.style("stroke", "red")
 		.style("fill", "none");
 
 var points = players.selectAll("circle.waypoint")
@@ -263,7 +296,7 @@ var points = players.selectAll("circle.waypoint")
 		.attr("cx", function(d) { return x(d.x); })
 		.attr("cy", function(d) { return y(d.y); })
 		.attr("r", 2)
-		.style("fill", "pink");
+		.style("fill", "none");
 
 var markers = players.append("g")
 		.attr("class", "marker")
