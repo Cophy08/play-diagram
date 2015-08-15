@@ -340,16 +340,31 @@ rink.append("circle")
 *
 */
 
+// Store pass timer as a variable so it can be cleared if the animation is restarted midway
+var passTimer;
+
 d3.select("#play").on("click", function() {
 	markers.each(function(d) {
 		slide(d3.select(this), d, 0);
+	});
+
+	// Clear the existing passTimer before restarting the pass sequence from idx = 0
+	// Also reset the circle indicating the puck carrier
+	clearTimeout(passTimer);
+	circles.style("stroke-opacity", function(d) {
+		if (d.player === targets[0]) {
+			return 1;
+		} else {
+			return 0;
+		}
 	});
 	setPassTimer(0);
 });
 
 
+
 function setPassTimer(idx) {
-	setTimeout(function() {
+	passTimer = setTimeout(function() {
 
 		// Draw and remove puck path
 		if (idx > 0) {
@@ -395,13 +410,13 @@ function setPassTimer(idx) {
 		}
 
 		circles.transition()
-			.style("fill-opacity", "0")
-			.style("stroke-opacity", "0");
-
-		circles.filter(function(d) { return d.player === targets[idx]; })
-			.transition()
-				.style("fill-opacity", "0")
-				.style("stroke-opacity", "1");
+			.style("stroke-opacity", function(d) {
+				if (d.player === targets[idx]) {
+					return 1;
+				} else {
+					return 0;
+				}
+			});
 
 		if (idx < targets.length - 1) {
 			setPassTimer(idx + 1);
