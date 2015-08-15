@@ -9,6 +9,8 @@
 	<link rel="stylesheet" type="text/css" href="css/rink-style.css">
 </head>
 <body>
+	<a href="#" id="grid-toggle" style="text-decoration: none; font-family: Roboto; display: block;">Toggle grid</a>
+	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; display: block;">Play</a>
 	<svg></svg>
 </body>
 <script>
@@ -74,7 +76,7 @@ rinkMap.select("g.zones").selectAll("circle.red-line")
 rinkMap.select("g.zones").selectAll("path.goal-crease")
 	.style("stroke", "#d2d2d2")
 	.style("fill", "none");
-rinkMap.selectAll("path.rink-face")
+rinkMap.selectAll("path.rink-face, circle.red-faceoff")
 	.style("fill", "none");
 
 
@@ -91,20 +93,10 @@ gridlines.append("line")
 	.attr("x1", function() { return d3.min(x.range()); })
 	.attr("x2", function() { return d3.max(x.range()); })
 	.attr("y1", function(d) { return y(d); })
-	.attr("y2", function(d) { return y(d); })
-	.attr("stroke", "#ddd")
-	.attr("stroke-width", 1)
-	.style("opacity", 0)
-	.attr("y-coord", function(d) { return d; });
+	.attr("y2", function(d) { return y(d); });
 gridlines.append("text")
 	.attr("y", function(d) { return y(d); })
-	.attr("x", -10)
-	.style("alignment-baseline", "middle")
-	.style("text-anchor", "end")
-	.style("font-size", "8px")
-	.style("fill", "#aaa")
-	.style("opacity", 0)
-	.text(function(d) { return d; });
+	.attr("x", -10);
 
 gridlines = rink.select("#v-rules").selectAll("g")
 	.data(d3.range(x.domain()[0], x.domain()[1] + ftPerCell, ftPerCell))
@@ -113,27 +105,34 @@ gridlines.append("line")
 	.attr("x1", function(d) { return x(d); })
 	.attr("x2", function(d) { return x(d); })
 	.attr("y1", function() { return d3.min(y.range()); })
-	.attr("y2", function() { return d3.max(y.range()); })
-	.attr("stroke-width", 1)
-	.attr("stroke", function(d) {
-		if (d === 100 || d === 10 || d === 190) {
-			return "#aaa";
-		} else if (d === 65 || d === 135 ) {
-			return "#aaa"
-		} else {
-			return "#ddd";
-		}
-	})
-	.style("opacity", 0)
-	.attr("x-coord", function(d) { return d; });
+	.attr("y2", function() { return d3.max(y.range()); });
 gridlines.append("text")
 	.attr("y", y.range()[0] + 20)
-	.attr("x", function(d) { return x(d); })
+	.attr("x", function(d) { return x(d); });
+
+rink.selectAll("#v-rules, #h-rules").selectAll("line")
+	.style("stroke", "#f7f7f7")
+	.style("stroke-width", 1)
+	.style("visibility", "visible");
+rink.selectAll("#v-rules, #h-rules").selectAll("text")
 	.style("text-anchor", "middle")
 	.style("font-size", "8px")
-	.style("fill", "#aaa")
-	.style("opacity", 0)
+	.style("fill", "#ccc")
+	.style("visibility", "visible")
 	.text(function(d) { return d; });
+
+// Append toggle control for grid visibility
+var isGridVisible = true;
+d3.select("#grid-toggle").on("click", function() {
+	var gridElements = rink.selectAll("#v-rules, #h-rules").selectAll("line, text");
+	if (isGridVisible) {
+		gridElements.style("visibility", "hidden");
+		isGridVisible = false;
+	} else {
+		gridElements.style("visibility", "visible");
+		isGridVisible = true;
+	}
+});
 
 /*
 *
@@ -341,10 +340,12 @@ rink.append("circle")
 *
 */
 
-markers.each(function(d) {
-	slide(d3.select(this), d, 0);
+d3.select("#play").on("click", function() {
+	markers.each(function(d) {
+		slide(d3.select(this), d, 0);
+	});
+	setPassTimer(0);
 });
-setPassTimer(0);
 
 
 function setPassTimer(idx) {
