@@ -28,7 +28,7 @@ var y = d3.scale.linear()
 
 /*
 *
-* Initialize layout
+* Initialize svg and groups
 *
 */
 
@@ -44,40 +44,40 @@ d3.select("svg")
 var rink = d3.select("svg").append("g")
 	.attr("id", "rink")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-var rinkDiagram = rink.append("g")
-	.attr("id", "rink-diagram");
 rink.append("g")
 	.attr("id", "h-rules");
 rink.append("g")
 	.attr("id", "v-rules");
+var rinkMap = rink.append("g")
+	.attr("id", "rink-map");
 
-var fullHorzPlot = new RINK_MAP({parent: rinkDiagram, fullRink: true, desiredWidth: 340, horizontal: true});
-fullHorzPlot();
-d3.select("g.zones")
+/*
+*
+* Append rink diagram and customize styling
+*
+*/
+
+var drawRinkMap = new RINK_MAP({parent: rinkMap, fullRink: true, desiredWidth: 340, horizontal: true});
+drawRinkMap();
+
+rinkMap.select("g.zones")
 	.attr("transform", "");
-
-d3.select("g.zones").selectAll("rect")
+rinkMap.select("g.zones").selectAll("rect")
 	.style("fill", "#f2f2f2")
-
-d3.select("g.zones").selectAll("rect.red-line")
-	.style("fill", "#ccc")
-
-d3.select("g.zones").selectAll("path, line, circle")
-	.style("stroke", "#ccc");
-
-d3.select("g.zones").selectAll("circle.red-line")
+rinkMap.select("g.zones").selectAll("rect.red-line")
+	.style("fill", "#d2d2d2")
+rinkMap.select("g.zones").selectAll("path, line, circle")
+	.style("stroke", "#d2d2d2");
+rinkMap.select("g.zones").selectAll("circle.red-line")
 	.style("stroke", "none")
 	.style("fill", "#f2f2f2");
-
-d3.select("g.zones").selectAll("path.goal-crease")
-	.style("stroke", "#ccc")
+rinkMap.select("g.zones").selectAll("path.goal-crease")
+	.style("stroke", "#d2d2d2")
+	.style("fill", "none");
+rinkMap.selectAll("path.rink-face")
 	.style("fill", "none");
 
-d3.selectAll("path.rink-face")
-	.style("fill", "none");
 
-// d3.selectAll("rect.center-line")
-// 	.style("display", "none");
 /*
 *
 * Append grid
@@ -152,13 +152,13 @@ playerData.push({
 playerData.push({
 	player: "42",
 	colour: "red",
-	waypoints: [[0,10,42],[2,20,23],[8,160,75],[10,180,75]]
+	waypoints: [[0,10,42],[2,20,23],[7,160,75],[8,160,75],[10,180,70]]
 });
 
 playerData.push({
 	player: "21",
 	colour: "red",
-	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,180,10]]
+	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,180,40]]
 });
 
 // Convert waypoint array elements into properties
@@ -212,15 +212,15 @@ var paths = players.selectAll("path")
 
 			var ctrlPt = [x(d.end[0]), y(d.end[1])];
 
-			if (d.next.length === 2) {
+			if (d.start[0] === d.end[0] && d.start[1] === d.end[1]) {
+				// Keep the ctrlPt at the endPt if the player is stationary
+			} else if (d.next.length === 2) {
 
 				var rise = y(d.next[1]) - y(d.end[1]);
 				rise *= -1; // Adjust rise since higher y values are plotted lower
 				var run = x(d.next[0]) - x(d.end[0]);
 				var slope = rise / run;
-
 				var delta = 10;
-
 
 				if (slope === 0) {
 					if (run >= 0) {
@@ -268,17 +268,16 @@ var paths = players.selectAll("path")
 					}
 				}
 
-
 				// To turn off curved paths
 				//ctrlPt = [x(d.end[0]), y(d.end[1])];
 
 				// To check where the smoother is located
-				// rink.append("circle")
-				// 	.attr("class", "ctrlPt")
-				// 	.attr("cx", ctrlPt[0])
-				// 	.attr("cy", ctrlPt[1])
-				// 	.attr("r", 2)
-				// 	.attr("fill", "#ccc");
+				rink.append("circle")
+					.attr("class", "ctrlPt")
+					.attr("cx", ctrlPt[0])
+					.attr("cy", ctrlPt[1])
+					.attr("r", 2)
+					.attr("fill", "#ccc");
 			}
 
 			var dString = "M" + x(d.start[0]) + "," + y(d.start[1]);
@@ -319,17 +318,11 @@ markers.append("text")
 	.style("fill", function(d) { return d.colour; })
 	.text(function(d) { return d.player; });
 
-
-
 /*
 *
-* Start transitions
+* Append puck marker
 *
 */
-
-markers.each(function(d) {
-	slide(d3.select(this), d, 0);
-});
 
 rink.append("line")
 	.attr("class", "puck")
@@ -342,6 +335,15 @@ rink.append("circle")
 	.style("fill", "black")
 	.style("fill-opacity", 0);
 
+/*
+*
+* Start transitions
+*
+*/
+
+markers.each(function(d) {
+	slide(d3.select(this), d, 0);
+});
 setPassTimer(0);
 
 
@@ -408,7 +410,7 @@ function setPassTimer(idx) {
 
 function slide(element, data, idx) {
 
-	if (idx < data.waypoints.length - 1) {
+	if (idx < data.paths.length) {
 		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.player === data.player; });
 		var animMarker = animPlayerGroup.select("g.marker");
 		var animPath = animPlayerGroup.selectAll("path").filter(function(d) { return d.order === idx; });
