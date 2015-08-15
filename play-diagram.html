@@ -286,7 +286,7 @@ var paths = players.selectAll("path")
 			dString += " " + x(d.end[0]) + "," + y(d.end[1]);
 			return dString;
 		})
-		.style("stroke", "red")
+		.style("stroke", "pink")
 		.style("fill", "none");
 
 var points = players.selectAll("circle.waypoint")
@@ -306,7 +306,7 @@ var circles = markers.append("circle")
 	.attr("cx", 0)
 	.attr("cy", -1) // To better center circle on player number
 	.attr("r", 10)
-	.style("stroke", "red")
+	.style("stroke", "black")
 	.style("fill", "none")
 	.style("stroke-opacity", 0);
 
@@ -333,13 +333,13 @@ markers.each(function(d) {
 
 rink.append("line")
 	.attr("class", "puck")
-	.style("stroke", "blue")
+	.style("stroke", "black")
 	.style("stroke-opacity", 0)
 	.style("stroke-dasharray", "2,3");
 rink.append("circle")
 	.attr("class", "puck")
 	.attr("r", 2)
-	.style("fill", "blue")
+	.style("fill", "black")
 	.style("fill-opacity", 0);
 
 setPassTimer(0);
