@@ -7,11 +7,14 @@
 	<link href="http://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet" type="text/css">
 	<script type="text/javascript" src="js/rinkPlot.js"></script>
 	<link rel="stylesheet" type="text/css" href="css/rink-style.css">
+	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
-	<a href="#" id="grid-toggle" style="text-decoration: none; font-family: Roboto; display: block;">Toggle grid</a>
-	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; display: block;">Play</a>
-	<svg></svg>
+	<a href="#" id="grid-toggle" style="text-decoration: none; font-family: Roboto;">Grid</a>
+	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Play</a>
+	<svg id="rink-svg" style="display: block;"></svg>
+	<div id="table" style="display: block;"></div>
+	</div>
 </body>
 <script>
 var rinkWidth = 200;
@@ -39,7 +42,7 @@ var y = d3.scale.linear()
 *
 */
 
-d3.select("svg")
+d3.select("#rink-svg")
 	.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
 	.style("width", (rinkWidth / ftPerCell) * cellSize + margin.left + margin.right + "px")
 	.style("margin", "20px")
@@ -48,7 +51,7 @@ d3.select("svg")
 	.style("font-size", "12px")
 	.style("font-weight", "500");
 
-d3.select("svg").append("text")
+d3.select("#rink-svg").append("text")
 	.attr("x", x.range()[1] + margin.left)
 	.attr("y", y.range()[0] + margin.top)
 	.style("font-size", "12px")
@@ -56,7 +59,8 @@ d3.select("svg").append("text")
 	.style("fill", rinkStroke)
 	.style("text-anchor", "end")
 	.text("@datarink");
-var rink = d3.select("svg").append("g")
+
+var rink = d3.select("#rink-svg").append("g")
 	.attr("id", "rink")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 rink.append("g")
@@ -75,6 +79,7 @@ var rinkMap = rink.append("g")
 var drawRinkMap = new RINK_MAP({parent: rinkMap, fullRink: true, desiredWidth: 340, horizontal: true});
 drawRinkMap();
 
+
 rinkMap.select("g.zones")
 	.attr("transform", "");
 rinkMap.select("g.zones").selectAll("rect")
@@ -92,6 +97,21 @@ rinkMap.select("g.zones").selectAll("path.goal-crease")
 rinkMap.selectAll("path.rink-face, circle.red-faceoff")
 	.style("fill", "none");
 
+// Redraw a full rink face instead of 2 halves from rinkPlot.js because:
+// 1. We don't have a stroke in the middle of the rink (where the 2 halves meet)
+// 2. The full rink face will be used as the click target to set skater paths
+rinkMap.selectAll(".rink-face")
+	.style("stroke", "none");
+rinkMap.select("g.zones")
+	.append("rect")
+		.attr("id", "rink-bg")
+		.attr("width", x.range()[1])
+		.attr("height", y.range()[0])
+		.attr("rx", x(28))
+		.attr("ry", y(0) - y(28))
+		.style("fill", "white")
+		.style("stroke", rinkStroke)
+		.style("fill-opacity", 0);
 
 /*
 *
@@ -157,35 +177,35 @@ var playerData = [];
 
 playerData.push({
 	id: 1,
-	player: "D1",
+	label: "D1",
 	colour: "blue",
 	waypoints: [[0,2.5,42.5]]
 });
 
 playerData.push({
 	id: 2,
-	player: "D2",
+	label: "D2",
 	colour: "blue",
 	waypoints: [[0,45,80]]
 });
 
 playerData.push({
 	id: 3,
-	player: "F1",
+	label: "F1",
 	colour: "blue",
 	waypoints: [[0,25,42.5],[2,12,12],[4,28,2]]
 });
 
 playerData.push({
 	id: 4,
-	player: "F2",
+	label: "F2",
 	colour: "blue",
 	waypoints: [[0,50,35],[2,38,12],[3,50,5],[4,75,5],[6,95,30],[7,102,42],[8,120,45]]
 });
 
 playerData.push({
 	id: 5,
-	player: "F3",
+	label: "F3",
 	colour: "blue",
 	waypoints: [[0,120,80],[4,120,80],[6,123,65],[7,115,68],[8,105,75]]
 });
@@ -193,31 +213,31 @@ playerData.push({
 //╳●✕✖
 playerData.push({
 	id: 6,
-	player: "✕",
+	label: "✕",
 	colour: "red",
 	waypoints: [[0,18,38]]
 })
 playerData.push({
 	id: 7,
-	player: "✕",
+	label: "✕",
 	colour: "red",
 	waypoints: [[0,95,75]]
 })
 playerData.push({
 	id: 8,
-	player: "✕",
+	label: "✕",
 	colour: "red",
 	waypoints: [[0,95,42.5]]
 })
 playerData.push({
 	id: 9,
-	player: "✕",
+	label: "✕",
 	colour: "red",
 	waypoints: [[0,95,10]]
 })
 playerData.push({
 	id: 10,
-	player: "✕",
+	label: "✕",
 	colour: "red",
 	waypoints: [[0,140,42.5]]
 })
@@ -370,7 +390,7 @@ markers.append("text")
 	.style("alignment-baseline", "middle")
 	.style("text-anchor", "middle")
 	.style("fill", function(d) { return d.colour; })
-	.text(function(d) { return d.player; });
+	.text(function(d) { return d.label; });
 
 /*
 *
@@ -480,7 +500,7 @@ function setPassTimer(idx) {
 function slide(element, data, idx) {
 
 	if (idx < data.paths.length) {
-		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.player === data.player; });
+		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.id === data.id; });
 		var animMarker = animPlayerGroup.select("g.marker");
 		var animPath = animPlayerGroup.selectAll("path").filter(function(d) { return d.order === idx; });
 
@@ -504,6 +524,65 @@ function translateAlong(path) {
 		};
 	};
 }
+
+initTimeline();
+
+function initTimeline() {
+	var playerIds = d3.range(1, 10 + 1, 1);
+	var seconds = d3.range(0, 30 + 1, 1);
+
+	var rows = d3.select("#table").selectAll("div.player.row")
+		.data(playerIds)
+		.enter().append("div")
+			.attr("id", function(d) { return "player-" + d; })
+			.attr("class", "player row");
+
+	rows.append("div")
+		.attr("class", "player-id cell")
+		.text(function(d) { return d; });
+	rows.append("div")
+		.attr("class", "name cell")
+		.text("name");
+	rows.append("div")
+		.attr("class", "colour cell")
+		.text("blue");
+	rows.append("div")
+		.attr("class", "timeline cell");
+
+	var timelineWidth = 900;
+	var timelineHeight = 40;
+	var tX = d3.scale.ordinal()
+		.domain(seconds)
+		.rangeRoundPoints([0, timelineWidth], 1);
+
+	var timelines = d3.select("#table").selectAll("div.timeline")
+		.append("svg")
+			.attr("height", timelineHeight + "px")
+			.attr("width", timelineWidth + "px")
+			.style("background-color", "#fafafa");
+
+	var dots = timelines.selectAll("dot")
+		.data(seconds)
+	dots.enter().append("circle")
+		.attr("class", "dot")
+		.attr("cy", timelineHeight / 2)
+		.attr("cx", function(d) { return tX(d); })
+		.attr("r", 5)
+		.style("fill", "#ccc")
+		.append("title")
+			.text(function(d) { return d; });
+	dots.on("click", function() {
+		console.log("A");
+		pickPosition();
+	});
+}
+
+function pickPosition() {
+	d3.select("#rink-map")
+		.on("mousemove", function() {
+			console.log("Hi!");
+		});
+};
 
 </script>
 </html>

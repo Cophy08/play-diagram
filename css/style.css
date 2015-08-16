@@ -1,0 +1,21 @@
+body {
+	font-family: Roboto, san-serif;
+	font-size: 12px;
+}
+
+.cell {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.player-id.cell {
+	width: 30px;
+}
+
+.colour.cell {
+	width: 50px;
+}
+
+.name.cell {
+	width: 100px;
+}
