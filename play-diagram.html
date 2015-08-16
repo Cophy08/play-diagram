@@ -151,7 +151,7 @@ playerData.push({
 playerData.push({
 	player: "42",
 	colour: "red",
-	waypoints: [[0,10,42],[2,20,23],[7,160,75],[8,160,75],[10,180,70]]
+	waypoints: [[0,10,42],[2,20,23],[7,160,75],[8,160,70]]
 });
 
 playerData.push({
@@ -159,6 +159,10 @@ playerData.push({
 	colour: "red",
 	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,180,40]]
 });
+
+// Player with puck
+var carriers = ["81", "42", "21", "42", "81", "r-goal"];
+var possessionStartTimes = [0, 1000, 2000, 4000, 5000, 8000];
 
 // Convert waypoint array elements into properties
 playerData.forEach(function(p) {
@@ -170,9 +174,9 @@ playerData.forEach(function(p) {
 		};
 	});
 
+	// Convert waypoints to paths
 	paths = [];
 	for (var i = 0; i < p.waypoints.length - 1; i++) {
-
 		var nextPoint = [];
 		if (i < p.waypoints.length - 2) {
 			nextPoint = [p.waypoints[i + 2].x, p.waypoints[i + 2].y];
@@ -187,11 +191,75 @@ playerData.forEach(function(p) {
 		});
 	}
 	p.paths = paths;
-});
 
-// Player with puck
-var targets = ["81", "42", "21", "42", "81", "r-goal"];
-var delays = [0, 1000, 1000, 2000, 2000, 2000];
+	// Create the string for each path's d attribute
+	for (var i = 0; i < p.paths.length; i++) {
+
+		var ctrlPt = [x(p.paths[i].end[0]), y(p.paths[i].end[1])];
+
+		if (p.paths[i].start[0] === p.paths[i].end[0] && p.paths[i].start[1] === p.paths[i].end[1]) {
+			// Keep the ctrlPt at the endPt if the player is stationary
+		} else if (p.paths[i].next.length === 2) {
+
+			var rise = y(p.paths[i].next[1]) - y(p.paths[i].end[1]);
+			rise *= -1; // Adjust rise since higher y values are plotted lower
+			var run = x(p.paths[i].next[0]) - x(p.paths[i].end[0]);
+			var slope = rise / run;
+			var delta = 10;
+
+			if (slope === 0) {
+				if (run >= 0) {
+					// If player will skate right, then ctrlPt is left
+					ctrlPt[0] = ctrlPt[0] - delta;
+				} else {
+					// If player will skate left, then ctrlPt is right
+					ctrlPt[0] = ctrlPt[0] + delta;
+				}
+			} else if (slope == Number.POSITIVE_INFINITY || slope == Number.NEGATIVE_INFINITY) {
+				if (rise >= 0) {
+					// If player skates up, then ctrlPt is down
+					ctrlPt[1] = ctrlPt[1] + delta;
+				} else {
+					// If player skates down, then ctrlPt is up
+					ctrlPt[1] = ctrlPt[1] - delta;
+				}
+			} else if (slope > 0) {
+				if (run >= 0) {
+					// If player will skate up and right, then ctrlPt is down and left
+					ctrlPt[0] = ctrlPt[0] - delta;
+					ctrlPt[1] = ctrlPt[1] + delta * slope;
+				} else {
+					// If player will skate down and left, then ctrlPt is up and right
+					ctrlPt[0] = ctrlPt[0] + delta;
+					ctrlPt[1] = ctrlPt[1] - delta * slope;
+				}
+			} else if (slope < 0) {
+				if (run >= 0) {
+					// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
+					ctrlPt[0] = ctrlPt[0] + delta / slope;
+					ctrlPt[1] = ctrlPt[1] - delta;
+				} else {
+					// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
+					ctrlPt[0] = ctrlPt[0] - delta / slope;
+					ctrlPt[1] = ctrlPt[1] + delta;
+				}
+			}
+
+			// To check where the smoother is located
+			rink.append("circle")
+				.attr("class", "ctrlPt2")
+				.attr("cx", ctrlPt[0])
+				.attr("cy", ctrlPt[1])
+				.attr("r", 2)
+				.attr("fill", "gold");
+		}
+
+		var dString = "M" + x(p.paths[i].start[0]) + "," + y(p.paths[i].start[1]);
+		dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
+		dString += " " + x(p.paths[i].end[0]) + "," + y(p.paths[i].end[1]);
+		p.paths[i].dString = dString;
+	}
+});
 
 /*
 *
@@ -207,83 +275,7 @@ var players = rink.selectAll("g.player")
 var paths = players.selectAll("path")
 	.data(function(d) { return d.paths; })
 	.enter().append("path")
-		.attr("d", function(d) {
-
-			var ctrlPt = [x(d.end[0]), y(d.end[1])];
-
-			if (d.start[0] === d.end[0] && d.start[1] === d.end[1]) {
-				// Keep the ctrlPt at the endPt if the player is stationary
-			} else if (d.next.length === 2) {
-
-				var rise = y(d.next[1]) - y(d.end[1]);
-				rise *= -1; // Adjust rise since higher y values are plotted lower
-				var run = x(d.next[0]) - x(d.end[0]);
-				var slope = rise / run;
-				var delta = 10;
-
-				if (slope === 0) {
-					if (run >= 0) {
-						// If player will skate right, then ctrlPt is left
-						ctrlPt[0] = ctrlPt[0] - delta;
-					} else {
-						// If player will skate left, then ctrlPt is right
-						ctrlPt[0] = ctrlPt[0] + delta;
-					}
-				} else if (slope == Number.POSITIVE_INFINITY || slope == Number.NEGATIVE_INFINITY) {
-					if (rise >= 0) {
-						// If player skates up, then ctrlPt is down
-						ctrlPt[1] = ctrlPt[1] + delta;
-					} else {
-						// If player skates down, then ctrlPt is up
-						ctrlPt[1] = ctrlPt[1] - delta;
-					}
-				} else if (slope > 0) {
-					if (run >= 0) {
-						// If player will skate up and right, then ctrlPt is down and left
-						ctrlPt[0] = ctrlPt[0] - delta;
-						ctrlPt[1] = ctrlPt[1] + delta * slope;
-
-						// For bigger curves, use:
-						// ctrlPt[0] = ctrlPt[0] - delta / slope;
-						// ctrlPt[1] = ctrlPt[1] + delta;
-					} else {
-						// If player will skate down and left, then ctrlPt is up and right
-						ctrlPt[0] = ctrlPt[0] + delta;
-						ctrlPt[1] = ctrlPt[1] - delta * slope;
-					}
-				} else if (slope < 0) {
-					if (run >= 0) {
-						// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
-						ctrlPt[0] = ctrlPt[0] + delta / slope;
-						ctrlPt[1] = ctrlPt[1] - delta;
-
-						// For bigger curves, use:
-						// ctrlPt[0] = ctrlPt[0] - delta;
-						// ctrlPt[1] = ctrlPt[1] + delta * slope;
-					} else {
-						// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
-						ctrlPt[0] = ctrlPt[0] - delta / slope;
-						ctrlPt[1] = ctrlPt[1] + delta;
-					}
-				}
-
-				// To turn off curved paths
-				//ctrlPt = [x(d.end[0]), y(d.end[1])];
-
-				// To check where the smoother is located
-				rink.append("circle")
-					.attr("class", "ctrlPt")
-					.attr("cx", ctrlPt[0])
-					.attr("cy", ctrlPt[1])
-					.attr("r", 2)
-					.attr("fill", "#ccc");
-			}
-
-			var dString = "M" + x(d.start[0]) + "," + y(d.start[1]);
-			dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
-			dString += " " + x(d.end[0]) + "," + y(d.end[1]);
-			return dString;
-		})
+		.attr("d", function(d) { return d.dString; })
 		.style("stroke", "pink")
 		.style("fill", "none");
 
@@ -352,7 +344,7 @@ d3.select("#play").on("click", function() {
 	// Also reset the circle indicating the puck carrier
 	clearTimeout(passTimer);
 	circles.style("stroke-opacity", function(d) {
-		if (d.player === targets[0]) {
+		if (d.player === carriers[0]) {
 			return 1;
 		} else {
 			return 0;
@@ -368,24 +360,24 @@ function setPassTimer(idx) {
 
 		// Draw and remove puck path
 		if (idx > 0) {
-			var sourceTransform = markers.filter(function(d) { return d.player === targets[idx - 1]; }).attr("transform");
+			var sourceTransform = markers.filter(function(d) { return d.player === carriers[idx - 1]; }).attr("transform");
 			var sourcePos = [];
 			sourcePos[0] = sourceTransform.substring(sourceTransform.indexOf("(") + 1, sourceTransform.indexOf(","));
 			sourcePos[1] = sourceTransform.substring(sourceTransform.indexOf(",") + 1, sourceTransform.indexOf(")"));
 			sourcePos = [+sourcePos[0], +sourcePos[1]];
 
 			var targetPos = [];
-			if (targets[idx] === "r-goal" || targets[idx] === "l-goal") {
+			if (carriers[idx] === "r-goal" || carriers[idx] === "l-goal") {
 				targetPos = [x(190), y(85/2)];
 			} else {
-				var targetTransform = markers.filter(function(d) { return d.player === targets[idx]; }).attr("transform");
+				var targetTransform = markers.filter(function(d) { return d.player === carriers[idx]; }).attr("transform");
 				targetPos[0] = targetTransform.substring(targetTransform.indexOf("(") + 1, targetTransform.indexOf(","));
 				targetPos[1] = targetTransform.substring(targetTransform.indexOf(",") + 1, targetTransform.indexOf(")"));
 				targetPos = [+targetPos[0], +targetPos[1]];
 			}
 
 			var duration = 500;
-			if (targets[idx] === "r-goal" || targets[idx] === "l-goal") {
+			if (carriers[idx] === "r-goal" || carriers[idx] === "l-goal") {
 				duration = 1500;
 			}
 
@@ -411,17 +403,17 @@ function setPassTimer(idx) {
 
 		circles.transition()
 			.style("stroke-opacity", function(d) {
-				if (d.player === targets[idx]) {
+				if (d.player === carriers[idx]) {
 					return 1;
 				} else {
 					return 0;
 				}
 			});
 
-		if (idx < targets.length - 1) {
+		if (idx < carriers.length - 1) {
 			setPassTimer(idx + 1);
 		}
-	}, delays[idx]);
+	}, possessionStartTimes[idx] - possessionStartTimes[idx - 1]);
 }
 
 function slide(element, data, idx) {
