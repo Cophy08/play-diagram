@@ -19,6 +19,11 @@ var rinkHeight = 85;
 var ftPerCell = 5;
 var cellSize = 20;
 
+var rinkStroke = "#ccc";
+var rinkFill = "#ebebeb";
+
+var pathColour = "lightskyblue"; //pink
+
 var margin = {top: 30, left: 30, right: 30, bottom: 30};
 
 var x = d3.scale.linear()
@@ -65,16 +70,16 @@ drawRinkMap();
 rinkMap.select("g.zones")
 	.attr("transform", "");
 rinkMap.select("g.zones").selectAll("rect")
-	.style("fill", "#f2f2f2")
+	.style("fill", rinkFill)
 rinkMap.select("g.zones").selectAll("rect.red-line")
-	.style("fill", "#d2d2d2")
+	.style("fill", rinkStroke)
 rinkMap.select("g.zones").selectAll("path, line, circle")
-	.style("stroke", "#d2d2d2");
+	.style("stroke", rinkStroke);
 rinkMap.select("g.zones").selectAll("circle.red-line")
 	.style("stroke", "none")
-	.style("fill", "#f2f2f2");
+	.style("fill", rinkFill);
 rinkMap.select("g.zones").selectAll("path.goal-crease")
-	.style("stroke", "#d2d2d2")
+	.style("stroke", rinkStroke)
 	.style("fill", "none");
 rinkMap.selectAll("path.rink-face, circle.red-faceoff")
 	.style("fill", "none");
@@ -145,41 +150,73 @@ var playerData = [];
 playerData.push({
 	id: 1,
 	player: "D1",
-	colour: "red",
-	waypoints: [[0,20,80],[1.5,30,60],[3,10,30],[5,60,30],[7,150,60],[10,160,40]]
+	colour: "blue",
+	waypoints: [[0,2.5,42.5]]
 });
 
 playerData.push({
 	id: 2,
 	player: "D2",
-	colour: "red",
-	waypoints: [[0,10,42],[2,20,23],[7,160,75],[8,160,70]]
+	colour: "blue",
+	waypoints: [[0,45,80]]
 });
 
 playerData.push({
 	id: 3,
 	player: "F1",
-	colour: "red",
-	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,180,40]]
+	colour: "blue",
+	waypoints: [[0,25,42.5],[2,12,12],[4,28,2]]
 });
 
 playerData.push({
 	id: 4,
 	player: "F2",
-	colour: "red",
-	waypoints: [[0,50,80]]
+	colour: "blue",
+	waypoints: [[0,50,35],[2,38,12],[3,50,5],[4,75,5],[6,95,30],[7,102,42],[8,120,45]]
 });
 
 playerData.push({
 	id: 5,
 	player: "F3",
-	colour: "red",
-	waypoints: [[0,70,40]]
+	colour: "blue",
+	waypoints: [[0,120,80],[4,120,80],[6,123,65],[7,115,68],[8,105,75]]
 });
 
-// Player with puck
-var carriers = [1, 2, 3, 5, 1, 1000];
-var possessionStartTimes = [0, 1000, 2000, 4000, 5000, 8000];
+//╳●✕✖
+playerData.push({
+	id: 6,
+	player: "✕",
+	colour: "red",
+	waypoints: [[0,18,38]]
+})
+playerData.push({
+	id: 7,
+	player: "✕",
+	colour: "red",
+	waypoints: [[0,95,75]]
+})
+playerData.push({
+	id: 8,
+	player: "✕",
+	colour: "red",
+	waypoints: [[0,95,42.5]]
+})
+playerData.push({
+	id: 9,
+	player: "✕",
+	colour: "red",
+	waypoints: [[0,95,10]]
+})
+playerData.push({
+	id: 10,
+	player: "✕",
+	colour: "red",
+	waypoints: [[0,140,42.5]]
+})
+
+// Player with puck - use -1000 or 1000 for the left and right nets
+var carriers = [1, 2, 4, 5];
+var possessionStartTimes = [0, 1000, 6000, 7500];
 
 // Convert waypoint array elements into properties
 playerData.forEach(function(p) {
@@ -263,12 +300,12 @@ playerData.forEach(function(p) {
 			}
 
 			// To check where the smoother is located
-			rink.append("circle")
-				.attr("class", "ctrlPt2")
-				.attr("cx", ctrlPt[0])
-				.attr("cy", ctrlPt[1])
-				.attr("r", 2)
-				.attr("fill", "gold");
+			// rink.append("circle")
+			// 	.attr("class", "ctrlPt2")
+			// 	.attr("cx", ctrlPt[0])
+			// 	.attr("cy", ctrlPt[1])
+			// 	.attr("r", 2)
+			// 	.attr("fill", "gold");
 		}
 
 		var dString = "M" + x(p.paths[i].start[0]) + "," + y(p.paths[i].start[1]);
@@ -293,7 +330,7 @@ var paths = players.selectAll("path")
 	.data(function(d) { return d.paths; })
 	.enter().append("path")
 		.attr("d", function(d) { return d.dString; })
-		.style("stroke", "pink")
+		.style("stroke", pathColour)
 		.style("fill", "none");
 
 var points = players.selectAll("circle.waypoint")
@@ -303,7 +340,8 @@ var points = players.selectAll("circle.waypoint")
 		.attr("cx", function(d) { return x(d.x); })
 		.attr("cy", function(d) { return y(d.y); })
 		.attr("r", 2)
-		.style("fill", "none");
+		.style("visibility", "hidden")
+		.style("fill", pathColour);
 
 var markers = players.append("g")
 		.attr("class", "marker")
@@ -396,7 +434,7 @@ function setPassTimer(idx) {
 				duration = 1500;
 			}
 
-			// Draw and hide puck path
+			//Draw and hide puck path
 			rink.select("line.puck")
 				.attr("x1", sourcePos[0])
 				.attr("y1", sourcePos[1])
