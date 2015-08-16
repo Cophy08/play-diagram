@@ -143,25 +143,42 @@ d3.select("#grid-toggle").on("click", function() {
 var playerData = [];
 
 playerData.push({
-	player: "81",
+	id: 1,
+	player: "D1",
 	colour: "red",
 	waypoints: [[0,20,80],[1.5,30,60],[3,10,30],[5,60,30],[7,150,60],[10,160,40]]
 });
 
 playerData.push({
-	player: "42",
+	id: 2,
+	player: "D2",
 	colour: "red",
 	waypoints: [[0,10,42],[2,20,23],[7,160,75],[8,160,70]]
 });
 
 playerData.push({
-	player: "21",
+	id: 3,
+	player: "F1",
 	colour: "red",
 	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,180,40]]
 });
 
+playerData.push({
+	id: 4,
+	player: "F2",
+	colour: "red",
+	waypoints: [[0,50,80]]
+});
+
+playerData.push({
+	id: 5,
+	player: "F3",
+	colour: "red",
+	waypoints: [[0,70,40]]
+});
+
 // Player with puck
-var carriers = ["81", "42", "21", "42", "81", "r-goal"];
+var carriers = [1, 2, 3, 5, 1, 1000];
 var possessionStartTimes = [0, 1000, 2000, 4000, 5000, 8000];
 
 // Convert waypoint array elements into properties
@@ -344,7 +361,7 @@ d3.select("#play").on("click", function() {
 	// Also reset the circle indicating the puck carrier
 	clearTimeout(passTimer);
 	circles.style("stroke-opacity", function(d) {
-		if (d.player === carriers[0]) {
+		if (d.id === carriers[0]) {
 			return 1;
 		} else {
 			return 0;
@@ -353,31 +370,29 @@ d3.select("#play").on("click", function() {
 	setPassTimer(0);
 });
 
-
-
 function setPassTimer(idx) {
 	passTimer = setTimeout(function() {
 
 		// Draw and remove puck path
 		if (idx > 0) {
-			var sourceTransform = markers.filter(function(d) { return d.player === carriers[idx - 1]; }).attr("transform");
+			var sourceTransform = markers.filter(function(d) { return d.id === carriers[idx - 1]; }).attr("transform");
 			var sourcePos = [];
 			sourcePos[0] = sourceTransform.substring(sourceTransform.indexOf("(") + 1, sourceTransform.indexOf(","));
 			sourcePos[1] = sourceTransform.substring(sourceTransform.indexOf(",") + 1, sourceTransform.indexOf(")"));
 			sourcePos = [+sourcePos[0], +sourcePos[1]];
 
 			var targetPos = [];
-			if (carriers[idx] === "r-goal" || carriers[idx] === "l-goal") {
+			if (carriers[idx] === 1000 || carriers[idx] === -1000) {
 				targetPos = [x(190), y(85/2)];
 			} else {
-				var targetTransform = markers.filter(function(d) { return d.player === carriers[idx]; }).attr("transform");
+				var targetTransform = markers.filter(function(d) { return d.id === carriers[idx]; }).attr("transform");
 				targetPos[0] = targetTransform.substring(targetTransform.indexOf("(") + 1, targetTransform.indexOf(","));
 				targetPos[1] = targetTransform.substring(targetTransform.indexOf(",") + 1, targetTransform.indexOf(")"));
 				targetPos = [+targetPos[0], +targetPos[1]];
 			}
 
 			var duration = 500;
-			if (carriers[idx] === "r-goal" || carriers[idx] === "l-goal") {
+			if (carriers[idx] === 1000 || carriers[idx] === -1000) {
 				duration = 1500;
 			}
 
@@ -403,7 +418,7 @@ function setPassTimer(idx) {
 
 		circles.transition()
 			.style("stroke-opacity", function(d) {
-				if (d.player === carriers[idx]) {
+				if (d.id === carriers[idx]) {
 					return 1;
 				} else {
 					return 0;
