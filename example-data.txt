@@ -1,0 +1,24 @@
+#
+# Initial test
+#
+
+playerData.push({
+	player: "81",
+	colour: "red",
+	waypoints: [[0,20,80],[1.5,30,60],[3,10,30],[5,60,30],[7,150,60],[10,160,40]]
+});
+
+playerData.push({
+	player: "42",
+	colour: "red",
+	waypoints: [[0,10,42],[2,20,23],[7,160,75],[8,160,70]]
+});
+
+playerData.push({
+	player: "21",
+	colour: "red",
+	waypoints: [[0,12,22],[1,15,10],[9,170,30],[10,180,40]]
+});
+
+var carriers = ["81", "42", "21", "42", "81", "r-goal"];
+var possessionStartTimes = [0, 1000, 2000, 4000, 5000, 8000];
