@@ -12,10 +12,6 @@ body {
 	width: 30px;
 }
 
-.colour.cell {
+.colour.cell, .label.cell {
 	width: 50px;
-}
-
-.name.cell {
-	width: 100px;
 }

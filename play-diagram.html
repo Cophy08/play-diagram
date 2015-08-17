@@ -99,19 +99,16 @@ rinkMap.selectAll("path.rink-face, circle.red-faceoff")
 
 // Redraw a full rink face instead of 2 halves from rinkPlot.js because:
 // 1. We don't have a stroke in the middle of the rink (where the 2 halves meet)
-// 2. The full rink face will be used as the click target to set skater paths
 rinkMap.selectAll(".rink-face")
 	.style("stroke", "none");
 rinkMap.select("g.zones")
 	.append("rect")
-		.attr("id", "rink-bg")
 		.attr("width", x.range()[1])
 		.attr("height", y.range()[0])
 		.attr("rx", x(28))
 		.attr("ry", y(0) - y(28))
-		.style("fill", "white")
-		.style("stroke", rinkStroke)
-		.style("fill-opacity", 0);
+		.style("fill", "none")
+		.style("stroke", rinkStroke);
 
 /*
 *
@@ -175,222 +172,13 @@ d3.select("#grid-toggle").on("click", function() {
 
 var playerData = [];
 
-playerData.push({
-	id: 1,
-	label: "D1",
-	colour: "blue",
-	waypoints: [[0,2.5,42.5]]
-});
-
-playerData.push({
-	id: 2,
-	label: "D2",
-	colour: "blue",
-	waypoints: [[0,45,80]]
-});
-
-playerData.push({
-	id: 3,
-	label: "F1",
-	colour: "blue",
-	waypoints: [[0,25,42.5],[2,12,12],[4,28,2]]
-});
-
-playerData.push({
-	id: 4,
-	label: "F2",
-	colour: "blue",
-	waypoints: [[0,50,35],[2,38,12],[3,50,5],[4,75,5],[6,95,30],[7,102,42],[8,120,45]]
-});
-
-playerData.push({
-	id: 5,
-	label: "F3",
-	colour: "blue",
-	waypoints: [[0,120,80],[4,120,80],[6,123,65],[7,115,68],[8,105,75]]
-});
-
-//╳●✕✖
-playerData.push({
-	id: 6,
-	label: "✕",
-	colour: "red",
-	waypoints: [[0,18,38]]
-})
-playerData.push({
-	id: 7,
-	label: "✕",
-	colour: "red",
-	waypoints: [[0,95,75]]
-})
-playerData.push({
-	id: 8,
-	label: "✕",
-	colour: "red",
-	waypoints: [[0,95,42.5]]
-})
-playerData.push({
-	id: 9,
-	label: "✕",
-	colour: "red",
-	waypoints: [[0,95,10]]
-})
-playerData.push({
-	id: 10,
-	label: "✕",
-	colour: "red",
-	waypoints: [[0,140,42.5]]
-})
-
 // Player with puck - use -1000 or 1000 for the left and right nets
-var carriers = [1, 2, 4, 5];
-var possessionStartTimes = [0, 1000, 6000, 7500];
+var carriers = [];
+var possessionStartTimes = [];
 
-// Convert waypoint array elements into properties
-playerData.forEach(function(p) {
-	p.waypoints = p.waypoints.map(function(w) {
-		return {
-			t: w[0],
-			x: w[1],
-			y: w[2]
-		};
-	});
 
-	// Convert waypoints to paths
-	paths = [];
-	for (var i = 0; i < p.waypoints.length - 1; i++) {
-		var nextPoint = [];
-		if (i < p.waypoints.length - 2) {
-			nextPoint = [p.waypoints[i + 2].x, p.waypoints[i + 2].y];
-		}
 
-		paths.push({
-			order: i,
-			start: [p.waypoints[i].x, p.waypoints[i].y],
-			end: [p.waypoints[i + 1].x, p.waypoints[i + 1].y],
-			next: nextPoint,
-			duration: p.waypoints[i + 1].t - p.waypoints[i].t
-		});
-	}
-	p.paths = paths;
 
-	// Create the string for each path's d attribute
-	for (var i = 0; i < p.paths.length; i++) {
-
-		var ctrlPt = [x(p.paths[i].end[0]), y(p.paths[i].end[1])];
-
-		if (p.paths[i].start[0] === p.paths[i].end[0] && p.paths[i].start[1] === p.paths[i].end[1]) {
-			// Keep the ctrlPt at the endPt if the player is stationary
-		} else if (p.paths[i].next.length === 2) {
-
-			var rise = y(p.paths[i].next[1]) - y(p.paths[i].end[1]);
-			rise *= -1; // Adjust rise since higher y values are plotted lower
-			var run = x(p.paths[i].next[0]) - x(p.paths[i].end[0]);
-			var slope = rise / run;
-			var delta = 10;
-
-			if (slope === 0) {
-				if (run >= 0) {
-					// If player will skate right, then ctrlPt is left
-					ctrlPt[0] = ctrlPt[0] - delta;
-				} else {
-					// If player will skate left, then ctrlPt is right
-					ctrlPt[0] = ctrlPt[0] + delta;
-				}
-			} else if (slope == Number.POSITIVE_INFINITY || slope == Number.NEGATIVE_INFINITY) {
-				if (rise >= 0) {
-					// If player skates up, then ctrlPt is down
-					ctrlPt[1] = ctrlPt[1] + delta;
-				} else {
-					// If player skates down, then ctrlPt is up
-					ctrlPt[1] = ctrlPt[1] - delta;
-				}
-			} else if (slope > 0) {
-				if (run >= 0) {
-					// If player will skate up and right, then ctrlPt is down and left
-					ctrlPt[0] = ctrlPt[0] - delta;
-					ctrlPt[1] = ctrlPt[1] + delta * slope;
-				} else {
-					// If player will skate down and left, then ctrlPt is up and right
-					ctrlPt[0] = ctrlPt[0] + delta;
-					ctrlPt[1] = ctrlPt[1] - delta * slope;
-				}
-			} else if (slope < 0) {
-				if (run >= 0) {
-					// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
-					ctrlPt[0] = ctrlPt[0] + delta / slope;
-					ctrlPt[1] = ctrlPt[1] - delta;
-				} else {
-					// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
-					ctrlPt[0] = ctrlPt[0] - delta / slope;
-					ctrlPt[1] = ctrlPt[1] + delta;
-				}
-			}
-
-			// To check where the smoother is located
-			// rink.append("circle")
-			// 	.attr("class", "ctrlPt2")
-			// 	.attr("cx", ctrlPt[0])
-			// 	.attr("cy", ctrlPt[1])
-			// 	.attr("r", 2)
-			// 	.attr("fill", "gold");
-		}
-
-		var dString = "M" + x(p.paths[i].start[0]) + "," + y(p.paths[i].start[1]);
-		dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
-		dString += " " + x(p.paths[i].end[0]) + "," + y(p.paths[i].end[1]);
-		p.paths[i].dString = dString;
-	}
-});
-
-/*
-*
-* Append players and paths
-*
-*/
-
-var players = rink.selectAll("g.player")
-	.data(playerData)
-	.enter().append("g")
-		.attr("class", "player");
-
-var paths = players.selectAll("path")
-	.data(function(d) { return d.paths; })
-	.enter().append("path")
-		.attr("d", function(d) { return d.dString; })
-		.style("stroke", pathColour)
-		.style("fill", "none");
-
-var points = players.selectAll("circle.waypoint")
-	.data(function(d) { return d.waypoints; })
-	.enter().append("circle")
-		.attr("class", "waypoint")
-		.attr("cx", function(d) { return x(d.x); })
-		.attr("cy", function(d) { return y(d.y); })
-		.attr("r", 2)
-		.style("visibility", "hidden")
-		.style("fill", pathColour);
-
-var markers = players.append("g")
-		.attr("class", "marker")
-		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
-
-var circles = markers.append("circle")
-	.attr("cx", 0)
-	.attr("cy", -1) // To better center circle on player number
-	.attr("r", 10)
-	.style("stroke", "black")
-	.style("fill", "none")
-	.style("stroke-opacity", 0);
-
-markers.append("text")
-	.attr("r", 5)
-	.attr("x", 0)
-	.attr("y", 0)
-	.style("alignment-baseline", "middle")
-	.style("text-anchor", "middle")
-	.style("fill", function(d) { return d.colour; })
-	.text(function(d) { return d.label; });
 
 /*
 *
@@ -419,14 +207,14 @@ rink.append("circle")
 var passTimer;
 
 d3.select("#play").on("click", function() {
-	markers.each(function(d) {
+	d3.selectAll("g.marker").each(function(d) {
 		slide(d3.select(this), d, 0);
 	});
 
 	// Clear the existing passTimer before restarting the pass sequence from idx = 0
 	// Also reset the circle indicating the puck carrier
 	clearTimeout(passTimer);
-	circles.style("stroke-opacity", function(d) {
+	d3.selectAll("g.marker").selectAll("circle").style("stroke-opacity", function(d) {
 		if (d.id === carriers[0]) {
 			return 1;
 		} else {
@@ -482,7 +270,7 @@ function setPassTimer(idx) {
 						.style("fill-opacity", 0);
 		}
 
-		circles.transition()
+		d3.selectAll("g.markers").selectAll("circle").transition()
 			.style("stroke-opacity", function(d) {
 				if (d.id === carriers[idx]) {
 					return 1;
@@ -525,41 +313,53 @@ function translateAlong(path) {
 	};
 }
 
+var playerIds = d3.range(1, 10 + 1, 1);
+var seconds = d3.range(0, 30 + 1, 1);
+
+var timelineWidth = 900;
+var timelineHeight = 40;
+var tX = d3.scale.ordinal()
+	.domain(seconds)
+	.rangeRoundPoints([0, timelineWidth], 1);
 initTimeline();
 
 function initTimeline() {
-	var playerIds = d3.range(1, 10 + 1, 1);
-	var seconds = d3.range(0, 30 + 1, 1);
 
+	// Prepare the data
+	playerIds.forEach(function(p) {
+		playerData.push({
+			id: p,
+			label: "P" + p,
+			colour: "blue",
+			waypoints: [],
+			paths: []
+		})
+	});
+
+	// Create the table
 	var rows = d3.select("#table").selectAll("div.player.row")
-		.data(playerIds)
+		.data(playerData)
 		.enter().append("div")
-			.attr("id", function(d) { return "player-" + d; })
+			.attr("id", function(d) { return "player-" + d.id; })
 			.attr("class", "player row");
 
 	rows.append("div")
 		.attr("class", "player-id cell")
-		.text(function(d) { return d; });
+		.text(function(d) { return d.id; });
 	rows.append("div")
-		.attr("class", "name cell")
-		.text("name");
+		.attr("class", "label cell")
+		.text(function(d) { return d.label; });
 	rows.append("div")
 		.attr("class", "colour cell")
-		.text("blue");
+		.text(function(d) { return d.colour; });
 	rows.append("div")
 		.attr("class", "timeline cell");
-
-	var timelineWidth = 900;
-	var timelineHeight = 40;
-	var tX = d3.scale.ordinal()
-		.domain(seconds)
-		.rangeRoundPoints([0, timelineWidth], 1);
 
 	var timelines = d3.select("#table").selectAll("div.timeline")
 		.append("svg")
 			.attr("height", timelineHeight + "px")
 			.attr("width", timelineWidth + "px")
-			.style("background-color", "#fafafa");
+			.style("background-color", "none");
 
 	var dots = timelines.selectAll("dot")
 		.data(seconds)
@@ -567,22 +367,256 @@ function initTimeline() {
 		.attr("class", "dot")
 		.attr("cy", timelineHeight / 2)
 		.attr("cx", function(d) { return tX(d); })
-		.attr("r", 5)
+		.attr("r", 6)
 		.style("fill", "#ccc")
 		.append("title")
 			.text(function(d) { return d; });
-	dots.on("click", function() {
-		console.log("A");
-		pickPosition();
+	dots.on("click", function(d) {
+		var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+		pickPosition(pickedPlayerId, d);
 	});
+
+	// Append a dot in the rink-svg for user to pick skater position
+	// Draw the rectangle above the dot so that all mousemove events register
+	d3.select("#rink").append("circle")
+		.attr("id", "picker-marker")
+		.attr("cx", 0)
+		.attr("cy", 0)
+		.attr("r", 5)
+		.style("fill", "gold")
+		.style("fill-opacity", 0)
+		.style("visibility", "hidden");
+	d3.select("#rink").append("rect")
+		.attr("id", "picker-mask")
+		.attr("width", x.range()[1])
+		.attr("height", y.range()[0])
+		.attr("rx", x(28))
+		.attr("ry", y(0) - y(28))
+		.style("fill", "white")
+		.style("fill-opacity", 0)
+		.style("visibility", "hidden");
+
 }
 
-function pickPosition() {
-	d3.select("#rink-map")
-		.on("mousemove", function() {
-			console.log("Hi!");
-		});
+
+function pickPosition(player, time) {
+	d3.selectAll("#picker-marker, #picker-mask")
+		.style("visibility", "visible");
+	d3.select("#picker-mask").transition()
+		.style("fill-opacity", 0);
+	d3.select("#picker-marker").transition()
+		.style("fill-opacity", 1);
+
+	var pickerMarker = d3.select("#picker-marker");
+	var pickerMask = d3.select("#picker-mask")
+
+	pickerMask.on("mousemove", function() {
+		// Snap to the closest whole foot
+		var mPos = d3.mouse(this);
+		var pxPerFt = cellSize / ftPerCell;
+		var mX = Math.round(mPos[0] / pxPerFt) * pxPerFt;
+		var mY = Math.round(mPos[1] / pxPerFt) * pxPerFt;
+		pickerMarker.attr("cx", mX)
+			.attr("cy", mY);
+	});
+
+	pickerMask.on("click", function() {
+		var mPos = d3.mouse(this);
+		var pxPerFt = cellSize / ftPerCell;
+		var mX = Math.round(mPos[0] / pxPerFt) * pxPerFt;
+		var mY = Math.round(mPos[1] / pxPerFt) * pxPerFt;
+
+		d3.selectAll("#picker-marker, #picker-mask")
+			.transition()
+				.style("fill-opacity", 0)
+				.each("end", function() {
+					d3.select(this).style("visibility", "hidden")
+				});
+
+		// updateData();
+		var pickedPlayerData = playerData.filter(function(d) { return d.id === player; })[0];
+		var pickedTimeWaypoint = pickedPlayerData.waypoints.filter(function(d) { return d[0] === time; });
+
+		// If another waypoint already exists for the picked time, replace it
+		var existingTimeWaypointIdx = -1;
+		var i = 0;
+		while (existingTimeWaypointIdx < 0 && i < pickedPlayerData.waypoints.length) {
+			if (pickedPlayerData.waypoints[i].t === time) { existingTimeWaypointIdx = i; }
+			else { i++; }
+		}
+
+		if (existingTimeWaypointIdx >= 0) {
+			pickedPlayerData.waypoints[existingTimeWaypointIdx] = {t: time, x: Math.round(x.invert(mX)), y: Math.round(y.invert(mY))};
+		} else {
+			pickedPlayerData.waypoints.push({t: time, x: Math.round(x.invert(mX)), y: Math.round(y.invert(mY))});
+			pickedPlayerData.waypoints = pickedPlayerData.waypoints.sort(function(a,b) { return a.t - b.t; });
+		}
+
+		// updatePaths();
+		generateDStrings(pickedPlayerData.id - 1);
+		updateRink();
+	});
 };
 
+function updateRink() {
+	/*
+	*
+	* Append players and paths
+	*
+	*/
+
+	var players = rink.selectAll("g.player")
+		.data(playerData.filter(function(d) { return d.waypoints.length > 0; }), function(d) { return d.id; });
+	var enteredPlayers = players.enter().append("g")
+		.attr("class", "player");
+
+	var paths = players.selectAll("path")
+		.data(function(d) { return d.paths; });
+	paths.enter().append("path")
+		.style("fill", "none");
+	paths.attr("d", function(d) { return d.dString; })
+		.style("stroke", pathColour);
+
+	var points = players.selectAll("text.waypoint")
+		.data(function(d) { return d.waypoints; }, function(w) { return w.t; })
+	points.enter().append("text")
+		.attr("class", "waypoint")
+		.style("font-size", 10)
+		.style("font-weight", 300)
+		.style("text-anchor", "middle")
+		.style("alignment-baseline", "middle");
+	points.attr("x", function(d) { return x(d.x); })
+		.attr("y", function(d) { return y(d.y); })
+		.style("fill", pathColour)
+		.text(function(d) { return d.t; });
+
+	var markers = enteredPlayers.append("g")
+		.attr("class", "marker")
+		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
+
+	markers.append("circle")
+		.attr("cx", 0)
+		.attr("cy", -1) // To better center circle on player number
+		.attr("r", 10)
+		.style("stroke", "black")
+		.style("fill", "none")
+		.style("stroke-opacity", 0);
+
+	markers.append("text")
+		.attr("r", 5)
+		.attr("x", 0)
+		.attr("y", 0)
+		.style("alignment-baseline", "middle")
+		.style("text-anchor", "middle")
+		.style("fill", function(d) { return d.colour; })
+		.text(function(d) { return d.label; });
+
+	/*
+	*
+	* Update timeline with event dots
+	*
+	*/
+
+	var rows = d3.select("#table").selectAll("div.player.row")
+		.data(playerData);
+	var timelines = rows.select("div.timeline").select("svg");
+	var waypointDots = timelines.selectAll("circle.waypoint")
+		.data(function(d) { return d.waypoints; }, function(w) { return w.t; });
+	waypointDots.enter().append("circle")
+		.attr("class", "waypoint")
+		.attr("r", 2);
+	waypointDots.attr("cx", function(d) { return tX(d.t); })
+		.attr("cy", timelineHeight / 2);
+
+};
+
+function generateDStrings(playerIdx) {
+
+	// Convert waypoints to paths
+	paths = [];
+	for (var i = 0; i < playerData[playerIdx].waypoints.length - 1; i++) {
+		var nextPoint = [];
+		if (i < playerData[playerIdx].waypoints.length - 2) {
+			nextPoint = [playerData[playerIdx].waypoints[i + 2].x, playerData[playerIdx].waypoints[i + 2].y];
+		}
+
+		paths.push({
+			order: i,
+			start: [playerData[playerIdx].waypoints[i].x, playerData[playerIdx].waypoints[i].y],
+			end: [playerData[playerIdx].waypoints[i + 1].x, playerData[playerIdx].waypoints[i + 1].y],
+			next: nextPoint,
+			duration: playerData[playerIdx].waypoints[i + 1].t - playerData[playerIdx].waypoints[i].t
+		});
+	}
+	playerData[playerIdx].paths = paths;
+
+	// Create the string for each path's d attribute
+	for (var i = 0; i < playerData[playerIdx].paths.length; i++) {
+
+		var ctrlPt = [x(playerData[playerIdx].paths[i].end[0]), y(playerData[playerIdx].paths[i].end[1])];
+
+		if (playerData[playerIdx].paths[i].start[0] === playerData[playerIdx].paths[i].end[0] && playerData[playerIdx].paths[i].start[1] === playerData[playerIdx].paths[i].end[1]) {
+			// Keep the ctrlPt at the endPt if the player is stationary
+		} else if (playerData[playerIdx].paths[i].next.length === 2) {
+
+			var rise = y(playerData[playerIdx].paths[i].next[1]) - y(playerData[playerIdx].paths[i].end[1]);
+			rise *= -1; // Adjust rise since higher y values are plotted lower
+			var run = x(playerData[playerIdx].paths[i].next[0]) - x(playerData[playerIdx].paths[i].end[0]);
+			var slope = rise / run;
+			var delta = 10;
+
+			if (slope === 0) {
+				if (run >= 0) {
+					// If player will skate right, then ctrlPt is left
+					ctrlPt[0] = ctrlPt[0] - delta;
+				} else {
+					// If player will skate left, then ctrlPt is right
+					ctrlPt[0] = ctrlPt[0] + delta;
+				}
+			} else if (slope == Number.POSITIVE_INFINITY || slope == Number.NEGATIVE_INFINITY) {
+				if (rise >= 0) {
+					// If player skates up, then ctrlPt is down
+					ctrlPt[1] = ctrlPt[1] + delta;
+				} else {
+					// If player skates down, then ctrlPt is up
+					ctrlPt[1] = ctrlPt[1] - delta;
+				}
+			} else if (slope > 0) {
+				if (run >= 0) {
+					// If player will skate up and right, then ctrlPt is down and left
+					ctrlPt[0] = ctrlPt[0] - delta;
+					ctrlPt[1] = ctrlPt[1] + delta * slope;
+				} else {
+					// If player will skate down and left, then ctrlPt is up and right
+					ctrlPt[0] = ctrlPt[0] + delta;
+					ctrlPt[1] = ctrlPt[1] - delta * slope;
+				}
+			} else if (slope < 0) {
+				if (run >= 0) {
+					// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
+					ctrlPt[0] = ctrlPt[0] + delta / slope;
+					ctrlPt[1] = ctrlPt[1] - delta;
+				} else {
+					// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
+					ctrlPt[0] = ctrlPt[0] - delta / slope;
+					ctrlPt[1] = ctrlPt[1] + delta;
+				}
+			}
+
+			// To check where the smoother is located
+			// rink.append("circle")
+			// 	.attr("class", "ctrlPt2")
+			// 	.attr("cx", ctrlPt[0])
+			// 	.attr("cy", ctrlPt[1])
+			// 	.attr("r", 2)
+			// 	.attr("fill", "gold");
+		}
+
+		var dString = "M" + x(playerData[playerIdx].paths[i].start[0]) + "," + y(playerData[playerIdx].paths[i].start[1]);
+		dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
+		dString += " " + x(playerData[playerIdx].paths[i].end[0]) + "," + y(playerData[playerIdx].paths[i].end[1]);
+		playerData[playerIdx].paths[i].dString = dString;
+	}
+}
 </script>
 </html>
