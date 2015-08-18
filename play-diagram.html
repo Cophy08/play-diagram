@@ -22,7 +22,6 @@ var ftPerCell = 5;
 var cellSize = 20;
 
 
-
 var pathColour = "lightskyblue"; //pink
 
 var margin = {top: 30, left: 30, right: 30, bottom: 30};
@@ -294,16 +293,8 @@ function initTimeline() {
 		.attr("cy", timelineHeight / 2)
 		.attr("cx", function(d) { return tX(d); })
 		.attr("r", 4);
-	timepoints.on("click", function(d) {
-		var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
-		openPicker(pickedPlayerId, d);
 
-		// If user clcks on the timepoint again, cancel position picker
-		d3.select(this).on("click", function() {
-			console.log("Hi!");
-			d3.select(this).on("click", null);
-		});
-	});
+	setTimelineListeners("reset");
 
 	// Append a dot in the rink-svg for user to pick skater position
 	// Draw the rectangle above the dot so that all mousemove events register
@@ -324,6 +315,63 @@ function initTimeline() {
 		.style("visibility", "hidden");
 }
 
+function setTimelineListeners(pickerInvoker) {
+	if (pickerInvoker === "reset") {
+
+		d3.selectAll("div.timeline").selectAll("circle.timepoint").on("click", function(d) {
+			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+			openPicker(pickedPlayerId, d);
+
+			// Updates listeners to the timepoint case
+			setTimelineListeners(this);
+		});
+
+		d3.selectAll("div.timeline").selectAll("circle.waypoint").on("click", function(d) {
+			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+			openPicker(pickedPlayerId, d.t);
+
+			// Updates listeners to the waypoint case
+			setTimelineListeners(this);
+		});
+	} else if (d3.select(pickerInvoker).attr("class").indexOf("waypoint") >= 0) {
+
+		// WAYPOINT CASE: If a waypoint was initially clicked, then:
+		// Clicking on a timepoint will transfer the waypoint to the clicked timepoint
+		// Clicking other waypoints does nothing, but clicking the initial waypoint closes the picker
+
+		var invokerPlayer = d3.select(pickerInvoker).node().parentNode.parentNode.parentNode.__data__.id;
+		d3.selectAll("div.timeline").selectAll("circle.timepoint").on("click", function(d) {
+			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+			updateWaypoint(pickedPlayerId, d, pickerInvoker.__data__.x, pickerInvoker.__data__.y);
+			removeWaypoint(invokerPlayer, pickerInvoker.__data__.t);
+			closePicker();
+		});
+		d3.selectAll("div.timeline").selectAll("circle.waypoint").on("click", null);
+		d3.select(pickerInvoker).on("click", function() {
+			closePicker();
+			setTimelineListeners("reset");
+		});
+	} else if (d3.select(pickerInvoker).attr("class").indexOf("timepoint") >= 0) {
+
+		// TIMEPOINT CASE: Desired behaviour:
+		// If user clicks on a timepoint that's not already selected, then open the picker for it
+		// If user clicks on the already-selected timepoint, then cancel all picker activities
+
+		var invokerPlayer = d3.select(pickerInvoker).node().parentNode.parentNode.parentNode.__data__.id;
+		d3.selectAll("div.timeline").selectAll("circle.timepoint").on("click", function(d) {
+
+			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+
+			if (invokerPlayer === pickedPlayerId && d === pickerInvoker.__data__) {
+				closePicker();
+				setTimelineListeners("reset");
+			} else {
+				openPicker(pickedPlayerId, d);
+			}
+
+		});
+	}
+}
 function openPicker(player, t) {
 	// Make picker elements visible
 	d3.selectAll("#picker-marker, #picker-mask")
@@ -353,13 +401,36 @@ function openPicker(player, t) {
 	});
 }
 
+// Remove listeners and hide picker
 function closePicker() {
+	d3.select("#picker-mask").on("mousemove", null);
+	d3.select("#picker-mask").on("click", null);
 	d3.selectAll("#picker-marker, #picker-mask")
 		.transition()
 			.style("fill-opacity", 0)
 			.each("end", function() {
 				d3.select(this).style("visibility", "hidden")
 			});
+}
+
+function removeWaypoint(player, t) {
+	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
+
+	// Check if a waypoint for the specified time already exists. If it does, get its index
+	var existingWaypointIdx = -1;
+	var i = 0;
+	while (existingWaypointIdx < 0 && i < playerToUpdate.waypoints.length) {
+		if (playerToUpdate.waypoints[i].t === t) { existingWaypointIdx = i; }
+		else { i++; }
+	}
+
+	if (existingWaypointIdx >= 0) {
+		playerToUpdate.waypoints.splice(existingWaypointIdx, 1);
+	}
+
+	// Update path data and rink elements
+	generateDStrings(playerToUpdate.id - 1);
+	updateRink();
 }
 
 function updateWaypoint(player, t, x, y) {
@@ -392,11 +463,13 @@ function updateRink() {
 	// Append players and paths
 	var players = rink.select("#players").selectAll("g.player")
 		.data(playerData.filter(function(d) { return d.waypoints.length > 0; }), function(d) { return d.id; });
+	players.exit().remove();
 	var enteredPlayers = players.enter().append("g")
 		.attr("class", "player");
 
 	var paths = players.selectAll("path")
 		.data(function(d) { return d.paths; });
+	paths.exit().remove();
 	paths.enter().append("path")
 		.style("fill", "none");
 	paths.attr("d", function(d) { return d.dString; })
@@ -404,6 +477,7 @@ function updateRink() {
 
 	var points = players.selectAll("text.waypoint")
 		.data(function(d) { return d.waypoints; }, function(w) { return w.t; })
+	points.exit().remove();
 	points.enter().append("text")
 		.attr("class", "waypoint")
 		.style("font-size", 10)
@@ -446,11 +520,15 @@ function updateRink() {
 	var timelines = rows.select("div.timeline").select("svg");
 	var waypoints = timelines.selectAll("circle.waypoint")
 		.data(function(d) { return d.waypoints; }, function(w) { return w.t; });
+	waypoints.exit().remove();
 	waypoints.enter().append("circle")
 		.attr("class", "waypoint")
 		.attr("r", 6);
 	waypoints.attr("cx", function(d) { return tX(d.t); })
 		.attr("cy", timelineHeight / 2);
+
+	setTimelineListeners("reset");
+
 };
 
 function generateDStrings(playerIdx) {
