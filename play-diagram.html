@@ -293,8 +293,7 @@ function initTimeline() {
 		.attr("cy", timelineHeight / 2)
 		.attr("cx", function(d) { return tX(d); })
 		.attr("r", 4);
-
-	setTimelineListeners("reset");
+	setTimelineListeners();
 
 	// Append a dot in the rink-svg for user to pick skater position
 	// Draw the rectangle above the dot so that all mousemove events register
@@ -316,7 +315,7 @@ function initTimeline() {
 }
 
 function setTimelineListeners(pickerInvoker) {
-	if (pickerInvoker === "reset") {
+	if (pickerInvoker == null) {
 
 		d3.selectAll("div.timeline").selectAll("circle.timepoint").on("click", function(d) {
 			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
@@ -349,7 +348,6 @@ function setTimelineListeners(pickerInvoker) {
 		d3.selectAll("div.timeline").selectAll("circle.waypoint").on("click", null);
 		d3.select(pickerInvoker).on("click", function() {
 			closePicker();
-			setTimelineListeners("reset");
 		});
 	} else if (d3.select(pickerInvoker).attr("class").indexOf("timepoint") >= 0) {
 
@@ -361,7 +359,6 @@ function setTimelineListeners(pickerInvoker) {
 			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
 			if (invokerPlayer === pickedPlayerId && d === pickerInvoker.__data__) {
 				closePicker();
-				setTimelineListeners("reset");
 			} else {
 				openPicker(pickedPlayerId, d);
 			}
@@ -408,6 +405,8 @@ function closePicker() {
 			.each("end", function() {
 				d3.select(this).style("visibility", "hidden")
 			});
+
+	setTimelineListeners();
 }
 
 function removeWaypoint(player, t) {
@@ -523,9 +522,6 @@ function updateRink() {
 		.attr("r", 6);
 	waypoints.attr("cx", function(d) { return tX(d.t); })
 		.attr("cy", timelineHeight / 2);
-
-	setTimelineListeners("reset");
-
 };
 
 function generateDStrings(playerIdx) {
