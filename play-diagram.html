@@ -353,23 +353,20 @@ function setTimelineListeners(pickerInvoker) {
 		});
 	} else if (d3.select(pickerInvoker).attr("class").indexOf("timepoint") >= 0) {
 
-		// TIMEPOINT CASE: Desired behaviour:
-		// If user clicks on a timepoint that's not already selected, then open the picker for it
-		// If user clicks on the already-selected timepoint, then cancel all picker activities
-
+		// TIMEPOINT CASE: If a timepoint was initially clicked, then:
+		// Clicking on another timepoint will change the picker to the new timepoint, but clicking on the already-selected timepoint will cancel the picker
+		// Clicking on a waypoints does nothing
 		var invokerPlayer = d3.select(pickerInvoker).node().parentNode.parentNode.parentNode.__data__.id;
 		d3.selectAll("div.timeline").selectAll("circle.timepoint").on("click", function(d) {
-
 			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
-
 			if (invokerPlayer === pickedPlayerId && d === pickerInvoker.__data__) {
 				closePicker();
 				setTimelineListeners("reset");
 			} else {
 				openPicker(pickedPlayerId, d);
 			}
-
 		});
+		d3.selectAll("div.timeline").selectAll("circle.waypoint").on("click", null);
 	}
 }
 function openPicker(player, t) {
