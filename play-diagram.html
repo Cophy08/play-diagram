@@ -6,7 +6,6 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet" type="text/css">
 	<script type="text/javascript" src="js/rinkPlot.js"></script>
-	<link rel="stylesheet" type="text/css" href="css/rink-style.css">
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
@@ -22,8 +21,7 @@ var rinkHeight = 85;
 var ftPerCell = 5;
 var cellSize = 20;
 
-var rinkStroke = "#ccc";
-var rinkFill = "#ebebeb";
+
 
 var pathColour = "lightskyblue"; //pink
 
@@ -35,6 +33,42 @@ var x = d3.scale.linear()
 var y = d3.scale.linear()
 	.domain([0, rinkHeight])
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
+
+var isGridVisible = false;
+
+
+
+
+
+// Player with puck - use -1000 or 1000 for the left and right nets
+var carriers = [];
+var possessionStartTimes = [];
+
+// Store pass timer as a variable so it can be cleared if the animation is restarted midway
+var passTimer;
+
+
+// Prepare the data
+var playerData = [];
+var playerIds = d3.range(1, 10 + 1, 1);
+playerIds.forEach(function(p) {
+	playerData.push({
+		id: p,
+		label: "F" + p,
+		colour: "blue",
+		waypoints: [],
+		paths: []
+	})
+});
+
+// Timeline
+var timelineWidth = 900;
+var timelineHeight = 40;
+var seconds = d3.range(0, 30 + 1, 1);
+var tX = d3.scale.ordinal()
+	.domain(seconds)
+	.rangeRoundPoints([0, timelineWidth], 1);
+
 
 /*
 *
@@ -56,7 +90,7 @@ d3.select("#rink-svg").append("text")
 	.attr("y", y.range()[0] + margin.top)
 	.style("font-size", "12px")
 	.style("font-weight", "300")
-	.style("fill", rinkStroke)
+	.style("fill", "#ccc")
 	.style("text-anchor", "end")
 	.text("@datarink");
 
@@ -69,112 +103,26 @@ rink.append("g")
 	.attr("id", "v-rules");
 var rinkMap = rink.append("g")
 	.attr("id", "rink-map");
-
+rink.append("g")
+	.attr("id", "players");
 /*
 *
 * Append rink diagram and customize styling
 *
 */
 
-var drawRinkMap = new RINK_MAP({parent: rinkMap, fullRink: true, desiredWidth: 340, horizontal: true});
+var drawRinkMap = new RINK_MAP({parent: rinkMap, fullRink: true, desiredWidth: (rinkHeight / ftPerCell) * cellSize, horizontal: true});
 drawRinkMap();
+styleRink();
+
+appendGrid();
+
+initTimeline();
 
 
-rinkMap.select("g.zones")
-	.attr("transform", "");
-rinkMap.select("g.zones").selectAll("rect")
-	.style("fill", rinkFill)
-rinkMap.select("g.zones").selectAll("rect.red-line")
-	.style("fill", rinkStroke)
-rinkMap.select("g.zones").selectAll("path, line, circle")
-	.style("stroke", rinkStroke);
-rinkMap.select("g.zones").selectAll("circle.red-line")
-	.style("stroke", "none")
-	.style("fill", rinkFill);
-rinkMap.select("g.zones").selectAll("path.goal-crease")
-	.style("stroke", rinkStroke)
-	.style("fill", "none");
-rinkMap.selectAll("path.rink-face, circle.red-faceoff")
-	.style("fill", "none");
 
-// Redraw a full rink face instead of 2 halves from rinkPlot.js because:
-// 1. We don't have a stroke in the middle of the rink (where the 2 halves meet)
-rinkMap.selectAll(".rink-face")
-	.style("stroke", "none");
-rinkMap.select("g.zones")
-	.append("rect")
-		.attr("width", x.range()[1])
-		.attr("height", y.range()[0])
-		.attr("rx", x(28))
-		.attr("ry", y(0) - y(28))
-		.style("fill", "none")
-		.style("stroke", rinkStroke);
 
-/*
-*
-* Append grid
-*
-*/
 
-var gridlines = rink.select("#h-rules").selectAll("g")
-	.data(d3.range(y.domain()[0], y.domain()[1] + ftPerCell, ftPerCell))
-	.enter().append("g");
-gridlines.append("line")
-	.attr("x1", function() { return d3.min(x.range()); })
-	.attr("x2", function() { return d3.max(x.range()); })
-	.attr("y1", function(d) { return y(d); })
-	.attr("y2", function(d) { return y(d); });
-gridlines.append("text")
-	.attr("y", function(d) { return y(d); })
-	.attr("x", -10);
-
-gridlines = rink.select("#v-rules").selectAll("g")
-	.data(d3.range(x.domain()[0], x.domain()[1] + ftPerCell, ftPerCell))
-	.enter().append("g");
-gridlines.append("line")
-	.attr("x1", function(d) { return x(d); })
-	.attr("x2", function(d) { return x(d); })
-	.attr("y1", function() { return d3.min(y.range()); })
-	.attr("y2", function() { return d3.max(y.range()); });
-gridlines.append("text")
-	.attr("y", y.range()[0] + 20)
-	.attr("x", function(d) { return x(d); });
-
-rink.selectAll("#v-rules, #h-rules").selectAll("line")
-	.style("stroke", "#f7f7f7")
-	.style("stroke-width", 1)
-	.style("visibility", "visible");
-rink.selectAll("#v-rules, #h-rules").selectAll("text")
-	.style("text-anchor", "middle")
-	.style("font-size", "8px")
-	.style("fill", "#ccc")
-	.style("visibility", "visible")
-	.text(function(d) { return d; });
-
-// Append toggle control for grid visibility
-var isGridVisible = true;
-d3.select("#grid-toggle").on("click", function() {
-	var gridElements = rink.selectAll("#v-rules, #h-rules").selectAll("line, text");
-	if (isGridVisible) {
-		gridElements.style("visibility", "hidden");
-		isGridVisible = false;
-	} else {
-		gridElements.style("visibility", "visible");
-		isGridVisible = true;
-	}
-});
-
-/*
-*
-* Player data
-*
-*/
-
-var playerData = [];
-
-// Player with puck - use -1000 or 1000 for the left and right nets
-var carriers = [];
-var possessionStartTimes = [];
 
 
 
@@ -203,8 +151,7 @@ rink.append("circle")
 *
 */
 
-// Store pass timer as a variable so it can be cleared if the animation is restarted midway
-var passTimer;
+
 
 d3.select("#play").on("click", function() {
 	d3.selectAll("g.marker").each(function(d) {
@@ -313,36 +260,16 @@ function translateAlong(path) {
 	};
 }
 
-var playerIds = d3.range(1, 10 + 1, 1);
-var seconds = d3.range(0, 30 + 1, 1);
 
-var timelineWidth = 900;
-var timelineHeight = 40;
-var tX = d3.scale.ordinal()
-	.domain(seconds)
-	.rangeRoundPoints([0, timelineWidth], 1);
-initTimeline();
 
 function initTimeline() {
 
-	// Prepare the data
-	playerIds.forEach(function(p) {
-		playerData.push({
-			id: p,
-			label: "P" + p,
-			colour: "blue",
-			waypoints: [],
-			paths: []
-		})
-	});
-
-	// Create the table
+	// Create the timeline table
 	var rows = d3.select("#table").selectAll("div.player.row")
 		.data(playerData)
 		.enter().append("div")
 			.attr("id", function(d) { return "player-" + d.id; })
 			.attr("class", "player row");
-
 	rows.append("div")
 		.attr("class", "player-id cell")
 		.text(function(d) { return d.id; });
@@ -355,23 +282,19 @@ function initTimeline() {
 	rows.append("div")
 		.attr("class", "timeline cell");
 
+	// Append timeline svgs and timepoints
 	var timelines = d3.select("#table").selectAll("div.timeline")
 		.append("svg")
 			.attr("height", timelineHeight + "px")
-			.attr("width", timelineWidth + "px")
-			.style("background-color", "none");
-
-	var dots = timelines.selectAll("dot")
+			.attr("width", timelineWidth + "px");
+	var timepoints = timelines.selectAll("circle.timepoint")
 		.data(seconds)
-	dots.enter().append("circle")
-		.attr("class", "dot")
+	timepoints.enter().append("circle")
+		.attr("class", "timepoint")
 		.attr("cy", timelineHeight / 2)
 		.attr("cx", function(d) { return tX(d); })
-		.attr("r", 6)
-		.style("fill", "#ccc")
-		.append("title")
-			.text(function(d) { return d; });
-	dots.on("click", function(d) {
+		.attr("r", 4);
+	timepoints.on("click", function(d) {
 		var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
 		pickPosition(pickedPlayerId, d);
 	});
@@ -383,7 +306,6 @@ function initTimeline() {
 		.attr("cx", 0)
 		.attr("cy", 0)
 		.attr("r", 5)
-		.style("fill", "gold")
 		.style("fill-opacity", 0)
 		.style("visibility", "hidden");
 	d3.select("#rink").append("rect")
@@ -392,24 +314,25 @@ function initTimeline() {
 		.attr("height", y.range()[0])
 		.attr("rx", x(28))
 		.attr("ry", y(0) - y(28))
-		.style("fill", "white")
 		.style("fill-opacity", 0)
 		.style("visibility", "hidden");
-
 }
 
 
 function pickPosition(player, time) {
-	d3.selectAll("#picker-marker, #picker-mask")
-		.style("visibility", "visible");
-	d3.select("#picker-mask").transition()
-		.style("fill-opacity", 0);
-	d3.select("#picker-marker").transition()
-		.style("fill-opacity", 1);
 
 	var pickerMarker = d3.select("#picker-marker");
 	var pickerMask = d3.select("#picker-mask")
 
+	// Make picker elements visible
+	d3.selectAll("#picker-marker, #picker-mask")
+		.style("visibility", "visible");
+	pickerMask.transition()
+		.style("fill-opacity", 0.1);
+	pickerMarker.transition()
+		.style("fill-opacity", 1);
+
+	// Get the picker's position
 	pickerMask.on("mousemove", function() {
 		// Snap to the closest whole foot
 		var mPos = d3.mouse(this);
@@ -420,6 +343,7 @@ function pickPosition(player, time) {
 			.attr("cy", mY);
 	});
 
+	// Store the picked position
 	pickerMask.on("click", function() {
 		var mPos = d3.mouse(this);
 		var pxPerFt = cellSize / ftPerCell;
@@ -433,7 +357,7 @@ function pickPosition(player, time) {
 					d3.select(this).style("visibility", "hidden")
 				});
 
-		// updateData();
+		// Update the waypoint data
 		var pickedPlayerData = playerData.filter(function(d) { return d.id === player; })[0];
 		var pickedTimeWaypoint = pickedPlayerData.waypoints.filter(function(d) { return d[0] === time; });
 
@@ -444,7 +368,6 @@ function pickPosition(player, time) {
 			if (pickedPlayerData.waypoints[i].t === time) { existingTimeWaypointIdx = i; }
 			else { i++; }
 		}
-
 		if (existingTimeWaypointIdx >= 0) {
 			pickedPlayerData.waypoints[existingTimeWaypointIdx] = {t: time, x: Math.round(x.invert(mX)), y: Math.round(y.invert(mY))};
 		} else {
@@ -452,20 +375,16 @@ function pickPosition(player, time) {
 			pickedPlayerData.waypoints = pickedPlayerData.waypoints.sort(function(a,b) { return a.t - b.t; });
 		}
 
-		// updatePaths();
+		// Update path data and rink elements
 		generateDStrings(pickedPlayerData.id - 1);
 		updateRink();
 	});
 };
 
 function updateRink() {
-	/*
-	*
-	* Append players and paths
-	*
-	*/
 
-	var players = rink.selectAll("g.player")
+	// Append players and paths
+	var players = rink.select("#players").selectAll("g.player")
 		.data(playerData.filter(function(d) { return d.waypoints.length > 0; }), function(d) { return d.id; });
 	var enteredPlayers = players.enter().append("g")
 		.attr("class", "player");
@@ -491,9 +410,7 @@ function updateRink() {
 		.text(function(d) { return d.t; });
 
 	var markers = enteredPlayers.append("g")
-		.attr("class", "marker")
-		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
-
+		.attr("class", "marker");
 	markers.append("circle")
 		.attr("cx", 0)
 		.attr("cy", -1) // To better center circle on player number
@@ -501,15 +418,16 @@ function updateRink() {
 		.style("stroke", "black")
 		.style("fill", "none")
 		.style("stroke-opacity", 0);
-
 	markers.append("text")
 		.attr("r", 5)
 		.attr("x", 0)
 		.attr("y", 0)
-		.style("alignment-baseline", "middle")
-		.style("text-anchor", "middle")
 		.style("fill", function(d) { return d.colour; })
 		.text(function(d) { return d.label; });
+
+	// Update marker positions in case the first waypoint's data has changed
+	d3.selectAll("g.marker")
+		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
 
 	/*
 	*
@@ -520,14 +438,17 @@ function updateRink() {
 	var rows = d3.select("#table").selectAll("div.player.row")
 		.data(playerData);
 	var timelines = rows.select("div.timeline").select("svg");
-	var waypointDots = timelines.selectAll("circle.waypoint")
+	var waypoints = timelines.selectAll("circle.waypoint")
 		.data(function(d) { return d.waypoints; }, function(w) { return w.t; });
-	waypointDots.enter().append("circle")
+	waypoints.enter().append("circle")
 		.attr("class", "waypoint")
-		.attr("r", 2);
-	waypointDots.attr("cx", function(d) { return tX(d.t); })
+		.attr("r", 6);
+	waypoints.attr("cx", function(d) { return tX(d.t); })
 		.attr("cy", timelineHeight / 2);
-
+	waypoints.on("click", function(d) {
+		var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+		pickPosition(pickedPlayerId, d.t);
+	});
 };
 
 function generateDStrings(playerIdx) {
@@ -617,6 +538,113 @@ function generateDStrings(playerIdx) {
 		dString += " " + x(playerData[playerIdx].paths[i].end[0]) + "," + y(playerData[playerIdx].paths[i].end[1]);
 		playerData[playerIdx].paths[i].dString = dString;
 	}
+}
+
+/*
+*
+* Updates styling from rinkPlot.js
+*
+*/
+
+function styleRink() {
+
+	// Remove translation
+	rinkMap.select("g.zones")
+		.attr("transform", "");
+
+	// Make rink monochrome
+	var rinkStroke = "#ccc";
+	var rinkFill = "#ebebeb";
+	rinkMap.select("g.zones").selectAll("rect")
+		.style("fill", rinkFill)
+	rinkMap.select("g.zones").selectAll("rect.red-line")
+		.style("fill", rinkStroke)
+	rinkMap.select("g.zones").selectAll("path, line, circle")
+		.style("stroke", rinkStroke);
+	rinkMap.select("g.zones").selectAll("circle.red-line")
+		.style("stroke", "none")
+		.style("fill", rinkFill);
+	rinkMap.select("g.zones").selectAll("path.goal-crease")
+		.style("stroke", rinkStroke)
+		.style("fill", "none");
+	rinkMap.selectAll("path.rink-face, circle.red-faceoff")
+		.style("fill", "none");
+
+	// Hide the original half rink-faces from rinkPlot.js because it has a line where the 2 halves meet
+	rinkMap.selectAll(".rink-face")
+		.style("stroke", "none");
+
+	// Redraw a full rink rink-face for a neat outline
+	rinkMap.select("g.zones")
+		.append("rect")
+			.attr("width", x.range()[1])
+			.attr("height", y.range()[0])
+			.attr("rx", x(28))
+			.attr("ry", y(0) - y(28))
+			.style("fill", "none")
+			.style("stroke", rinkStroke);
+}
+
+/*
+*
+* Append grid
+*
+*/
+
+function appendGrid() {
+
+	// Append horizontal rules
+	var gridlines = rink.select("#h-rules").selectAll("g")
+		.data(d3.range(y.domain()[0], y.domain()[1] + ftPerCell, ftPerCell))
+		.enter().append("g");
+	gridlines.append("line")
+		.attr("x1", function() { return d3.min(x.range()); })
+		.attr("x2", function() { return d3.max(x.range()); })
+		.attr("y1", function(d) { return y(d); })
+		.attr("y2", function(d) { return y(d); });
+	gridlines.append("text")
+		.attr("y", function(d) { return y(d); })
+		.attr("x", -10);
+
+	// Append vertical rules
+	gridlines = rink.select("#v-rules").selectAll("g")
+		.data(d3.range(x.domain()[0], x.domain()[1] + ftPerCell, ftPerCell))
+		.enter().append("g");
+	gridlines.append("line")
+		.attr("x1", function(d) { return x(d); })
+		.attr("x2", function(d) { return x(d); })
+		.attr("y1", function() { return d3.min(y.range()); })
+		.attr("y2", function() { return d3.max(y.range()); });
+	gridlines.append("text")
+		.attr("y", y.range()[0] + 20)
+		.attr("x", function(d) { return x(d); });
+
+	// Apply common attributes
+	rink.selectAll("#v-rules, #h-rules").selectAll("line, text")
+		.attr("class", "grid");
+	rink.selectAll("#v-rules, #h-rules").selectAll("text")
+		.text(function(d) { return d; });
+
+	// Set grid visibility
+	if (isGridVisible) {
+		rink.selectAll("#v-rules, #h-rules").selectAll("line, text")
+			.style("visibility", "visible");
+	} else {
+		rink.selectAll("#v-rules, #h-rules").selectAll("line, text")
+			.style("visibility", "hidden");
+	}
+
+	// Add listener to toggle control for grid visibility
+	d3.select("#grid-toggle").on("click", function() {
+		var gridElements = rink.selectAll("#v-rules, #h-rules").selectAll("line, text");
+		if (isGridVisible) {
+			gridElements.style("visibility", "hidden");
+			isGridVisible = false;
+		} else {
+			gridElements.style("visibility", "visible");
+			isGridVisible = true;
+		}
+	});
 }
 </script>
 </html>

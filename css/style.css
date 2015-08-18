@@ -3,6 +3,32 @@ body {
 	font-size: 12px;
 }
 
+/*
+*
+* Rink
+*
+*/
+
+g.marker text {
+	alignment-baseline: middle;
+	text-anchor: middle;
+}
+
+#picker-marker {
+	fill: gold;
+}
+
+#picker-mask {
+	fill: black;
+}
+
+
+/*
+*
+* Timeline
+*
+*/
+
 .cell {
 	display: inline-block;
 	vertical-align: middle;
@@ -15,3 +41,31 @@ body {
 .colour.cell, .label.cell {
 	width: 50px;
 }
+
+circle.timepoint {
+	fill: white; /* Need a fill so that it's clickable */
+	stroke: #ccc;
+}
+
+circle.waypoint {
+	fill: #aaa;
+}
+
+
+
+/*
+*
+* Grid
+*
+*/
+
+line.grid {
+	stroke: #f7f7f7;
+}
+
+text.grid {
+	text-anchor: middle;
+	font-size: 8px;
+	fill: #ccc;
+}
+
