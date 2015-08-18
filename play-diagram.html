@@ -296,7 +296,13 @@ function initTimeline() {
 		.attr("r", 4);
 	timepoints.on("click", function(d) {
 		var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
-		pickPosition(pickedPlayerId, d);
+		openPicker(pickedPlayerId, d);
+
+		// If user clcks on the timepoint again, cancel position picker
+		d3.select(this).on("click", function() {
+			console.log("Hi!");
+			d3.select(this).on("click", null);
+		});
 	});
 
 	// Append a dot in the rink-svg for user to pick skater position
@@ -318,68 +324,68 @@ function initTimeline() {
 		.style("visibility", "hidden");
 }
 
-
-function pickPosition(player, time) {
-
-	var pickerMarker = d3.select("#picker-marker");
-	var pickerMask = d3.select("#picker-mask")
-
+function openPicker(player, t) {
 	// Make picker elements visible
 	d3.selectAll("#picker-marker, #picker-mask")
 		.style("visibility", "visible");
-	pickerMask.transition()
+	d3.select("#picker-mask").transition()
 		.style("fill-opacity", 0.1);
-	pickerMarker.transition()
+	d3.select("#picker-marker").transition()
 		.style("fill-opacity", 1);
 
-	// Get the picker's position
-	pickerMask.on("mousemove", function() {
-		// Snap to the closest whole foot
-		var mPos = d3.mouse(this);
-		var pxPerFt = cellSize / ftPerCell;
-		var mX = Math.round(mPos[0] / pxPerFt) * pxPerFt;
-		var mY = Math.round(mPos[1] / pxPerFt) * pxPerFt;
-		pickerMarker.attr("cx", mX)
+	// Move the picker marker; snap to the closest whole foot
+	var pxPerFt = cellSize / ftPerCell;
+	var mPos;
+	var mX;
+	var mY;
+	d3.select("#picker-mask").on("mousemove", function() {
+		mPos = d3.mouse(this);
+		mX = Math.round(mPos[0] / pxPerFt) * pxPerFt;
+		mY = Math.round(mPos[1] / pxPerFt) * pxPerFt;
+		d3.select("#picker-marker").attr("cx", mX)
 			.attr("cy", mY);
 	});
 
-	// Store the picked position
-	pickerMask.on("click", function() {
-		var mPos = d3.mouse(this);
-		var pxPerFt = cellSize / ftPerCell;
-		var mX = Math.round(mPos[0] / pxPerFt) * pxPerFt;
-		var mY = Math.round(mPos[1] / pxPerFt) * pxPerFt;
-
-		d3.selectAll("#picker-marker, #picker-mask")
-			.transition()
-				.style("fill-opacity", 0)
-				.each("end", function() {
-					d3.select(this).style("visibility", "hidden")
-				});
-
-		// Update the waypoint data
-		var pickedPlayerData = playerData.filter(function(d) { return d.id === player; })[0];
-		var pickedTimeWaypoint = pickedPlayerData.waypoints.filter(function(d) { return d[0] === time; });
-
-		// If another waypoint already exists for the picked time, replace it
-		var existingTimeWaypointIdx = -1;
-		var i = 0;
-		while (existingTimeWaypointIdx < 0 && i < pickedPlayerData.waypoints.length) {
-			if (pickedPlayerData.waypoints[i].t === time) { existingTimeWaypointIdx = i; }
-			else { i++; }
-		}
-		if (existingTimeWaypointIdx >= 0) {
-			pickedPlayerData.waypoints[existingTimeWaypointIdx] = {t: time, x: Math.round(x.invert(mX)), y: Math.round(y.invert(mY))};
-		} else {
-			pickedPlayerData.waypoints.push({t: time, x: Math.round(x.invert(mX)), y: Math.round(y.invert(mY))});
-			pickedPlayerData.waypoints = pickedPlayerData.waypoints.sort(function(a,b) { return a.t - b.t; });
-		}
-
-		// Update path data and rink elements
-		generateDStrings(pickedPlayerData.id - 1);
-		updateRink();
+	// Update waypoint data with the picked position, then close the picker
+	d3.select("#picker-mask").on("click", function() {
+		updateWaypoint(player, t, Math.round(x.invert(mX)), Math.round(y.invert(mY)));
+		closePicker();
 	});
-};
+}
+
+function closePicker() {
+	d3.selectAll("#picker-marker, #picker-mask")
+		.transition()
+			.style("fill-opacity", 0)
+			.each("end", function() {
+				d3.select(this).style("visibility", "hidden")
+			});
+}
+
+function updateWaypoint(player, t, x, y) {
+
+	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
+
+	// Check if a waypoint for the specified time already exists. If it does, get its index
+	var existingWaypointIdx = -1;
+	var i = 0;
+	while (existingWaypointIdx < 0 && i < playerToUpdate.waypoints.length) {
+		if (playerToUpdate.waypoints[i].t === t) { existingWaypointIdx = i; }
+		else { i++; }
+	}
+
+	// Add or update waypoint
+	if (existingWaypointIdx >= 0) {
+		playerToUpdate.waypoints[existingWaypointIdx] = {t: t, x: x, y: y};
+	} else {
+		playerToUpdate.waypoints.push({t: t, x: x, y: y});
+		playerToUpdate.waypoints = playerToUpdate.waypoints.sort(function(a, b) { return a.t - b.t; });
+	}
+
+	// Update path data and rink elements
+	generateDStrings(playerToUpdate.id - 1);
+	updateRink();
+}
 
 function updateRink() {
 
@@ -445,10 +451,6 @@ function updateRink() {
 		.attr("r", 6);
 	waypoints.attr("cx", function(d) { return tX(d.t); })
 		.attr("cy", timelineHeight / 2);
-	waypoints.on("click", function(d) {
-		var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
-		pickPosition(pickedPlayerId, d.t);
-	});
 };
 
 function generateDStrings(playerIdx) {
@@ -472,6 +474,7 @@ function generateDStrings(playerIdx) {
 	playerData[playerIdx].paths = paths;
 
 	// Create the string for each path's d attribute
+	rink.selectAll("circle.ctrlPt").remove();
 	for (var i = 0; i < playerData[playerIdx].paths.length; i++) {
 
 		var ctrlPt = [x(playerData[playerIdx].paths[i].end[0]), y(playerData[playerIdx].paths[i].end[1])];
@@ -525,12 +528,12 @@ function generateDStrings(playerIdx) {
 			}
 
 			// To check where the smoother is located
-			// rink.append("circle")
-			// 	.attr("class", "ctrlPt2")
-			// 	.attr("cx", ctrlPt[0])
-			// 	.attr("cy", ctrlPt[1])
-			// 	.attr("r", 2)
-			// 	.attr("fill", "gold");
+			rink.append("circle")
+				.attr("class", "ctrlPt")
+				.attr("cx", ctrlPt[0])
+				.attr("cy", ctrlPt[1])
+				.attr("r", 2)
+				.attr("fill", "gold");
 		}
 
 		var dString = "M" + x(playerData[playerIdx].paths[i].start[0]) + "," + y(playerData[playerIdx].paths[i].start[1]);
