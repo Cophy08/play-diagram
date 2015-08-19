@@ -587,47 +587,57 @@ function generateDStrings(playerIdx) {
 			rise *= -1; // Adjust rise since higher y values are plotted lower
 			var run = x(playerData[playerIdx].paths[i].next[0]) - x(playerData[playerIdx].paths[i].end[0]);
 			var slope = rise / run;
-			var delta = 10;
+
+			var delta = 20;
 
 			if (slope === 0) {
 				if (run >= 0) {
 					// If player will skate right, then ctrlPt is left
-					ctrlPt[0] = ctrlPt[0] - delta;
+					ctrlPt[0] -= delta;
 				} else {
 					// If player will skate left, then ctrlPt is right
-					ctrlPt[0] = ctrlPt[0] + delta;
+					ctrlPt[0] += delta;
 				}
 			} else if (slope == Number.POSITIVE_INFINITY || slope == Number.NEGATIVE_INFINITY) {
 				if (rise >= 0) {
 					// If player skates up, then ctrlPt is down
-					ctrlPt[1] = ctrlPt[1] + delta;
+					ctrlPt[1] += delta;
 				} else {
 					// If player skates down, then ctrlPt is up
-					ctrlPt[1] = ctrlPt[1] - delta;
+					ctrlPt[1] -= delta;
 				}
-			} else if (slope > 0) {
-				if (run >= 0) {
+			} else {
+
+				// To keep the ctrlPt close, deltaX and deltaY (the ctrlPt's offset) should not be larger than delta while maintaining the slope value
+				var deltaX, deltaY;
+				if (Math.abs(slope) <= 1) {
+					deltaX = delta;
+					deltaY = delta * Math.abs(slope);
+				} else {
+					deltaX = delta / Math.abs(slope);
+					deltaY = delta;
+				}
+
+				if (slope > 0 && run >= 0) {
 					// If player will skate up and right, then ctrlPt is down and left
-					ctrlPt[0] = ctrlPt[0] - delta;
-					ctrlPt[1] = ctrlPt[1] + delta * slope;
-				} else {
+					ctrlPt[0] -= deltaX;
+					ctrlPt[1] += deltaY;
+				} else if (slope > 0 && run < 0) {
 					// If player will skate down and left, then ctrlPt is up and right
-					ctrlPt[0] = ctrlPt[0] + delta;
-					ctrlPt[1] = ctrlPt[1] - delta * slope;
-				}
-			} else if (slope < 0) {
-				if (run >= 0) {
-					// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
-					ctrlPt[0] = ctrlPt[0] + delta / slope;
-					ctrlPt[1] = ctrlPt[1] - delta;
-				} else {
-					// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
-					ctrlPt[0] = ctrlPt[0] - delta / slope;
-					ctrlPt[1] = ctrlPt[1] + delta;
+					ctrlPt[0] += deltaX;
+					ctrlPt[1] -= deltaY;
+				} else if (slope < 0 && run >= 0) {
+					// If player will skate down and right, then ctrlPt is up and left
+					ctrlPt[0] -= deltaX;
+					ctrlPt[1] -= deltaY;
+				} else if (slope < 0 && run < 0) {
+					// If player will skate up and left, then ctrlPt is down and right
+					ctrlPt[0] += deltaX;
+					ctrlPt[1] += deltaY;
 				}
 			}
 
-			// To check where the smoother is located
+			// To check where the ctrlPt is located
 			d3.select("#rink").append("circle")
 				.attr("class", "ctrlPt")
 				.attr("cx", ctrlPt[0])
