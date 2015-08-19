@@ -3,6 +3,16 @@ body {
 	font-size: 12px;
 }
 
+svg {
+	margin: 20px;
+	font-family: Roboto, san-serif;
+	font-size: 12px;
+}
+
+svg.timeline {
+	margin: 0;
+}
+
 /*
 *
 * Rink
@@ -14,6 +24,21 @@ g.marker text {
 	text-anchor: middle;
 }
 
+g.marker circle {
+	fill: none;
+	stroke: black;
+}
+
+path.skater {
+	fill: none;
+}
+
+text.waypoint {
+	font-size: 10;
+	text-anchor: middle;
+	alignment-baseline: middle;
+
+}
 #picker-marker {
 	fill: gold;
 }

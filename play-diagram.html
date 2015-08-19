@@ -9,7 +9,6 @@
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
-	<a href="#" id="grid-toggle" style="text-decoration: none; font-family: Roboto;">Grid</a>
 	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Play</a>
 	<svg id="rink-svg" style="display: block;"></svg>
 	<div id="table" style="display: block;"></div>
@@ -47,7 +46,7 @@ var possessionStartTimes = [];
 var passTimer;
 
 
-// Prepare the data
+// Initialize player data
 var playerData = [];
 var playerIds = d3.range(1, 10 + 1, 1);
 playerIds.forEach(function(p) {
@@ -72,51 +71,40 @@ var tX = d3.scale.ordinal()
 /*
 *
 * Initialize svg and groups
+* Use groups to control layering
 *
 */
 
 d3.select("#rink-svg")
 	.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
 	.style("width", (rinkWidth / ftPerCell) * cellSize + margin.left + margin.right + "px")
-	.style("margin", "20px")
-	.style("background", "#fff")
-	.style("font-family", "Roboto, sans-serif")
-	.style("font-size", "12px")
-	.style("font-weight", "500");
+	.append("g")
+		.attr("id", "rink")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.select("#rink-svg").append("text")
-	.attr("x", x.range()[1] + margin.left)
-	.attr("y", y.range()[0] + margin.top)
-	.style("font-size", "12px")
-	.style("font-weight", "300")
-	.style("fill", "#ccc")
-	.style("text-anchor", "end")
-	.text("@datarink");
 
-var rink = d3.select("#rink-svg").append("g")
-	.attr("id", "rink")
-	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-rink.append("g")
-	.attr("id", "h-rules");
-rink.append("g")
-	.attr("id", "v-rules");
-var rinkMap = rink.append("g")
-	.attr("id", "rink-map");
-rink.append("g")
-	.attr("id", "players");
+
 /*
 *
 * Append rink diagram and customize styling
 *
 */
 
-var drawRinkMap = new RINK_MAP({parent: rinkMap, fullRink: true, desiredWidth: (rinkHeight / ftPerCell) * cellSize, horizontal: true});
-drawRinkMap();
-styleRink();
 
-appendGrid();
 
+initRink();
 initTimeline();
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -133,12 +121,12 @@ initTimeline();
 *
 */
 
-rink.append("line")
+d3.select("#rink").append("line")
 	.attr("class", "puck")
 	.style("stroke", "black")
 	.style("stroke-opacity", 0)
 	.style("stroke-dasharray", "2,3");
-rink.append("circle")
+d3.select("#rink").append("circle")
 	.attr("class", "puck")
 	.attr("r", 2)
 	.style("fill", "black")
@@ -284,6 +272,7 @@ function initTimeline() {
 	// Append timeline svgs and timepoints
 	var timelines = d3.select("#table").selectAll("div.timeline")
 		.append("svg")
+			.attr("class", "timeline")
 			.attr("height", timelineHeight + "px")
 			.attr("width", timelineWidth + "px");
 
@@ -328,7 +317,7 @@ function setTimelineListeners(sourceElement) {
 
 	if (sourceElement == null) {
 		// If this function is called without a sourceElement, reset listeners
-		d3.selectAll("div.timeline").selectAll("circle.timepoint, circle.waypoint").on("click", function(d) {
+		d3.selectAll("svg.timeline").selectAll("circle.timepoint, circle.waypoint").on("click", function(d) {
 
 			var activePlayerId = this.parentNode.parentNode.parentNode.__data__.id;
 
@@ -354,13 +343,13 @@ function setTimelineListeners(sourceElement) {
 			// Clicking on a timepoint will transfer the waypoint to the clicked timepoint
 			// Clicking the initial waypoint closes the picker
 			// Clicking other waypoints does nothing
-			d3.selectAll("div.timeline").selectAll("circle.timepoint").on("click", function(d) {
+			d3.selectAll("svg.timeline").selectAll("circle.timepoint").on("click", function(d) {
 				var activePlayerId = this.parentNode.parentNode.parentNode.__data__.id;
 				updateWaypoint(activePlayerId, d, sourceElement.__data__.x, sourceElement.__data__.y);
 				removeWaypoint(sourcePlayerId, sourceElement.__data__.t);
 				closePicker();
 			});
-			d3.selectAll("div.timeline").selectAll("circle.waypoint").on("click", null);
+			d3.selectAll("svg.timeline").selectAll("circle.waypoint").on("click", null);
 			d3.select(sourceElement).on("click", function() {
 				closePicker();
 			});
@@ -369,7 +358,7 @@ function setTimelineListeners(sourceElement) {
 			// Clicking on the already-selected timepoint will cancel the picker
 			// Clicking on another timepoint will change the picker to the new timepoint
 			// Clicking on waypoints does nothing
-			d3.selectAll("div.timeline").selectAll("circle.timepoint").on("click", function(d) {
+			d3.selectAll("svg.timeline").selectAll("circle.timepoint").on("click", function(d) {
 				var activePlayerId = this.parentNode.parentNode.parentNode.__data__.id;
 				if (sourcePlayerId === activePlayerId && d === sourceElement.__data__) {
 					closePicker();
@@ -380,17 +369,17 @@ function setTimelineListeners(sourceElement) {
 					openPicker(activePlayerId, d);
 				}
 			});
-			d3.selectAll("div.timeline").selectAll("circle.waypoint").on("click", null);
+			d3.selectAll("svg.timeline").selectAll("circle.waypoint").on("click", null);
 		}
 	}
 }
 
 // Highlights the timepoint in the timeline of the specified player id
 function highlightTimepoint(player, t) {
-	d3.selectAll("div.timeline").filter(function(d) { return d.id !== player; })
+	d3.selectAll("svg.timeline").filter(function(d) { return d.id !== player; })
 		.select("circle.active")
 			.style("visibility", "hidden");
-	d3.selectAll("div.timeline").filter(function(d) { return d.id === player; })
+	d3.selectAll("svg.timeline").filter(function(d) { return d.id === player; })
 		.select("circle.active")
 			.attr("cx", tX(t))
 			.style("visibility", "visible");
@@ -407,9 +396,7 @@ function openPicker(player, t) {
 
 	// Move the picker marker; snap to the closest whole foot
 	var pxPerFt = cellSize / ftPerCell;
-	var mPos;
-	var mX;
-	var mY;
+	var mPos, mX, mY;
 	d3.select("#picker-mask").on("mousemove", function() {
 		mPos = d3.mouse(this);
 		mX = Math.round(mPos[0] / pxPerFt) * pxPerFt;
@@ -428,7 +415,7 @@ function openPicker(player, t) {
 // Remove listeners and hide picker
 function closePicker() {
 	// Hide active highlight in timelines
-	d3.selectAll("div.timeline").select("circle.active")
+	d3.selectAll("svg.timeline").select("circle.active")
 		.style("visibility", "hidden");
 
 	// Hide picker elements on rink
@@ -446,9 +433,8 @@ function closePicker() {
 }
 
 function removeWaypoint(player, t) {
-	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
-
 	// Check if a waypoint for the specified time already exists. If it does, get its index
+	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
 	var existingWaypointIdx = -1;
 	var i = 0;
 	while (existingWaypointIdx < 0 && i < playerToUpdate.waypoints.length) {
@@ -456,11 +442,8 @@ function removeWaypoint(player, t) {
 		else { i++; }
 	}
 
-	if (existingWaypointIdx >= 0) {
-		playerToUpdate.waypoints.splice(existingWaypointIdx, 1);
-	}
-
-	// Update path data and rink elements
+	// Remove the waypoint, then update path data and rink
+	if (existingWaypointIdx >= 0) { playerToUpdate.waypoints.splice(existingWaypointIdx, 1); }
 	generateDStrings(playerToUpdate.id - 1);
 	updateRink();
 }
@@ -477,69 +460,94 @@ function updateWaypoint(player, t, x, y) {
 		else { i++; }
 	}
 
-	// Add or update waypoint
+	// Add or update waypoint, then update path data and rink
 	if (existingWaypointIdx >= 0) {
 		playerToUpdate.waypoints[existingWaypointIdx] = {t: t, x: x, y: y};
 	} else {
 		playerToUpdate.waypoints.push({t: t, x: x, y: y});
 		playerToUpdate.waypoints = playerToUpdate.waypoints.sort(function(a, b) { return a.t - b.t; });
 	}
-
-	// Update path data and rink elements
 	generateDStrings(playerToUpdate.id - 1);
 	updateRink();
 }
 
+function initRink() {
+	// Append subgroups for rink to control layering
+	["rink-map", "players"].forEach(function(name) {
+		d3.select("#rink").append("g").attr("id", name);
+	});
+
+	// Render and style rink
+	var drawRinkMap = new RINK_MAP({parent: d3.select("#rink-map"), fullRink: true, desiredWidth: (rinkHeight / ftPerCell) * cellSize, horizontal: true});
+	drawRinkMap();
+	styleRink();
+
+	// Append groups and subgroups for each player to control layering
+	var players = d3.select("#players").selectAll("g.player")
+		.data(playerData, function(d) { return d.id; })
+		.enter().append("g")
+			.attr("class", "player");
+
+	["paths", "waypoints", "marker"].forEach(function(name) {
+		players.append("g").attr("class", name);
+	});
+
+	// Append marker elements
+	// Markers will be positioned as a group with transformations, so hardcode circle and text positions
+	d3.select("#players").selectAll("g.marker")
+		.append("circle")
+			.attr("cx", 0)
+			.attr("cy", -1) // To better center circle on player number
+			.attr("r", 10)
+			.style("stroke-opacity", 0);
+	d3.select("#players").selectAll("g.marker")
+		.append("text")
+			.attr("x", 0)
+			.attr("y", 0);
+
+}
+
 function updateRink() {
 
-	// Append players and paths
-	var players = rink.select("#players").selectAll("g.player")
-		.data(playerData.filter(function(d) { return d.waypoints.length > 0; }), function(d) { return d.id; });
-	players.exit().remove();
-	var enteredPlayers = players.enter().append("g")
-		.attr("class", "player");
+	// Bind updated data to player groups
+	// Since playerData was initialized to always have 10 players, player groups will never enter or exit
+	var players = d3.select("#players").selectAll("g.player")
+		.data(playerData, function(d) { return d.id; });
 
-	var paths = players.selectAll("path")
-		.data(function(d) { return d.paths; });
+	// Update paths in the path groups
+	// Using select() propagates the updated g.player data to g.paths: http://stackoverflow.com/questions/10129432/inheritance-in-data-joins
+	var paths = players.select("g.paths").selectAll("path.skater")
+		.data(function(d) { return d.paths; }, function(p) { return p.order + p.dString; });
 	paths.exit().remove();
 	paths.enter().append("path")
-		.style("fill", "none");
+		.attr("class", "skater");
 	paths.attr("d", function(d) { return d.dString; })
 		.style("stroke", pathColour);
 
-	var points = players.selectAll("text.waypoint")
+	// Update points in the point group
+	var waypoints = players.select("g.waypoints").selectAll("text.waypoint")
 		.data(function(d) { return d.waypoints; }, function(w) { return w.t; })
-	points.exit().remove();
-	points.enter().append("text")
-		.attr("class", "waypoint")
-		.style("font-size", 10)
-		.style("font-weight", 300)
-		.style("text-anchor", "middle")
-		.style("alignment-baseline", "middle");
-	points.attr("x", function(d) { return x(d.x); })
+	waypoints.exit().remove();
+	waypoints.enter().append("text")
+		.attr("class", "waypoint");
+	waypoints.attr("x", function(d) { return x(d.x); })
 		.attr("y", function(d) { return y(d.y); })
 		.style("fill", pathColour)
 		.text(function(d) { return d.t; });
 
-	var markers = enteredPlayers.append("g")
-		.attr("class", "marker");
-	markers.append("circle")
-		.attr("cx", 0)
-		.attr("cy", -1) // To better center circle on player number
-		.attr("r", 10)
-		.style("stroke", "black")
-		.style("fill", "none")
-		.style("stroke-opacity", 0);
-	markers.append("text")
-		.attr("r", 5)
-		.attr("x", 0)
-		.attr("y", 0)
-		.style("fill", function(d) { return d.colour; })
+	// Update markers - hide markers for players with no waypoints
+	var markers = players.select("g.marker");
+	markers.style("visibility", function(d) {
+			if (d.waypoints.length === 0) { return "hidden"; }
+			else { return "visible"; }
+		})
+	markers.select("text").style("fill", function(d) { return d.colour; })
 		.text(function(d) { return d.label; });
 
-	// Update marker positions in case the first waypoint's data has changed
-	d3.selectAll("g.marker")
+	// Only update position of players with 1 or more waypoints
+	markers.filter(function(d) { return d.waypoints.length > 0; })
 		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
+
 
 	/*
 	*
@@ -569,7 +577,6 @@ function generateDStrings(playerIdx) {
 		if (i < playerData[playerIdx].waypoints.length - 2) {
 			nextPoint = [playerData[playerIdx].waypoints[i + 2].x, playerData[playerIdx].waypoints[i + 2].y];
 		}
-
 		paths.push({
 			order: i,
 			start: [playerData[playerIdx].waypoints[i].x, playerData[playerIdx].waypoints[i].y],
@@ -581,7 +588,7 @@ function generateDStrings(playerIdx) {
 	playerData[playerIdx].paths = paths;
 
 	// Create the string for each path's d attribute
-	rink.selectAll("circle.ctrlPt").remove();
+	d3.selectAll("circle.ctrlPt").remove();
 	for (var i = 0; i < playerData[playerIdx].paths.length; i++) {
 
 		var ctrlPt = [x(playerData[playerIdx].paths[i].end[0]), y(playerData[playerIdx].paths[i].end[1])];
@@ -635,7 +642,7 @@ function generateDStrings(playerIdx) {
 			}
 
 			// To check where the smoother is located
-			rink.append("circle")
+			d3.select("#rink").append("circle")
 				.attr("class", "ctrlPt")
 				.attr("cx", ctrlPt[0])
 				.attr("cy", ctrlPt[1])
@@ -659,6 +666,7 @@ function generateDStrings(playerIdx) {
 function styleRink() {
 
 	// Remove translation
+	var rinkMap = d3.select("#rink-map");
 	rinkMap.select("g.zones")
 		.attr("transform", "");
 
@@ -695,66 +703,5 @@ function styleRink() {
 			.style("stroke", rinkStroke);
 }
 
-/*
-*
-* Append grid
-*
-*/
-
-function appendGrid() {
-
-	// Append horizontal rules
-	var gridlines = rink.select("#h-rules").selectAll("g")
-		.data(d3.range(y.domain()[0], y.domain()[1] + ftPerCell, ftPerCell))
-		.enter().append("g");
-	gridlines.append("line")
-		.attr("x1", function() { return d3.min(x.range()); })
-		.attr("x2", function() { return d3.max(x.range()); })
-		.attr("y1", function(d) { return y(d); })
-		.attr("y2", function(d) { return y(d); });
-	gridlines.append("text")
-		.attr("y", function(d) { return y(d); })
-		.attr("x", -10);
-
-	// Append vertical rules
-	gridlines = rink.select("#v-rules").selectAll("g")
-		.data(d3.range(x.domain()[0], x.domain()[1] + ftPerCell, ftPerCell))
-		.enter().append("g");
-	gridlines.append("line")
-		.attr("x1", function(d) { return x(d); })
-		.attr("x2", function(d) { return x(d); })
-		.attr("y1", function() { return d3.min(y.range()); })
-		.attr("y2", function() { return d3.max(y.range()); });
-	gridlines.append("text")
-		.attr("y", y.range()[0] + 20)
-		.attr("x", function(d) { return x(d); });
-
-	// Apply common attributes
-	rink.selectAll("#v-rules, #h-rules").selectAll("line, text")
-		.attr("class", "grid");
-	rink.selectAll("#v-rules, #h-rules").selectAll("text")
-		.text(function(d) { return d; });
-
-	// Set grid visibility
-	if (isGridVisible) {
-		rink.selectAll("#v-rules, #h-rules").selectAll("line, text")
-			.style("visibility", "visible");
-	} else {
-		rink.selectAll("#v-rules, #h-rules").selectAll("line, text")
-			.style("visibility", "hidden");
-	}
-
-	// Add listener to toggle control for grid visibility
-	d3.select("#grid-toggle").on("click", function() {
-		var gridElements = rink.selectAll("#v-rules, #h-rules").selectAll("line, text");
-		if (isGridVisible) {
-			gridElements.style("visibility", "hidden");
-			isGridVisible = false;
-		} else {
-			gridElements.style("visibility", "visible");
-			isGridVisible = true;
-		}
-	});
-}
 </script>
 </html>
