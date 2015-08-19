@@ -21,7 +21,6 @@ var ftPerCell = 5;
 var cellSize = 20;
 
 
-var pathColour = "lightskyblue"; //pink
 
 var margin = {top: 30, left: 30, right: 30, bottom: 30};
 
@@ -31,11 +30,6 @@ var x = d3.scale.linear()
 var y = d3.scale.linear()
 	.domain([0, rinkHeight])
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
-
-var isGridVisible = false;
-
-
-
 
 
 // Player with puck - use -1000 or 1000 for the left and right nets
@@ -68,29 +62,14 @@ var tX = d3.scale.ordinal()
 	.rangeRoundPoints([0, timelineWidth], 1);
 
 
-/*
-*
-* Initialize svg and groups
-* Use groups to control layering
-*
-*/
 
+// Initialize SVG
 d3.select("#rink-svg")
 	.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
 	.style("width", (rinkWidth / ftPerCell) * cellSize + margin.left + margin.right + "px")
 	.append("g")
 		.attr("id", "rink")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-
-
-/*
-*
-* Append rink diagram and customize styling
-*
-*/
-
-
 
 initRink();
 initTimeline();
@@ -477,7 +456,7 @@ function initRink() {
 		d3.select("#rink").append("g").attr("id", name);
 	});
 
-	// Render and style rink
+	// Append and style rink
 	var drawRinkMap = new RINK_MAP({parent: d3.select("#rink-map"), fullRink: true, desiredWidth: (rinkHeight / ftPerCell) * cellSize, horizontal: true});
 	drawRinkMap();
 	styleRink();
@@ -504,27 +483,25 @@ function initRink() {
 		.append("text")
 			.attr("x", 0)
 			.attr("y", 0);
-
 }
 
 function updateRink() {
 
+var pathColour = "pink";
 	// Bind updated data to player groups
 	// Since playerData was initialized to always have 10 players, player groups will never enter or exit
 	var players = d3.select("#players").selectAll("g.player")
 		.data(playerData, function(d) { return d.id; });
 
-	// Update paths in the path groups
+	// Update paths in the path groups and points in the point group
 	// Using select() propagates the updated g.player data to g.paths: http://stackoverflow.com/questions/10129432/inheritance-in-data-joins
 	var paths = players.select("g.paths").selectAll("path.skater")
 		.data(function(d) { return d.paths; }, function(p) { return p.order + p.dString; });
 	paths.exit().remove();
 	paths.enter().append("path")
 		.attr("class", "skater");
-	paths.attr("d", function(d) { return d.dString; })
-		.style("stroke", pathColour);
+	paths.attr("d", function(d) { return d.dString; });
 
-	// Update points in the point group
 	var waypoints = players.select("g.waypoints").selectAll("text.waypoint")
 		.data(function(d) { return d.waypoints; }, function(w) { return w.t; })
 	waypoints.exit().remove();
@@ -532,8 +509,18 @@ function updateRink() {
 		.attr("class", "waypoint");
 	waypoints.attr("x", function(d) { return x(d.x); })
 		.attr("y", function(d) { return y(d.y); })
-		.style("fill", pathColour)
 		.text(function(d) { return d.t; });
+
+	// Colour paths and text based on the player's colour
+	players.each(function(p) {
+		if (p.colour === "blue") {
+			colour = "lightskyblue";
+		} else if (p.colour === "red") {
+			colour = "pink";
+		}
+		d3.select(this).selectAll("path.skater").style("stroke", colour);
+		d3.select(this).selectAll("text.waypoint").style("fill", colour);
+	});
 
 	// Update markers - hide markers for players with no waypoints
 	var markers = players.select("g.marker");
@@ -547,7 +534,6 @@ function updateRink() {
 	// Only update position of players with 1 or more waypoints
 	markers.filter(function(d) { return d.waypoints.length > 0; })
 		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
-
 
 	/*
 	*
@@ -570,7 +556,7 @@ function updateRink() {
 
 function generateDStrings(playerIdx) {
 
-	// Convert waypoints to paths
+	// Create paths from waypoints
 	paths = [];
 	for (var i = 0; i < playerData[playerIdx].waypoints.length - 1; i++) {
 		var nextPoint = [];
