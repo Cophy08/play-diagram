@@ -286,6 +286,16 @@ function initTimeline() {
 		.append("svg")
 			.attr("height", timelineHeight + "px")
 			.attr("width", timelineWidth + "px");
+
+	// Append a circle to indicate the active timepoint or waypoint
+	timelines.append("circle")
+		.attr("class", "active")
+		.attr("r", 8)
+		.attr("cy", timelineHeight / 2)
+		.style("fill", "none")
+		.style("stroke", "black")
+		.style("visibility", "hidden");
+
 	var timepoints = timelines.selectAll("circle.timepoint")
 		.data(seconds)
 	timepoints.enter().append("circle")
@@ -315,10 +325,13 @@ function initTimeline() {
 }
 
 function setTimelineListeners(pickerInvoker) {
+
 	if (pickerInvoker == null) {
 
 		d3.selectAll("div.timeline").selectAll("circle.timepoint").on("click", function(d) {
+
 			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+			highlightTimepoint(pickedPlayerId, d);
 			openPicker(pickedPlayerId, d);
 
 			// Updates listeners to the timepoint case
@@ -327,6 +340,7 @@ function setTimelineListeners(pickerInvoker) {
 
 		d3.selectAll("div.timeline").selectAll("circle.waypoint").on("click", function(d) {
 			var pickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+			highlightTimepoint(pickedPlayerId, d.t);
 			openPicker(pickedPlayerId, d.t);
 
 			// Updates listeners to the waypoint case
@@ -360,12 +374,30 @@ function setTimelineListeners(pickerInvoker) {
 			if (invokerPlayer === pickedPlayerId && d === pickerInvoker.__data__) {
 				closePicker();
 			} else {
+				highlightTimepoint(pickedPlayerId, d);
 				openPicker(pickedPlayerId, d);
+
+				// Reset listeners based on the clicked timepoint (so that clicking on this new timepoint again will close the picker)
+				setTimelineListeners(this);
 			}
 		});
 		d3.selectAll("div.timeline").selectAll("circle.waypoint").on("click", null);
 	}
+
+
 }
+
+// Highlights the timepoint in the timeline of the specified player id
+function highlightTimepoint(player, t) {
+	d3.selectAll("div.timeline").filter(function(d) { return d.id !== player; })
+		.select("circle.active")
+			.style("visibility", "hidden");
+	d3.selectAll("div.timeline").filter(function(d) { return d.id === player; })
+		.select("circle.active")
+			.attr("cx", tX(t))
+			.style("visibility", "visible");
+}
+
 function openPicker(player, t) {
 	// Make picker elements visible
 	d3.selectAll("#picker-marker, #picker-mask")
@@ -397,6 +429,11 @@ function openPicker(player, t) {
 
 // Remove listeners and hide picker
 function closePicker() {
+	// Hide active highlight in timelines
+	d3.selectAll("div.timeline").select("circle.active")
+		.style("visibility", "hidden");
+
+	// Hide picker elements on rink
 	d3.select("#picker-mask").on("mousemove", null);
 	d3.select("#picker-mask").on("click", null);
 	d3.selectAll("#picker-marker, #picker-mask")
@@ -406,6 +443,7 @@ function closePicker() {
 				d3.select(this).style("visibility", "hidden")
 			});
 
+	// Reset listeners
 	setTimelineListeners();
 }
 
@@ -519,7 +557,7 @@ function updateRink() {
 	waypoints.exit().remove();
 	waypoints.enter().append("circle")
 		.attr("class", "waypoint")
-		.attr("r", 6);
+		.attr("r", 5);
 	waypoints.attr("cx", function(d) { return tX(d.t); })
 		.attr("cy", timelineHeight / 2);
 };
