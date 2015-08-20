@@ -17,6 +17,7 @@
 <script>
 var rinkWidth = 200;
 var rinkHeight = 85;
+var rinkRadius = 28;
 var ftPerCell = 5;
 var cellSize = 20;
 
@@ -318,8 +319,8 @@ function initTimeline() {
 		.attr("id", "picker-mask")
 		.attr("width", x.range()[1])
 		.attr("height", y.range()[0])
-		.attr("rx", x(28))
-		.attr("ry", y(0) - y(28))
+		.attr("rx", x(rinkRadius))
+		.attr("ry", y(0) - y(rinkRadius))
 		.style("fill-opacity", 0)
 		.style("visibility", "hidden");
 }
@@ -708,6 +709,53 @@ function generateDStrings(playerIdx) {
 	}
 }
 
+// point coordinates should already be scaled
+function isPointInRink(point) {
+
+	d3.select("#rink").append("circle")
+		.attr("class", "test-pos")
+		.attr("cx", point[0])
+		.attr("cy", point[1])
+		.attr("r", 5)
+		.style("fill", "red");
+
+	var isInRink = false;
+
+	// Check if point is within the 4 circles
+	// Centers of the top-left, bottom-left, top-right, and bottom-right rink arcs
+	var centres = [];
+	centres[0] = [x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
+	centres[1] = [x(rinkRadius), y(0) - y(rinkRadius)];
+	centres[2] = [x(rinkWidth) - x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
+	centres[3] = [x(rinkWidth) - x(rinkRadius), y(0) - y(rinkRadius)];
+
+	var i = 0;
+	while (!isInRink && i < centres.length) {
+		var a2 = Math.pow(point[0] - centres[i][0], 2);
+		var b2 = Math.pow(point[1] - centres[i][1], 2);
+		var c2 = Math.pow(x(rinkRadius), 2);
+		console.log(a2, b2, c2);
+		if (a2 + b2 < c2) { isInRink = true; }
+		else { i++; }
+	};
+
+	// Check if point is in the rectangle that goes from one end of the rink to the other
+	if (!isInRink) {
+		if (point[0] > x(0) && point[0] < x(rinkWidth) && point[1] > y(rinkHeight) + y(rinkRadius) && point[1] < y(0) - y(rinkRadius)) {
+			isInRink = true;
+		}
+	}
+
+	// Check if point is in the rectangle that goes from one side (where benches are) of the rink to the other (where penalty boxes are)
+	if (!isInRink) {
+		if (point[0] > x(0) + x(rinkRadius) && point[0] < x(rinkWidth) - x(rinkRadius) && point[1] > y(rinkHeight) && point[1] < y(0)) {
+			isInRink = true;
+		}
+	}
+
+	return isInRink;
+}
+
 /*
 *
 * Updates styling from rinkPlot.js
@@ -748,8 +796,8 @@ function styleRink() {
 		.append("rect")
 			.attr("width", x.range()[1])
 			.attr("height", y.range()[0])
-			.attr("rx", x(28))
-			.attr("ry", y(0) - y(28))
+			.attr("rx", x(rinkRadius))
+			.attr("ry", y(0) - y(rinkRadius))
 			.style("fill", "none")
 			.style("stroke", rinkStroke);
 }
