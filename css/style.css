@@ -57,8 +57,14 @@ text.waypoint {
 .cell {
 	display: inline-block;
 	vertical-align: middle;
+	padding: 0;
+	padding-bottom: 16px;
+	margin: 0;
 }
 
+.timeline.cell {
+	padding: 0;
+}
 .player-id.cell {
 	width: 30px;
 }
