@@ -53,6 +53,15 @@ playerIds.forEach(function(p) {
 	})
 });
 
+// type: timepoint, waypoint, none
+// player: playerId that owns the timepoint or waypoint
+// time: time of the timepoint or waypoint
+var activeElement = {
+	type: "none",
+	player: null,
+	time: null
+}
+
 // Timeline
 var timelineWidth = 900;
 var timelineHeight = 40;
@@ -271,7 +280,7 @@ function initTimeline() {
 		.attr("cy", timelineHeight / 2)
 		.attr("cx", function(d) { return tX(d); })
 		.attr("r", 4);
-	setTimelineListeners();
+	initTimelineListeners();
 
 	// Append a dot in the rink-svg for user to pick skater position
 	// Draw the rectangle above the dot so that all mousemove events register
@@ -292,65 +301,75 @@ function initTimeline() {
 		.style("visibility", "hidden");
 }
 
-function setTimelineListeners(sourceElement) {
+// Listeners for timepoints
+function initTimelineListeners() {
+	d3.selectAll("svg.timeline").selectAll("circle.timepoint").on("click", function(d) {
 
-	if (sourceElement == null) {
-		// If this function is called without a sourceElement, reset listeners
-		d3.selectAll("svg.timeline").selectAll("circle.timepoint, circle.waypoint").on("click", function(d) {
+		var clickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
 
-			var activePlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+		if (activeElement.type === "timepoint" && activeElement.player === clickedPlayerId && activeElement.time === d) {
+			// If the currently active timepoint is clicked, then close the picker, which will also clear the active element
+			closePicker();
+		} else if (activeElement.type === "none" || activeElement.type === "timepoint") {
+			// If there's no active element, set it to the clicked timepoint
+			// Or if the user clicks on a timepoint that isn't the currently active timepoint, make the clicked timepoint active
+			activeElement.type = "timepoint";
+			activeElement.time = d;
+			activeElement.player = clickedPlayerId;
+		} else if (activeElement.type === "waypoint") {
+			// If a waypoint is currently active, then clicking a timepoint will transfer the waypoint's x and y positions to the clicked timepoint's player and time
+			// Get the currently active waypoint's x and y positions
+			var activeWaypointData = playerData
+				.filter(function(p) { return p.id === activeElement.player; })[0].waypoints
+				.filter(function(w) { return w.t === activeElement.time; })[0];
 
-			// Get the active time, which is stored differently for timepoint and waypoints
-			var activeTime;
-			var activeElementClass = d3.select(this).attr("class");
-			if (activeElementClass.indexOf("waypoint") >= 0) {
-				activeTime = d.t;
-			} else if (activeElementClass.indexOf("timepoint") >= 0) {
-				activeTime = d;
-			}
+			// Add waypoint to the clickedPlayer; remove waypoint from the activeElement player
+			updateWaypoint(clickedPlayerId, d, activeWaypointData.x, activeWaypointData.y);
+			removeWaypoint(activeElement.player, activeElement.time);
 
-			// Updates listeners to the timepoint or waypoint case
-			highlightTimepoint(activePlayerId, activeTime);
-			openPicker(activePlayerId, activeTime);
-			setTimelineListeners(this);
-		});
-	} else {
-		// If a waypoint or timepoint was initially clicked
-		var sourcePlayerId = d3.select(sourceElement).node().parentNode.parentNode.parentNode.__data__.id;
-		if (d3.select(sourceElement).attr("class").indexOf("waypoint") >= 0) {
-			// WAYPOINT CASE: If a waypoint was initially clicked, then:
-			// Clicking on a timepoint will transfer the waypoint to the clicked timepoint
-			// Clicking the initial waypoint closes the picker
-			// Clicking other waypoints does nothing
-			d3.selectAll("svg.timeline").selectAll("circle.timepoint").on("click", function(d) {
-				var activePlayerId = this.parentNode.parentNode.parentNode.__data__.id;
-				updateWaypoint(activePlayerId, d, sourceElement.__data__.x, sourceElement.__data__.y);
-				removeWaypoint(sourcePlayerId, sourceElement.__data__.t);
-				closePicker();
-			});
-			d3.selectAll("svg.timeline").selectAll("circle.waypoint").on("click", null);
-			d3.select(sourceElement).on("click", function() {
-				closePicker();
-			});
-		} else if (d3.select(sourceElement).attr("class").indexOf("timepoint") >= 0) {
-			// TIMEPOINT CASE: If a timepoint was initially clicked, then:
-			// Clicking on the already-selected timepoint will cancel the picker
-			// Clicking on another timepoint will change the picker to the new timepoint
-			// Clicking on waypoints does nothing
-			d3.selectAll("svg.timeline").selectAll("circle.timepoint").on("click", function(d) {
-				var activePlayerId = this.parentNode.parentNode.parentNode.__data__.id;
-				if (sourcePlayerId === activePlayerId && d === sourceElement.__data__) {
-					closePicker();
-				} else {
-					// Reset listeners based on the clicked timepoint (so that clicking on this new timepoint again will close the picker)
-					setTimelineListeners(this);
-					highlightTimepoint(activePlayerId, d);
-					openPicker(activePlayerId, d);
-				}
-			});
-			d3.selectAll("svg.timeline").selectAll("circle.waypoint").on("click", null);
+			// Close the picker, which will also clear the active element
+			closePicker();
 		}
-	}
+
+		// If there's still an active element, highlight the active element and open picker
+		if (activeElement.type !== "none") {
+			highlightTimepoint(activeElement.player, activeElement.time);
+			openPicker(activeElement.player, activeElement.time);
+		}
+	});
+
+
+}
+
+function clearActiveElement() {
+	activeElement.type = "none";
+	activeElement.time = null;
+	activeElement.player = null;
+}
+
+// Listeners for waypoints
+function appendWaypointListeners() {
+	d3.selectAll("svg.timeline").selectAll("circle.waypoint").on("click", function(d) {
+		var clickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+		if (activeElement.type === "waypoint" && activeElement.player === clickedPlayerId && activeElement.time === d.t) {
+			// If the currently active waypoint is clicked, then close the picker, which will also clear the active element
+			closePicker();
+		} else if (activeElement.type === "none") {
+			// If there's no active element, set it to the clicked waypoint
+			activeElement.type = "waypoint";
+			activeElement.time = d.t;
+			activeElement.player = clickedPlayerId;
+		}
+		// In any other case, clicking a waypoint does nothing. This includes:
+		// If a waypoint is active, and the user clicks on another waypoint
+		// If a timepoint is active, and the user clicks on a waypoint
+
+		// If there's still an active element, highlight the active element and open picker
+		if (activeElement.type !== "none") {
+			highlightTimepoint(activeElement.player, activeElement.time);
+			openPicker(activeElement.player, activeElement.time);
+		}
+	});
 }
 
 // Highlights the timepoint in the timeline of the specified player id
@@ -407,8 +426,8 @@ function closePicker() {
 				d3.select(this).style("visibility", "hidden")
 			});
 
-	// Reset listeners
-	setTimelineListeners();
+	// Clear active element
+	clearActiveElement();
 }
 
 function removeWaypoint(player, t) {
@@ -552,6 +571,9 @@ var pathColour = "pink";
 		.attr("r", 5);
 	waypoints.attr("cx", function(d) { return tX(d.t); })
 		.attr("cy", timelineHeight / 2);
+
+	// Add listeners for waypoints
+	appendWaypointListeners();
 };
 
 function generateDStrings(playerIdx) {
@@ -583,12 +605,13 @@ function generateDStrings(playerIdx) {
 			// Keep the ctrlPt at the endPt if the player is stationary
 		} else if (playerData[playerIdx].paths[i].next.length === 2) {
 
+			// Increasing delta will increase smoothing by increasing the ctrlPt's offset
+			var delta = 20;
+
 			var rise = y(playerData[playerIdx].paths[i].next[1]) - y(playerData[playerIdx].paths[i].end[1]);
 			rise *= -1; // Adjust rise since higher y values are plotted lower
 			var run = x(playerData[playerIdx].paths[i].next[0]) - x(playerData[playerIdx].paths[i].end[0]);
 			var slope = rise / run;
-
-			var delta = 20;
 
 			if (slope === 0) {
 				if (run >= 0) {
