@@ -208,7 +208,6 @@ function setPassTimer(idx) {
 }
 
 function slide(element, data, idx) {
-
 	if (idx < data.paths.length) {
 		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.id === data.id; });
 		var animMarker = animPlayerGroup.select("g.marker");
@@ -268,16 +267,40 @@ function initTimeline() {
 	timelines.append("circle")
 		.attr("class", "active")
 		.attr("r", 8)
-		.attr("cy", timelineHeight / 2)
+		.attr("cy", timelineHeight / 3)
 		.style("fill", "none")
 		.style("stroke", "black")
 		.style("visibility", "hidden");
+
+	// Append a delete link
+	var bW = 45;
+	var bH= 16;
+	var button = timelines.append("g")
+		.attr("id", "delete");
+	button.append("rect")
+		.attr("x", -bW / 2)
+		.attr("y", timelineHeight - bH)
+		.attr("rx", 2)
+		.attr("ry", 2)
+		.attr("width", bW)
+		.attr("height", bH)
+		.style("visibility", "hidden");
+	button.append("text")
+		.attr("x", 0)
+		.attr("y", timelineHeight - bH / 2 + 1)
+		.style("visibility", "hidden")
+		.text("DELETE");
+	button.on("click", function() {
+		removeWaypoint(activeElement.player, activeElement.time);
+		closePicker();
+	});
+
 
 	var timepoints = timelines.selectAll("circle.timepoint")
 		.data(seconds)
 	timepoints.enter().append("circle")
 		.attr("class", "timepoint")
-		.attr("cy", timelineHeight / 2)
+		.attr("cy", timelineHeight / 3)
 		.attr("cx", function(d) { return tX(d); })
 		.attr("r", 4);
 	initTimelineListeners();
@@ -333,18 +356,22 @@ function initTimelineListeners() {
 
 		// If there's still an active element, highlight the active element and open picker
 		if (activeElement.type !== "none") {
-			highlightTimepoint(activeElement.player, activeElement.time);
+			highlightActiveElement();
 			openPicker(activeElement.player, activeElement.time);
 		}
 	});
-
-
 }
 
 function clearActiveElement() {
 	activeElement.type = "none";
 	activeElement.time = null;
 	activeElement.player = null;
+
+	// Hide active highlight and delete action in timelines
+	d3.selectAll("svg.timeline").select("circle.active")
+		.style("visibility", "hidden");
+	d3.select("#delete").selectAll("*")
+		.style("visibility", "hidden");
 }
 
 // Listeners for waypoints
@@ -366,21 +393,29 @@ function appendWaypointListeners() {
 
 		// If there's still an active element, highlight the active element and open picker
 		if (activeElement.type !== "none") {
-			highlightTimepoint(activeElement.player, activeElement.time);
+			highlightActiveElement();
 			openPicker(activeElement.player, activeElement.time);
 		}
 	});
 }
 
 // Highlights the timepoint in the timeline of the specified player id
-function highlightTimepoint(player, t) {
-	d3.selectAll("svg.timeline").filter(function(d) { return d.id !== player; })
+function highlightActiveElement() {
+	d3.selectAll("svg.timeline").filter(function(d) { return d.id !== activeElement.player; })
 		.select("circle.active")
 			.style("visibility", "hidden");
-	d3.selectAll("svg.timeline").filter(function(d) { return d.id === player; })
+	d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
 		.select("circle.active")
-			.attr("cx", tX(t))
+			.attr("cx", tX(activeElement.time))
 			.style("visibility", "visible");
+
+	if (activeElement.type === "waypoint") {
+		d3.select("#delete").selectAll("*")
+			.attr("transform", "translate(" + tX(activeElement.time) + ",0)")
+			.style("visibility", "visible");
+	} else {
+		d3.select("#delete").selectAll("*").style("visibility", "hidden");
+	}
 }
 
 function openPicker(player, t) {
@@ -412,10 +447,6 @@ function openPicker(player, t) {
 
 // Remove listeners and hide picker
 function closePicker() {
-	// Hide active highlight in timelines
-	d3.selectAll("svg.timeline").select("circle.active")
-		.style("visibility", "hidden");
-
 	// Hide picker elements on rink
 	d3.select("#picker-mask").on("mousemove", null);
 	d3.select("#picker-mask").on("click", null);
@@ -570,7 +601,7 @@ var pathColour = "pink";
 		.attr("class", "waypoint")
 		.attr("r", 5);
 	waypoints.attr("cx", function(d) { return tX(d.t); })
-		.attr("cy", timelineHeight / 2);
+		.attr("cy", timelineHeight / 3);
 
 	// Add listeners for waypoints
 	appendWaypointListeners();

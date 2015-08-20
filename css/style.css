@@ -76,7 +76,20 @@ circle.waypoint {
 	fill: #aaa;
 }
 
+#delete {
+	cursor: pointer;
+}
 
+	#delete rect {
+		fill: firebrick;
+	}
+
+	#delete text {
+		text-anchor: middle;
+		alignment-baseline: middle;
+		font-size: 10px;
+		fill: white;
+	}
 
 /*
 *
