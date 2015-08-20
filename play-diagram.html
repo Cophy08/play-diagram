@@ -275,9 +275,9 @@ function initTimeline() {
 	// Append a delete link
 	var bW = 45;
 	var bH= 16;
-	var button = timelines.append("g")
-		.attr("id", "delete");
-	button.append("rect")
+	var buttons = timelines.append("g")
+		.attr("class", "button delete");
+	buttons.append("rect")
 		.attr("x", -bW / 2)
 		.attr("y", timelineHeight - bH)
 		.attr("rx", 2)
@@ -285,12 +285,12 @@ function initTimeline() {
 		.attr("width", bW)
 		.attr("height", bH)
 		.style("visibility", "hidden");
-	button.append("text")
+	buttons.append("text")
 		.attr("x", 0)
 		.attr("y", timelineHeight - bH / 2 + 1)
 		.style("visibility", "hidden")
 		.text("DELETE");
-	button.on("click", function() {
+	buttons.on("click", function() {
 		removeWaypoint(activeElement.player, activeElement.time);
 		closePicker();
 	});
@@ -370,7 +370,7 @@ function clearActiveElement() {
 	// Hide active highlight and delete action in timelines
 	d3.selectAll("svg.timeline").select("circle.active")
 		.style("visibility", "hidden");
-	d3.select("#delete").selectAll("*")
+	d3.selectAll(".button.delete").selectAll("*")
 		.style("visibility", "hidden");
 }
 
@@ -409,12 +409,13 @@ function highlightActiveElement() {
 			.attr("cx", tX(activeElement.time))
 			.style("visibility", "visible");
 
+	d3.selectAll(".button.delete").selectAll("*").style("visibility", "hidden");
 	if (activeElement.type === "waypoint") {
-		d3.select("#delete").selectAll("*")
+		console.log("Hi");
+		d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
+			.selectAll(".button.delete").selectAll("*")
 			.attr("transform", "translate(" + tX(activeElement.time) + ",0)")
 			.style("visibility", "visible");
-	} else {
-		d3.select("#delete").selectAll("*").style("visibility", "hidden");
 	}
 }
 

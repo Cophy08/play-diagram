@@ -82,15 +82,15 @@ circle.waypoint {
 	fill: #aaa;
 }
 
-#delete {
+.button.delete {
 	cursor: pointer;
 }
 
-	#delete rect {
+	.button.delete rect {
 		fill: firebrick;
 	}
 
-	#delete text {
+	.button.delete text {
 		text-anchor: middle;
 		alignment-baseline: middle;
 		font-size: 10px;
