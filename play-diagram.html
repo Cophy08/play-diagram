@@ -15,17 +15,20 @@
 	</div>
 </body>
 <script>
+
+/*
+*
+* Rink configuration
+*
+*/
+
+var margin = {top: 30, left: 30, right: 30, bottom: 30};
+
 var rinkWidth = 200;
 var rinkHeight = 85;
 var rinkRadius = 28;
 var ftPerCell = 5;
 var cellSize = 20;
-
-var activeCircleR = 8;
-var waypointCircleR = 5;
-var timepointCircleR = 4;
-
-var margin = {top: 30, left: 30, right: 30, bottom: 30};
 
 var x = d3.scale.linear()
 	.domain([0, rinkWidth])
@@ -34,14 +37,27 @@ var y = d3.scale.linear()
 	.domain([0, rinkHeight])
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
 
+/*
+*
+* Timeline configuration
+*
+*/
 
-// Player with puck - use -1000 or 1000 for the left and right nets
-var carriers = [];
-var possessionStartTimes = [];
+var timelineWidth = 900;
+var timelineHeight = 40;
+var seconds = d3.range(0, 30 + 1, 1);
+var tX = d3.scale.ordinal()
+	.domain(seconds)
+	.rangeRoundPoints([0, timelineWidth], 1);
+var activeCircleR = 8;
+var waypointCircleR = 5;
+var timepointCircleR = 4;
 
-// Store pass timer as a variable so it can be cleared if the animation is restarted midway
-var passTimer;
-
+/*
+*
+* Data
+*
+*/
 
 // Initialize player data
 var playerData = [];
@@ -58,6 +74,7 @@ playerIds.forEach(function(p) {
 	})
 });
 
+// Stores the active element in the timeline
 // type: timepoint, waypoint, none
 // player: playerId that owns the timepoint or waypoint
 // time: time of the timepoint or waypoint
@@ -67,17 +84,19 @@ var activeElement = {
 	time: null
 }
 
-// Timeline
-var timelineWidth = 900;
-var timelineHeight = 40;
-var seconds = d3.range(0, 30 + 1, 1);
-var tX = d3.scale.ordinal()
-	.domain(seconds)
-	.rangeRoundPoints([0, timelineWidth], 1);
+// TO CLEAN UP
+// Player with puck - use -1000 or 1000 for the left and right nets
+var carriers = [];
+var possessionStartTimes = [];
+// Store pass timer as a variable so it can be cleared if the animation is restarted midway
+var passTimer;
 
+/*
+*
+* Initialize SVG
+*
+*/
 
-
-// Initialize SVG
 d3.select("#rink-svg")
 	.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
 	.style("width", (rinkWidth / ftPerCell) * cellSize + margin.left + margin.right + "px")
@@ -110,6 +129,7 @@ initTimeline();
 
 /*
 *
+* TO CLEAN UP
 * Append puck marker
 *
 */
@@ -135,7 +155,7 @@ d3.select("#rink").append("circle")
 
 d3.select("#play").on("click", function() {
 	d3.selectAll("g.marker").each(function(d) {
-		slide(d3.select(this), d, 0);
+		translatePlayer(d3.select(this), d, 0);
 	});
 
 	// Clear the existing passTimer before restarting the pass sequence from idx = 0
@@ -151,18 +171,17 @@ d3.select("#play").on("click", function() {
 	setPassTimer(0);
 });
 
-function slide(element, data, idx) {
+function translatePlayer(element, data, idx) {
 	if (idx < data.paths.length) {
 		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.id === data.id; });
 		var animMarker = animPlayerGroup.select("g.marker");
 		var animPath = animPlayerGroup.selectAll("path").filter(function(d) { return d.order === idx; });
-
 		animMarker.transition()
 			.duration(function(d) { return d.paths[idx].duration * 1000; })
 			.ease("linear")
 			.attrTween("transform", translateAlong(animPath.node()))
 			.each("end", function(d) {
-				slide(d3.select(this), d, idx + 1);
+				translatePlayer(d3.select(this), d, idx + 1);
 			});
 	}
 }
@@ -241,7 +260,6 @@ function initTimeline() {
 		closePicker();
 	});
 
-
 	var timepoints = timelines.selectAll("circle.timepoint")
 		.data(seconds)
 	timepoints.enter().append("circle")
@@ -257,8 +275,7 @@ function initTimeline() {
 		.attr("id", "picker-marker")
 		.attr("cx", 0)
 		.attr("cy", 0)
-		.attr("r", 5)
-		.style("fill-opacity", 0)
+		.attr("r", activeCircleR)
 		.style("visibility", "hidden");
 	d3.select("#rink").append("rect")
 		.attr("id", "picker-mask")
@@ -266,7 +283,6 @@ function initTimeline() {
 		.attr("height", y.range()[0])
 		.attr("rx", x(rinkRadius))
 		.attr("ry", y(0) - y(rinkRadius))
-		.style("fill-opacity", 0)
 		.style("visibility", "hidden");
 }
 
@@ -331,7 +347,6 @@ function appendWaypointListeners() {
 	});
 }
 
-
 // Highlights the timepoint in the timeline of the specified player id
 function highlightActiveElement() {
 	clearActiveElementHighlights();
@@ -384,14 +399,11 @@ function clearActiveElement() {
 function openPicker(player, t) {
 	// Make picker elements visible
 	d3.selectAll("#picker-marker, #picker-mask")
+		.attr("class", "active")
 		.style("visibility", "visible");
-	d3.select("#picker-mask").transition()
-		.style("fill-opacity", 0.1);
 	d3.select("#picker-marker")
 		.attr("cx", -100)
-		.attr("cy", -100)
-		.transition()
-			.style("fill-opacity", 1);
+		.attr("cy", -100);
 
 	// Move the picker marker; snap to the closest whole foot
 	var pxPerFt = cellSize / ftPerCell;
@@ -417,11 +429,8 @@ function closePicker() {
 	d3.select("#picker-mask").on("mousemove", null);
 	d3.select("#picker-mask").on("click", null);
 	d3.selectAll("#picker-marker, #picker-mask")
-		.transition()
-			.style("fill-opacity", 0)
-			.each("end", function() {
-				d3.select(this).style("visibility", "hidden")
-			});
+		.attr("class", "")
+		.style("visibility", "hidden");
 
 	// Clear active element
 	clearActiveElement();

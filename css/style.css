@@ -73,11 +73,17 @@ g.player path.skater {
 
 #picker-marker {
 	fill: gold;
+	fill-opacity: 0.5;
 }
 
 #picker-mask {
-	fill: black;
+	fill: white; /* Need a fill to detect mouse events */
+	fill-opacity: 0;
 }
+
+	#picker-mask.active {
+		stroke: gold;
+	}
 
 
 /*
@@ -105,10 +111,10 @@ g.player path.skater {
 	width: 50px;
 }
 
-
-circle.active {
+.timeline circle.active {
 	fill: none;
-	stroke: #ccc;
+	/*stroke: #ccc;*/
+	stroke: gold;
 	stroke-width: 2px;
 }
 
