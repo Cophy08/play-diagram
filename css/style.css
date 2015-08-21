@@ -105,19 +105,3 @@ circle.waypoint {
 		fill: white;
 	}
 
-/*
-*
-* Grid
-*
-*/
-
-line.grid {
-	stroke: #f7f7f7;
-}
-
-text.grid {
-	text-anchor: middle;
-	font-size: 8px;
-	fill: #ccc;
-}
-
