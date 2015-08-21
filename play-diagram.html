@@ -21,7 +21,9 @@ var rinkRadius = 28;
 var ftPerCell = 5;
 var cellSize = 20;
 
-
+var activeCircleR = 8;
+var waypointCircleR = 5;
+var timepointCircleR = 4;
 
 var margin = {top: 30, left: 30, right: 30, bottom: 30};
 
@@ -267,7 +269,7 @@ function initTimeline() {
 	// Append a circle to indicate the active timepoint or waypoint; these should be rendered behind the actual timepoints
 	timelines.append("circle")
 		.attr("class", "active")
-		.attr("r", 8)
+		.attr("r", 0)
 		.attr("cy", timelineHeight / 3)
 		.style("fill", "none")
 		.style("stroke", "black")
@@ -303,7 +305,7 @@ function initTimeline() {
 		.attr("class", "timepoint")
 		.attr("cy", timelineHeight / 3)
 		.attr("cx", function(d) { return tX(d); })
-		.attr("r", 4);
+		.attr("r", timepointCircleR);
 	initTimelineListeners();
 
 	// Append a dot in the rink-svg for user to pick skater position
@@ -363,6 +365,35 @@ function initTimelineListeners() {
 	});
 }
 
+// Highlights the timepoint in the timeline of the specified player id
+function highlightActiveElement() {
+	d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
+		.select("circle.active")
+			.attr("cx", tX(activeElement.time))
+			.attr("r", function() {
+				// If the active element is a waypoint, the starting radius for circle.active should be the waypoint circle radius
+				// Otherwise, it's going to feel like there's a delay because circle.active's smaller sizes will be obscured by the waypoint
+				if (activeElement.type === "waypoint") { return waypointCircleR; }
+				else { return 0; }
+			})
+			.style("visibility", "visible")
+			.transition()
+				.duration(function() {
+					if (activeElement.type === "waypoint") { return 250 * (waypointCircleR / activeCircleR); }
+					else { return 250; }
+				})
+				.ease("ease-out")
+				.attr("r", activeCircleR);
+
+	// Display the delete button
+	if (activeElement.type === "waypoint") {
+		d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
+			.selectAll(".button.delete").selectAll("*")
+			.attr("transform", "translate(" + tX(activeElement.time) + ",0)")
+			.style("visibility", "visible");
+	}
+}
+
 function clearActiveElement() {
 	activeElement.type = "none";
 	activeElement.time = null;
@@ -370,7 +401,10 @@ function clearActiveElement() {
 
 	// Hide active highlight and delete action in timelines
 	d3.selectAll("svg.timeline").select("circle.active")
-		.style("visibility", "hidden");
+		.transition()
+			.ease("ease-in")
+			.attr("r", 0)
+			.each("end", function() { d3.select(this).style("visibility", "hidden"); });
 	d3.selectAll(".button.delete").selectAll("*")
 		.style("visibility", "hidden");
 }
@@ -387,37 +421,15 @@ function appendWaypointListeners() {
 			activeElement.type = "waypoint";
 			activeElement.time = d.t;
 			activeElement.player = clickedPlayerId;
+
+			// Highlight the active element and open picker
+			highlightActiveElement();
+			openPicker(activeElement.player, activeElement.time);
 		}
 		// In any other case, clicking a waypoint does nothing. This includes:
 		// If a waypoint is active, and the user clicks on another waypoint
 		// If a timepoint is active, and the user clicks on a waypoint
-
-		// If there's still an active element, highlight the active element and open picker
-		if (activeElement.type !== "none") {
-			highlightActiveElement();
-			openPicker(activeElement.player, activeElement.time);
-		}
 	});
-}
-
-// Highlights the timepoint in the timeline of the specified player id
-function highlightActiveElement() {
-	d3.selectAll("svg.timeline").filter(function(d) { return d.id !== activeElement.player; })
-		.select("circle.active")
-			.style("visibility", "hidden");
-	d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
-		.select("circle.active")
-			.attr("cx", tX(activeElement.time))
-			.style("visibility", "visible");
-
-	d3.selectAll(".button.delete").selectAll("*").style("visibility", "hidden");
-	if (activeElement.type === "waypoint") {
-		console.log("Hi");
-		d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
-			.selectAll(".button.delete").selectAll("*")
-			.attr("transform", "translate(" + tX(activeElement.time) + ",0)")
-			.style("visibility", "visible");
-	}
 }
 
 function openPicker(player, t) {
@@ -598,12 +610,20 @@ var pathColour = "pink";
 	var timelines = rows.select("div.timeline").select("svg");
 	var waypoints = timelines.selectAll("circle.waypoint")
 		.data(function(d) { return d.waypoints; }, function(w) { return w.t; });
-	waypoints.exit().remove();
+	waypoints.exit().transition()
+		.attr("r", 0)
+		.each("end", function() { d3.select(this).remove(); });
+
+
 	waypoints.enter().append("circle")
 		.attr("class", "waypoint")
-		.attr("r", 5);
+		.attr("r", 0)
+		.transition().ease("linear").attr("r", waypointCircleR);
+
 	waypoints.attr("cx", function(d) { return tX(d.t); })
 		.attr("cy", timelineHeight / 3);
+
+
 
 	// Add listeners for waypoints
 	appendWaypointListeners();
@@ -711,14 +731,6 @@ function generateDStrings(playerIdx) {
 
 // point coordinates should already be scaled
 function isPointInRink(point) {
-
-	d3.select("#rink").append("circle")
-		.attr("class", "test-pos")
-		.attr("cx", point[0])
-		.attr("cy", point[1])
-		.attr("r", 5)
-		.style("fill", "red");
-
 	var isInRink = false;
 
 	// Check if point is within the 4 circles
@@ -728,7 +740,6 @@ function isPointInRink(point) {
 	centres[1] = [x(rinkRadius), y(0) - y(rinkRadius)];
 	centres[2] = [x(rinkWidth) - x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
 	centres[3] = [x(rinkWidth) - x(rinkRadius), y(0) - y(rinkRadius)];
-
 	var i = 0;
 	while (!isInRink && i < centres.length) {
 		var a2 = Math.pow(point[0] - centres[i][0], 2);
@@ -738,21 +749,18 @@ function isPointInRink(point) {
 		if (a2 + b2 < c2) { isInRink = true; }
 		else { i++; }
 	};
-
 	// Check if point is in the rectangle that goes from one end of the rink to the other
 	if (!isInRink) {
 		if (point[0] > x(0) && point[0] < x(rinkWidth) && point[1] > y(rinkHeight) + y(rinkRadius) && point[1] < y(0) - y(rinkRadius)) {
 			isInRink = true;
 		}
 	}
-
 	// Check if point is in the rectangle that goes from one side (where benches are) of the rink to the other (where penalty boxes are)
 	if (!isInRink) {
 		if (point[0] > x(0) + x(rinkRadius) && point[0] < x(rinkWidth) - x(rinkRadius) && point[1] > y(rinkHeight) && point[1] < y(0)) {
 			isInRink = true;
 		}
 	}
-
 	return isInRink;
 }
 

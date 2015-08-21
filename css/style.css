@@ -78,9 +78,17 @@ circle.timepoint {
 	stroke: #ccc;
 }
 
+	circle.timepoint:hover {
+		stroke: #777;
+	}
+
 circle.waypoint {
 	fill: #aaa;
 }
+
+	circle.waypoint:hover {
+		fill: #777;
+	}
 
 .button.delete {
 	cursor: pointer;
