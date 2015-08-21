@@ -9,7 +9,7 @@ svg {
 	font-size: 12px;
 }
 
-svg.timeline {
+svg.timeline, svg.colour-picker {
 	margin: 0;
 }
 
@@ -100,17 +100,20 @@ g.player path.skater {
 	margin: 0;
 }
 
-.timeline.cell {
+.timeline.cell, .colour-picker.cell {
 	padding: 0;
 }
 .player-id.cell {
 	width: 30px;
 }
 
-.colour.cell, .label.cell {
+.label.cell {
 	width: 50px;
 }
 
+circle.colour-picker {
+	fill-opacity: 0.5;
+}
 .timeline circle.active {
 	fill: none;
 	/*stroke: #ccc;*/

@@ -151,8 +151,6 @@ d3.select("#rink").append("circle")
 *
 */
 
-
-
 d3.select("#play").on("click", function() {
 	d3.selectAll("g.marker").each(function(d) {
 		translatePlayer(d3.select(this), d, 0);
@@ -212,10 +210,26 @@ function initTimeline() {
 		.attr("class", "label cell")
 		.text(function(d) { return d.label; });
 	rows.append("div")
-		.attr("class", "colour cell")
-		.text(function(d) { return d.colour; });
+		.attr("class", "colour-picker cell");
 	rows.append("div")
 		.attr("class", "timeline cell");
+
+	// Append colour pickers and listeners
+	d3.select("#table").selectAll("div.colour-picker").append("svg")
+		.attr("class", "colour-picker")
+		.style("height", timelineHeight + "px")
+		.attr("width", (2 * timepointCircleR) + "px")
+	d3.select("#table").selectAll("svg.colour-picker").append("circle")
+		.attr("class", "colour-picker")
+		.attr("cx", timepointCircleR)
+		.attr("cy", timelineHeight / 3)
+		.attr("r", timepointCircleR)
+		.style("fill", function(d) { return d.colour; })
+		.on("click", function(d) {
+			var newColour = "blue";
+			if (d.colour === "blue") { newColour = "red"; }
+			updatePlayerColour(d.id, newColour);
+		});
 
 	// Append timeline svgs and timepoints
 	var timelines = d3.select("#table").selectAll("div.timeline")
@@ -475,6 +489,12 @@ function updateWaypoint(player, t, x, y) {
 	updateRink();
 }
 
+function updatePlayerColour(player, newColour) {
+	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
+	playerToUpdate.colour = newColour;
+	updateRink();
+}
+
 function initRink() {
 	// Append subgroups for rink to control layering
 	["rink-map", "players"].forEach(function(name) {
@@ -511,8 +531,6 @@ function initRink() {
 }
 
 function updateRink() {
-
-	var pathColour = "pink";
 
 	// Bind updated data to player groups
 	// Since playerData was initialized to always have 10 players, player groups will never enter or exit
@@ -552,10 +570,11 @@ function updateRink() {
 
 	/*
 	*
-	* Update timeline with event dots
+	* Update timeline
 	*
 	*/
 
+	// Update timeline dots
 	var rows = d3.select("#table").selectAll("div.player.row")
 		.data(playerData);
 	var timelines = rows.select("div.timeline").select("svg");
@@ -573,6 +592,10 @@ function updateRink() {
 
 	// Add listeners for waypoints
 	appendWaypointListeners();
+
+	// Update colour pickers
+	d3.select("#table").selectAll("svg.colour-picker").select("circle.colour-picker")
+		.style("fill", function(d) { return d.colour; });
 };
 
 function generateDStrings(playerIdx) {
