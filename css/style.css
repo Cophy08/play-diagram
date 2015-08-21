@@ -45,30 +45,32 @@ g.player g.marker text {
 		fill: red;
 	}
 
-g.player.blue path.skater {
-	stroke: lightskyblue;
-}
-
-g.player.blue text.waypoint {
-	fill: lightskyblue;
-}
-
-g.player.red path.skater {
-	stroke: pink;
-}
-
-g.player.red text.waypoint {
-	fill: pink;
-}
-
-
-
-text.waypoint {
-	font-size: 10;
+g.player text.waypoint {
+	font-size: 10px;
 	text-anchor: middle;
 	alignment-baseline: middle;
-
 }
+
+	g.player.blue text.waypoint {
+		fill: lightskyblue;
+	}
+
+	g.player.red text.waypoint {
+		fill: pink;
+	}
+
+g.player path.skater {
+	stroke-opacity: 0.5;
+}
+
+	g.player.blue path.skater {
+		stroke: lightskyblue;
+	}
+
+	g.player.red path.skater {
+		stroke: pink;
+	}
+
 #picker-marker {
 	fill: gold;
 }

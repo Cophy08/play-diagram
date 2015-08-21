@@ -47,10 +47,12 @@ var passTimer;
 var playerData = [];
 var playerIds = d3.range(1, 10 + 1, 1);
 playerIds.forEach(function(p) {
+	var colour = "blue";
+	if (p > 5) { colour = "red"; }
 	playerData.push({
 		id: p,
 		label: "F" + p,
-		colour: "blue",
+		colour: colour,
 		waypoints: [],
 		paths: []
 	})
@@ -306,8 +308,33 @@ function initTimelineListeners() {
 	});
 }
 
+// Listeners for waypoints
+function appendWaypointListeners() {
+	d3.selectAll("svg.timeline").selectAll("circle.waypoint").on("click", function(d) {
+		var clickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+		if (activeElement.type === "waypoint" && activeElement.player === clickedPlayerId && activeElement.time === d.t) {
+			// If the currently active waypoint is clicked, then close the picker, which will also clear the active element
+			closePicker();
+		} else if (activeElement.type === "none") {
+			// If there's no active element, set it to the clicked waypoint
+			activeElement.type = "waypoint";
+			activeElement.time = d.t;
+			activeElement.player = clickedPlayerId;
+
+			// Highlight the active element and open picker
+			highlightActiveElement();
+			openPicker(activeElement.player, activeElement.time);
+		}
+		// In any other case, clicking a waypoint does nothing. This includes:
+		// If a waypoint is active, and the user clicks on another waypoint
+		// If a timepoint is active, and the user clicks on a waypoint
+	});
+}
+
+
 // Highlights the timepoint in the timeline of the specified player id
 function highlightActiveElement() {
+	clearActiveElementHighlights();
 	d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
 		.select("circle.active")
 			.attr("cx", tX(activeElement.time))
@@ -335,42 +362,23 @@ function highlightActiveElement() {
 	}
 }
 
-function clearActiveElement() {
-	activeElement.type = "none";
-	activeElement.time = null;
-	activeElement.player = null;
-
-	// Hide active highlight and delete action in timelines
-	d3.selectAll("svg.timeline").select("circle.active")
-		.transition()
-			.ease("ease-in")
-			.attr("r", 0)
-			.each("end", function() { d3.select(this).style("visibility", "hidden"); });
+// Hide active highlight and delete action in timelines
+function clearActiveElementHighlights() {
+	d3.selectAll("svg.timeline").filter(function(d) { return d.id !== activeElement.player; })
+		.selectAll("circle.active")
+			.transition()
+				.ease("ease-in")
+				.attr("r", 0)
+				.each("end", function() { d3.select(this).style("visibility", "hidden"); });
 	d3.selectAll(".button.delete").selectAll("*")
 		.style("visibility", "hidden");
 }
 
-// Listeners for waypoints
-function appendWaypointListeners() {
-	d3.selectAll("svg.timeline").selectAll("circle.waypoint").on("click", function(d) {
-		var clickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
-		if (activeElement.type === "waypoint" && activeElement.player === clickedPlayerId && activeElement.time === d.t) {
-			// If the currently active waypoint is clicked, then close the picker, which will also clear the active element
-			closePicker();
-		} else if (activeElement.type === "none") {
-			// If there's no active element, set it to the clicked waypoint
-			activeElement.type = "waypoint";
-			activeElement.time = d.t;
-			activeElement.player = clickedPlayerId;
-
-			// Highlight the active element and open picker
-			highlightActiveElement();
-			openPicker(activeElement.player, activeElement.time);
-		}
-		// In any other case, clicking a waypoint does nothing. This includes:
-		// If a waypoint is active, and the user clicks on another waypoint
-		// If a timepoint is active, and the user clicks on a waypoint
-	});
+function clearActiveElement() {
+	activeElement.type = "none";
+	activeElement.time = null;
+	activeElement.player = null;
+	clearActiveElementHighlights();
 }
 
 function openPicker(player, t) {
