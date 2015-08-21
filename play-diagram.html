@@ -207,12 +207,24 @@ function initTimeline() {
 		.attr("class", "player-id cell")
 		.text(function(d) { return d.id; });
 	rows.append("div")
-		.attr("class", "label cell")
-		.text(function(d) { return d.label; });
+		.attr("class", "label cell");
 	rows.append("div")
 		.attr("class", "colour-picker cell");
 	rows.append("div")
 		.attr("class", "timeline cell");
+
+	// Append player label text fields
+	d3.select("#table").selectAll("div.label").append("input")
+		.attr("id", function(d) { return "label-" + d.id; })
+		.attr("type", "text")
+		.attr("size", 5)
+		.attr("maxlength", 3)
+		.property("value", function(d) { return d.label; })
+		.on("blur", function(d) {
+			// Update player label when text field loses focus - only update if the value has changed
+			var newLabel = document.getElementById("label-" + d.id).value;
+			if (d.label !== newLabel) { updatePlayerLabel(d.id, newLabel); }
+		});
 
 	// Append colour pickers and listeners
 	d3.select("#table").selectAll("div.colour-picker").append("svg")
@@ -492,6 +504,12 @@ function updateWaypoint(player, t, x, y) {
 function updatePlayerColour(player, newColour) {
 	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
 	playerToUpdate.colour = newColour;
+	updateRink();
+}
+
+function updatePlayerLabel(player, newLabel) {
+	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
+	playerToUpdate.label = newLabel;
 	updateRink();
 }
 

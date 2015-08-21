@@ -103,14 +103,27 @@ g.player path.skater {
 .timeline.cell, .colour-picker.cell {
 	padding: 0;
 }
+
 .player-id.cell {
 	width: 30px;
 }
 
-.label.cell {
+/*.label.cell {
 	width: 50px;
+}*/
+
+input[type=text] {
+	padding: 5px;
+	border: none;
+	border-bottom: 1px solid #ccc;
+	margin: 0px 10px;
 }
 
+	input[type=text]:focus {
+		outline: none;
+		border-bottom: 2px solid #777;
+		padding-bottom: 4px;
+	}
 circle.colour-picker {
 	fill-opacity: 0.5;
 }
