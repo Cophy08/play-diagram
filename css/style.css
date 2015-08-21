@@ -33,6 +33,36 @@ path.skater {
 	fill: none;
 }
 
+g.player g.marker text {
+	font-weight: 700;
+}
+
+	g.player.blue g.marker text {
+		fill: blue;
+	}
+
+	g.player.red g.marker text {
+		fill: red;
+	}
+
+g.player.blue path.skater {
+	stroke: lightskyblue;
+}
+
+g.player.blue text.waypoint {
+	fill: lightskyblue;
+}
+
+g.player.red path.skater {
+	stroke: pink;
+}
+
+g.player.red text.waypoint {
+	fill: pink;
+}
+
+
+
 text.waypoint {
 	font-size: 10;
 	text-anchor: middle;
@@ -73,9 +103,20 @@ text.waypoint {
 	width: 50px;
 }
 
+
+circle.active {
+	fill: none;
+	stroke: #ccc;
+	stroke-width: 2px;
+}
+
+line.baseline {
+	stroke: #ddd;
+}
+
 circle.timepoint {
 	fill: white; /* Need a fill so that it's clickable */
-	stroke: #ccc;
+	stroke: #bbb;
 }
 
 	circle.timepoint:hover {
@@ -95,13 +136,22 @@ circle.waypoint {
 }
 
 	.button.delete rect {
-		fill: firebrick;
+		fill: pink;
 	}
 
 	.button.delete text {
 		text-anchor: middle;
 		alignment-baseline: middle;
 		font-size: 10px;
-		fill: white;
+		fill: firebrick;
+		font-weight: 700;
+	}
+
+	.button.delete:hover rect {
+		fill: lightpink;
+	}
+
+	.button.delete:hover text {
+		fill: darkred;
 	}
 

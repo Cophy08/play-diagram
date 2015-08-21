@@ -149,67 +149,6 @@ d3.select("#play").on("click", function() {
 	setPassTimer(0);
 });
 
-function setPassTimer(idx) {
-	passTimer = setTimeout(function() {
-
-		// Draw and remove puck path
-		if (idx > 0) {
-			var sourceTransform = markers.filter(function(d) { return d.id === carriers[idx - 1]; }).attr("transform");
-			var sourcePos = [];
-			sourcePos[0] = sourceTransform.substring(sourceTransform.indexOf("(") + 1, sourceTransform.indexOf(","));
-			sourcePos[1] = sourceTransform.substring(sourceTransform.indexOf(",") + 1, sourceTransform.indexOf(")"));
-			sourcePos = [+sourcePos[0], +sourcePos[1]];
-
-			var targetPos = [];
-			if (carriers[idx] === 1000 || carriers[idx] === -1000) {
-				targetPos = [x(190), y(85/2)];
-			} else {
-				var targetTransform = markers.filter(function(d) { return d.id === carriers[idx]; }).attr("transform");
-				targetPos[0] = targetTransform.substring(targetTransform.indexOf("(") + 1, targetTransform.indexOf(","));
-				targetPos[1] = targetTransform.substring(targetTransform.indexOf(",") + 1, targetTransform.indexOf(")"));
-				targetPos = [+targetPos[0], +targetPos[1]];
-			}
-
-			var duration = 500;
-			if (carriers[idx] === 1000 || carriers[idx] === -1000) {
-				duration = 1500;
-			}
-
-			//Draw and hide puck path
-			rink.select("line.puck")
-				.attr("x1", sourcePos[0])
-				.attr("y1", sourcePos[1])
-				.attr("x2", targetPos[0])
-				.attr("y2", targetPos[1])
-				.transition().duration(50)
-					.style("stroke-opacity", 1)
-					.transition().duration(duration)
-						.style("stroke-opacity", 0);
-
-			rink.select("circle.puck")
-				.attr("cx", targetPos[0])
-				.attr("cy", targetPos[1])
-				.transition().duration(50)
-					.style("fill-opacity", 1)
-					.transition().duration(duration)
-						.style("fill-opacity", 0);
-		}
-
-		d3.selectAll("g.markers").selectAll("circle").transition()
-			.style("stroke-opacity", function(d) {
-				if (d.id === carriers[idx]) {
-					return 1;
-				} else {
-					return 0;
-				}
-			});
-
-		if (idx < carriers.length - 1) {
-			setPassTimer(idx + 1);
-		}
-	}, possessionStartTimes[idx] - possessionStartTimes[idx - 1]);
-}
-
 function slide(element, data, idx) {
 	if (idx < data.paths.length) {
 		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.id === data.id; });
@@ -236,8 +175,6 @@ function translateAlong(path) {
 		};
 	};
 }
-
-
 
 function initTimeline() {
 
@@ -267,17 +204,21 @@ function initTimeline() {
 			.attr("width", timelineWidth + "px");
 
 	// Append a circle to indicate the active timepoint or waypoint; these should be rendered behind the actual timepoints
+	timelines.append("line")
+		.attr("class", "baseline")
+		.attr("x1", tX(seconds[0]))
+		.attr("x2", tX(seconds[seconds.length - 1]))
+		.attr("y1", timelineHeight / 3)
+		.attr("y2", timelineHeight / 3);
 	timelines.append("circle")
 		.attr("class", "active")
 		.attr("r", 0)
 		.attr("cy", timelineHeight / 3)
-		.style("fill", "none")
-		.style("stroke", "black")
 		.style("visibility", "hidden");
 
 	// Append a delete link
-	var bW = 45;
-	var bH= 16;
+	var bW = 42;
+	var bH= 15;
 	var buttons = timelines.append("g")
 		.attr("class", "button delete");
 	buttons.append("rect")
@@ -438,8 +379,11 @@ function openPicker(player, t) {
 		.style("visibility", "visible");
 	d3.select("#picker-mask").transition()
 		.style("fill-opacity", 0.1);
-	d3.select("#picker-marker").transition()
-		.style("fill-opacity", 1);
+	d3.select("#picker-marker")
+		.attr("cx", -100)
+		.attr("cy", -100)
+		.transition()
+			.style("fill-opacity", 1);
 
 	// Move the picker marker; snap to the closest whole foot
 	var pxPerFt = cellSize / ftPerCell;
@@ -551,11 +495,13 @@ function initRink() {
 
 function updateRink() {
 
-var pathColour = "pink";
+	var pathColour = "pink";
+
 	// Bind updated data to player groups
 	// Since playerData was initialized to always have 10 players, player groups will never enter or exit
 	var players = d3.select("#players").selectAll("g.player")
 		.data(playerData, function(d) { return d.id; });
+	players.attr("class", function(d) { return "player " + d.colour; });
 
 	// Update paths in the path groups and points in the point group
 	// Using select() propagates the updated g.player data to g.paths: http://stackoverflow.com/questions/10129432/inheritance-in-data-joins
@@ -575,25 +521,13 @@ var pathColour = "pink";
 		.attr("y", function(d) { return y(d.y); })
 		.text(function(d) { return d.t; });
 
-	// Colour paths and text based on the player's colour
-	players.each(function(p) {
-		if (p.colour === "blue") {
-			colour = "lightskyblue";
-		} else if (p.colour === "red") {
-			colour = "pink";
-		}
-		d3.select(this).selectAll("path.skater").style("stroke", colour);
-		d3.select(this).selectAll("text.waypoint").style("fill", colour);
-	});
-
 	// Update markers - hide markers for players with no waypoints
 	var markers = players.select("g.marker");
 	markers.style("visibility", function(d) {
 			if (d.waypoints.length === 0) { return "hidden"; }
 			else { return "visible"; }
 		})
-	markers.select("text").style("fill", function(d) { return d.colour; })
-		.text(function(d) { return d.label; });
+	markers.select("text").text(function(d) { return d.label; });
 
 	// Only update position of players with 1 or more waypoints
 	markers.filter(function(d) { return d.waypoints.length > 0; })
@@ -613,17 +547,12 @@ var pathColour = "pink";
 	waypoints.exit().transition()
 		.attr("r", 0)
 		.each("end", function() { d3.select(this).remove(); });
-
-
 	waypoints.enter().append("circle")
 		.attr("class", "waypoint")
 		.attr("r", 0)
 		.transition().ease("linear").attr("r", waypointCircleR);
-
 	waypoints.attr("cx", function(d) { return tX(d.t); })
 		.attr("cy", timelineHeight / 3);
-
-
 
 	// Add listeners for waypoints
 	appendWaypointListeners();
@@ -649,7 +578,6 @@ function generateDStrings(playerIdx) {
 	playerData[playerIdx].paths = paths;
 
 	// Create the string for each path's d attribute
-	d3.selectAll("circle.ctrlPt").remove();
 	for (var i = 0; i < playerData[playerIdx].paths.length; i++) {
 
 		var ctrlPt = [x(playerData[playerIdx].paths[i].end[0]), y(playerData[playerIdx].paths[i].end[1])];
@@ -719,54 +647,55 @@ function generateDStrings(playerIdx) {
 			}
 
 			// To check where the ctrlPt is located
-			d3.select("#rink").append("circle")
-				.attr("class", "ctrlPt")
-				.attr("cx", ctrlPt[0])
-				.attr("cy", ctrlPt[1])
-				.attr("r", 2)
-				.attr("fill", "gold");
+			// d3.select("#rink").append("circle")
+			// 	.attr("class", "ctrlPt")
+			// 	.attr("cx", ctrlPt[0])
+			// 	.attr("cy", ctrlPt[1])
+			// 	.attr("r", 2)
+			// 	.attr("fill", "gold");
 		}
+		//d3.selectAll("circle.ctrlPt").remove();
 
 		var dString = "M" + x(playerData[playerIdx].paths[i].start[0]) + "," + y(playerData[playerIdx].paths[i].start[1]);
 		dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
 		dString += " " + x(playerData[playerIdx].paths[i].end[0]) + "," + y(playerData[playerIdx].paths[i].end[1]);
 		playerData[playerIdx].paths[i].dString = dString;
 	}
+
+	// Check if a given point [x, y] is within the rink - coordinates should already be scaled to pixels (not feet)
+	function isPointInRink(point) {
+		var isInRink = false;
+		// Check if point is within the 4 circles
+		// Centers of the top-left, bottom-left, top-right, and bottom-right rink arcs
+		var centres = [];
+		centres[0] = [x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
+		centres[1] = [x(rinkRadius), y(0) - y(rinkRadius)];
+		centres[2] = [x(rinkWidth) - x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
+		centres[3] = [x(rinkWidth) - x(rinkRadius), y(0) - y(rinkRadius)];
+		var i = 0;
+		while (!isInRink && i < centres.length) {
+			var a2 = Math.pow(point[0] - centres[i][0], 2);
+			var b2 = Math.pow(point[1] - centres[i][1], 2);
+			var c2 = Math.pow(x(rinkRadius), 2);
+			if (a2 + b2 < c2) { isInRink = true; }
+			else { i++; }
+		};
+		// Check if point is in the rectangle that goes from one end of the rink to the other
+		if (!isInRink) {
+			if (point[0] > x(0) && point[0] < x(rinkWidth) && point[1] > y(rinkHeight) + y(rinkRadius) && point[1] < y(0) - y(rinkRadius)) {
+				isInRink = true;
+			}
+		}
+		// Check if point is in the rectangle that goes from one side (where benches are) of the rink to the other (where penalty boxes are)
+		if (!isInRink) {
+			if (point[0] > x(0) + x(rinkRadius) && point[0] < x(rinkWidth) - x(rinkRadius) && point[1] > y(rinkHeight) && point[1] < y(0)) {
+				isInRink = true;
+			}
+		}
+		return isInRink;
+	}
 }
 
-// point coordinates should already be scaled to pixels (not feet)
-function isPointInRink(point) {
-	var isInRink = false;
-
-	// Check if point is within the 4 circles
-	// Centers of the top-left, bottom-left, top-right, and bottom-right rink arcs
-	var centres = [];
-	centres[0] = [x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
-	centres[1] = [x(rinkRadius), y(0) - y(rinkRadius)];
-	centres[2] = [x(rinkWidth) - x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
-	centres[3] = [x(rinkWidth) - x(rinkRadius), y(0) - y(rinkRadius)];
-	var i = 0;
-	while (!isInRink && i < centres.length) {
-		var a2 = Math.pow(point[0] - centres[i][0], 2);
-		var b2 = Math.pow(point[1] - centres[i][1], 2);
-		var c2 = Math.pow(x(rinkRadius), 2);
-		if (a2 + b2 < c2) { isInRink = true; }
-		else { i++; }
-	};
-	// Check if point is in the rectangle that goes from one end of the rink to the other
-	if (!isInRink) {
-		if (point[0] > x(0) && point[0] < x(rinkWidth) && point[1] > y(rinkHeight) + y(rinkRadius) && point[1] < y(0) - y(rinkRadius)) {
-			isInRink = true;
-		}
-	}
-	// Check if point is in the rectangle that goes from one side (where benches are) of the rink to the other (where penalty boxes are)
-	if (!isInRink) {
-		if (point[0] > x(0) + x(rinkRadius) && point[0] < x(rinkWidth) - x(rinkRadius) && point[1] > y(rinkHeight) && point[1] < y(0)) {
-			isInRink = true;
-		}
-	}
-	return isInRink;
-}
 
 /*
 *
@@ -814,5 +743,72 @@ function styleRink() {
 			.style("stroke", rinkStroke);
 }
 
+
+
+
+
+
+
+
+function setPassTimer(idx) {
+	passTimer = setTimeout(function() {
+
+		// Draw and remove puck path
+		if (idx > 0) {
+			var sourceTransform = markers.filter(function(d) { return d.id === carriers[idx - 1]; }).attr("transform");
+			var sourcePos = [];
+			sourcePos[0] = sourceTransform.substring(sourceTransform.indexOf("(") + 1, sourceTransform.indexOf(","));
+			sourcePos[1] = sourceTransform.substring(sourceTransform.indexOf(",") + 1, sourceTransform.indexOf(")"));
+			sourcePos = [+sourcePos[0], +sourcePos[1]];
+
+			var targetPos = [];
+			if (carriers[idx] === 1000 || carriers[idx] === -1000) {
+				targetPos = [x(190), y(85/2)];
+			} else {
+				var targetTransform = markers.filter(function(d) { return d.id === carriers[idx]; }).attr("transform");
+				targetPos[0] = targetTransform.substring(targetTransform.indexOf("(") + 1, targetTransform.indexOf(","));
+				targetPos[1] = targetTransform.substring(targetTransform.indexOf(",") + 1, targetTransform.indexOf(")"));
+				targetPos = [+targetPos[0], +targetPos[1]];
+			}
+
+			var duration = 500;
+			if (carriers[idx] === 1000 || carriers[idx] === -1000) {
+				duration = 1500;
+			}
+
+			//Draw and hide puck path
+			rink.select("line.puck")
+				.attr("x1", sourcePos[0])
+				.attr("y1", sourcePos[1])
+				.attr("x2", targetPos[0])
+				.attr("y2", targetPos[1])
+				.transition().duration(50)
+					.style("stroke-opacity", 1)
+					.transition().duration(duration)
+						.style("stroke-opacity", 0);
+
+			rink.select("circle.puck")
+				.attr("cx", targetPos[0])
+				.attr("cy", targetPos[1])
+				.transition().duration(50)
+					.style("fill-opacity", 1)
+					.transition().duration(duration)
+						.style("fill-opacity", 0);
+		}
+
+		d3.selectAll("g.markers").selectAll("circle").transition()
+			.style("stroke-opacity", function(d) {
+				if (d.id === carriers[idx]) {
+					return 1;
+				} else {
+					return 0;
+				}
+			});
+
+		if (idx < carriers.length - 1) {
+			setPassTimer(idx + 1);
+		}
+	}, possessionStartTimes[idx] - possessionStartTimes[idx - 1]);
+}
 </script>
 </html>
