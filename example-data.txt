@@ -22,3 +22,84 @@ playerData.push({
 
 var carriers = ["81", "42", "21", "42", "81", "r-goal"];
 var possessionStartTimes = [0, 1000, 2000, 4000, 5000, 8000];
+
+
+
+/*
+*
+* RegressedPDO breakout
+*
+*/
+
+var playerData = [];
+
+playerData.push({
+	id: 1,
+	label: "D1",
+	colour: "blue",
+	waypoints: [[0,2.5,42.5]]
+});
+
+playerData.push({
+	id: 2,
+	label: "D2",
+	colour: "blue",
+	waypoints: [[0,45,80]]
+});
+
+playerData.push({
+	id: 3,
+	label: "F1",
+	colour: "blue",
+	waypoints: [[0,25,42.5],[2,12,12],[4,28,2]]
+});
+
+playerData.push({
+	id: 4,
+	label: "F2",
+	colour: "blue",
+	waypoints: [[0,50,35],[2,38,12],[3,50,5],[4,75,5],[6,95,30],[7,102,42],[8,120,45]]
+});
+
+playerData.push({
+	id: 5,
+	label: "F3",
+	colour: "blue",
+	waypoints: [[0,120,80],[4,120,80],[6,123,65],[7,115,68],[8,105,75]]
+});
+
+//╳●✕✖
+playerData.push({
+	id: 6,
+	label: "✕",
+	colour: "red",
+	waypoints: [[0,18,38]]
+})
+playerData.push({
+	id: 7,
+	label: "✕",
+	colour: "red",
+	waypoints: [[0,95,75]]
+})
+playerData.push({
+	id: 8,
+	label: "✕",
+	colour: "red",
+	waypoints: [[0,95,42.5]]
+})
+playerData.push({
+	id: 9,
+	label: "✕",
+	colour: "red",
+	waypoints: [[0,95,10]]
+})
+playerData.push({
+	id: 10,
+	label: "✕",
+	colour: "red",
+	waypoints: [[0,140,42.5]]
+})
+
+// Player with puck - use -1000 or 1000 for the left and right nets
+var carriers = [1, 2, 4, 5];
+var possessionStartTimes = [0, 1000, 6000, 7500];

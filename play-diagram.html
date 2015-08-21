@@ -6,25 +6,29 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet" type="text/css">
 	<script type="text/javascript" src="js/rinkPlot.js"></script>
-	<link rel="stylesheet" type="text/css" href="css/rink-style.css">
+	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
-	<a href="#" id="grid-toggle" style="text-decoration: none; font-family: Roboto; display: block;">Toggle grid</a>
-	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; display: block;">Play</a>
-	<svg></svg>
+	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Play</a>
+	<svg id="rink-svg" style="display: block;"></svg>
+	<div id="table" style="display: block;"></div>
+	</div>
 </body>
 <script>
-var rinkWidth = 200;
-var rinkHeight = 85;
-var ftPerCell = 5;
-var cellSize = 20;
 
-var rinkStroke = "#ccc";
-var rinkFill = "#ebebeb";
-
-var pathColour = "lightskyblue"; //pink
+/*
+*
+* Rink configuration
+*
+*/
 
 var margin = {top: 30, left: 30, right: 30, bottom: 30};
+
+var rinkWidth = 200;
+var rinkHeight = 85;
+var rinkRadius = 28;
+var ftPerCell = 5;
+var cellSize = 20;
 
 var x = d3.scale.linear()
 	.domain([0, rinkWidth])
@@ -35,355 +39,107 @@ var y = d3.scale.linear()
 
 /*
 *
-* Initialize svg and groups
+* Timeline configuration
 *
 */
 
-d3.select("svg")
+var timelineWidth = 900;
+var timelineHeight = 40;
+var seconds = d3.range(0, 30 + 1, 1);
+var tX = d3.scale.ordinal()
+	.domain(seconds)
+	.rangeRoundPoints([0, timelineWidth], 1);
+var activeCircleR = 8;
+var waypointCircleR = 5;
+var timepointCircleR = 4;
+
+/*
+*
+* Data
+*
+*/
+
+// Initialize player data
+var playerData = [];
+var playerIds = d3.range(1, 10 + 1, 1);
+playerIds.forEach(function(p) {
+	var colour = "blue";
+	if (p > 5) { colour = "red"; }
+	playerData.push({
+		id: p,
+		label: "F" + p,
+		colour: colour,
+		waypoints: [],
+		paths: []
+	})
+});
+
+// Stores the active element in the timeline
+// type: timepoint, waypoint, none
+// player: playerId that owns the timepoint or waypoint
+// time: time of the timepoint or waypoint
+var activeElement = {
+	type: "none",
+	player: null,
+	time: null
+}
+
+// TO CLEAN UP
+// Player with puck - use -1000 or 1000 for the left and right nets
+var carriers = [];
+var possessionStartTimes = [];
+// Store pass timer as a variable so it can be cleared if the animation is restarted midway
+var passTimer;
+
+/*
+*
+* Initialize SVG
+*
+*/
+
+d3.select("#rink-svg")
 	.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
 	.style("width", (rinkWidth / ftPerCell) * cellSize + margin.left + margin.right + "px")
-	.style("margin", "20px")
-	.style("background", "#fff")
-	.style("font-family", "Roboto, sans-serif")
-	.style("font-size", "12px")
-	.style("font-weight", "500");
+	.append("g")
+		.attr("id", "rink")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.select("svg").append("text")
-	.attr("x", x.range()[1] + margin.left)
-	.attr("y", y.range()[0] + margin.top)
-	.style("font-size", "12px")
-	.style("font-weight", "300")
-	.style("fill", rinkStroke)
-	.style("text-anchor", "end")
-	.text("@datarink");
-var rink = d3.select("svg").append("g")
-	.attr("id", "rink")
-	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-rink.append("g")
-	.attr("id", "h-rules");
-rink.append("g")
-	.attr("id", "v-rules");
-var rinkMap = rink.append("g")
-	.attr("id", "rink-map");
+initRink();
+initTimeline();
 
-/*
-*
-* Append rink diagram and customize styling
-*
-*/
 
-var drawRinkMap = new RINK_MAP({parent: rinkMap, fullRink: true, desiredWidth: 340, horizontal: true});
-drawRinkMap();
 
-rinkMap.select("g.zones")
-	.attr("transform", "");
-rinkMap.select("g.zones").selectAll("rect")
-	.style("fill", rinkFill)
-rinkMap.select("g.zones").selectAll("rect.red-line")
-	.style("fill", rinkStroke)
-rinkMap.select("g.zones").selectAll("path, line, circle")
-	.style("stroke", rinkStroke);
-rinkMap.select("g.zones").selectAll("circle.red-line")
-	.style("stroke", "none")
-	.style("fill", rinkFill);
-rinkMap.select("g.zones").selectAll("path.goal-crease")
-	.style("stroke", rinkStroke)
-	.style("fill", "none");
-rinkMap.selectAll("path.rink-face, circle.red-faceoff")
-	.style("fill", "none");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*
 *
-* Append grid
-*
-*/
-
-var gridlines = rink.select("#h-rules").selectAll("g")
-	.data(d3.range(y.domain()[0], y.domain()[1] + ftPerCell, ftPerCell))
-	.enter().append("g");
-gridlines.append("line")
-	.attr("x1", function() { return d3.min(x.range()); })
-	.attr("x2", function() { return d3.max(x.range()); })
-	.attr("y1", function(d) { return y(d); })
-	.attr("y2", function(d) { return y(d); });
-gridlines.append("text")
-	.attr("y", function(d) { return y(d); })
-	.attr("x", -10);
-
-gridlines = rink.select("#v-rules").selectAll("g")
-	.data(d3.range(x.domain()[0], x.domain()[1] + ftPerCell, ftPerCell))
-	.enter().append("g");
-gridlines.append("line")
-	.attr("x1", function(d) { return x(d); })
-	.attr("x2", function(d) { return x(d); })
-	.attr("y1", function() { return d3.min(y.range()); })
-	.attr("y2", function() { return d3.max(y.range()); });
-gridlines.append("text")
-	.attr("y", y.range()[0] + 20)
-	.attr("x", function(d) { return x(d); });
-
-rink.selectAll("#v-rules, #h-rules").selectAll("line")
-	.style("stroke", "#f7f7f7")
-	.style("stroke-width", 1)
-	.style("visibility", "visible");
-rink.selectAll("#v-rules, #h-rules").selectAll("text")
-	.style("text-anchor", "middle")
-	.style("font-size", "8px")
-	.style("fill", "#ccc")
-	.style("visibility", "visible")
-	.text(function(d) { return d; });
-
-// Append toggle control for grid visibility
-var isGridVisible = true;
-d3.select("#grid-toggle").on("click", function() {
-	var gridElements = rink.selectAll("#v-rules, #h-rules").selectAll("line, text");
-	if (isGridVisible) {
-		gridElements.style("visibility", "hidden");
-		isGridVisible = false;
-	} else {
-		gridElements.style("visibility", "visible");
-		isGridVisible = true;
-	}
-});
-
-/*
-*
-* Player data
-*
-*/
-
-var playerData = [];
-
-playerData.push({
-	id: 1,
-	player: "D1",
-	colour: "blue",
-	waypoints: [[0,2.5,42.5]]
-});
-
-playerData.push({
-	id: 2,
-	player: "D2",
-	colour: "blue",
-	waypoints: [[0,45,80]]
-});
-
-playerData.push({
-	id: 3,
-	player: "F1",
-	colour: "blue",
-	waypoints: [[0,25,42.5],[2,12,12],[4,28,2]]
-});
-
-playerData.push({
-	id: 4,
-	player: "F2",
-	colour: "blue",
-	waypoints: [[0,50,35],[2,38,12],[3,50,5],[4,75,5],[6,95,30],[7,102,42],[8,120,45]]
-});
-
-playerData.push({
-	id: 5,
-	player: "F3",
-	colour: "blue",
-	waypoints: [[0,120,80],[4,120,80],[6,123,65],[7,115,68],[8,105,75]]
-});
-
-//╳●✕✖
-playerData.push({
-	id: 6,
-	player: "✕",
-	colour: "red",
-	waypoints: [[0,18,38]]
-})
-playerData.push({
-	id: 7,
-	player: "✕",
-	colour: "red",
-	waypoints: [[0,95,75]]
-})
-playerData.push({
-	id: 8,
-	player: "✕",
-	colour: "red",
-	waypoints: [[0,95,42.5]]
-})
-playerData.push({
-	id: 9,
-	player: "✕",
-	colour: "red",
-	waypoints: [[0,95,10]]
-})
-playerData.push({
-	id: 10,
-	player: "✕",
-	colour: "red",
-	waypoints: [[0,140,42.5]]
-})
-
-// Player with puck - use -1000 or 1000 for the left and right nets
-var carriers = [1, 2, 4, 5];
-var possessionStartTimes = [0, 1000, 6000, 7500];
-
-// Convert waypoint array elements into properties
-playerData.forEach(function(p) {
-	p.waypoints = p.waypoints.map(function(w) {
-		return {
-			t: w[0],
-			x: w[1],
-			y: w[2]
-		};
-	});
-
-	// Convert waypoints to paths
-	paths = [];
-	for (var i = 0; i < p.waypoints.length - 1; i++) {
-		var nextPoint = [];
-		if (i < p.waypoints.length - 2) {
-			nextPoint = [p.waypoints[i + 2].x, p.waypoints[i + 2].y];
-		}
-
-		paths.push({
-			order: i,
-			start: [p.waypoints[i].x, p.waypoints[i].y],
-			end: [p.waypoints[i + 1].x, p.waypoints[i + 1].y],
-			next: nextPoint,
-			duration: p.waypoints[i + 1].t - p.waypoints[i].t
-		});
-	}
-	p.paths = paths;
-
-	// Create the string for each path's d attribute
-	for (var i = 0; i < p.paths.length; i++) {
-
-		var ctrlPt = [x(p.paths[i].end[0]), y(p.paths[i].end[1])];
-
-		if (p.paths[i].start[0] === p.paths[i].end[0] && p.paths[i].start[1] === p.paths[i].end[1]) {
-			// Keep the ctrlPt at the endPt if the player is stationary
-		} else if (p.paths[i].next.length === 2) {
-
-			var rise = y(p.paths[i].next[1]) - y(p.paths[i].end[1]);
-			rise *= -1; // Adjust rise since higher y values are plotted lower
-			var run = x(p.paths[i].next[0]) - x(p.paths[i].end[0]);
-			var slope = rise / run;
-			var delta = 10;
-
-			if (slope === 0) {
-				if (run >= 0) {
-					// If player will skate right, then ctrlPt is left
-					ctrlPt[0] = ctrlPt[0] - delta;
-				} else {
-					// If player will skate left, then ctrlPt is right
-					ctrlPt[0] = ctrlPt[0] + delta;
-				}
-			} else if (slope == Number.POSITIVE_INFINITY || slope == Number.NEGATIVE_INFINITY) {
-				if (rise >= 0) {
-					// If player skates up, then ctrlPt is down
-					ctrlPt[1] = ctrlPt[1] + delta;
-				} else {
-					// If player skates down, then ctrlPt is up
-					ctrlPt[1] = ctrlPt[1] - delta;
-				}
-			} else if (slope > 0) {
-				if (run >= 0) {
-					// If player will skate up and right, then ctrlPt is down and left
-					ctrlPt[0] = ctrlPt[0] - delta;
-					ctrlPt[1] = ctrlPt[1] + delta * slope;
-				} else {
-					// If player will skate down and left, then ctrlPt is up and right
-					ctrlPt[0] = ctrlPt[0] + delta;
-					ctrlPt[1] = ctrlPt[1] - delta * slope;
-				}
-			} else if (slope < 0) {
-				if (run >= 0) {
-					// If player will skate down and right, then ctrlPt is up and left; remember that slope is negative
-					ctrlPt[0] = ctrlPt[0] + delta / slope;
-					ctrlPt[1] = ctrlPt[1] - delta;
-				} else {
-					// If player will skate up and left, then ctrlPt is down and right; remember that slope is negative
-					ctrlPt[0] = ctrlPt[0] - delta / slope;
-					ctrlPt[1] = ctrlPt[1] + delta;
-				}
-			}
-
-			// To check where the smoother is located
-			// rink.append("circle")
-			// 	.attr("class", "ctrlPt2")
-			// 	.attr("cx", ctrlPt[0])
-			// 	.attr("cy", ctrlPt[1])
-			// 	.attr("r", 2)
-			// 	.attr("fill", "gold");
-		}
-
-		var dString = "M" + x(p.paths[i].start[0]) + "," + y(p.paths[i].start[1]);
-		dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
-		dString += " " + x(p.paths[i].end[0]) + "," + y(p.paths[i].end[1]);
-		p.paths[i].dString = dString;
-	}
-});
-
-/*
-*
-* Append players and paths
-*
-*/
-
-var players = rink.selectAll("g.player")
-	.data(playerData)
-	.enter().append("g")
-		.attr("class", "player");
-
-var paths = players.selectAll("path")
-	.data(function(d) { return d.paths; })
-	.enter().append("path")
-		.attr("d", function(d) { return d.dString; })
-		.style("stroke", pathColour)
-		.style("fill", "none");
-
-var points = players.selectAll("circle.waypoint")
-	.data(function(d) { return d.waypoints; })
-	.enter().append("circle")
-		.attr("class", "waypoint")
-		.attr("cx", function(d) { return x(d.x); })
-		.attr("cy", function(d) { return y(d.y); })
-		.attr("r", 2)
-		.style("visibility", "hidden")
-		.style("fill", pathColour);
-
-var markers = players.append("g")
-		.attr("class", "marker")
-		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
-
-var circles = markers.append("circle")
-	.attr("cx", 0)
-	.attr("cy", -1) // To better center circle on player number
-	.attr("r", 10)
-	.style("stroke", "black")
-	.style("fill", "none")
-	.style("stroke-opacity", 0);
-
-markers.append("text")
-	.attr("r", 5)
-	.attr("x", 0)
-	.attr("y", 0)
-	.style("alignment-baseline", "middle")
-	.style("text-anchor", "middle")
-	.style("fill", function(d) { return d.colour; })
-	.text(function(d) { return d.player; });
-
-/*
-*
+* TO CLEAN UP
 * Append puck marker
 *
 */
 
-rink.append("line")
+d3.select("#rink").append("line")
 	.attr("class", "puck")
 	.style("stroke", "black")
 	.style("stroke-opacity", 0)
 	.style("stroke-dasharray", "2,3");
-rink.append("circle")
+d3.select("#rink").append("circle")
 	.attr("class", "puck")
 	.attr("r", 2)
 	.style("fill", "black")
@@ -395,18 +151,15 @@ rink.append("circle")
 *
 */
 
-// Store pass timer as a variable so it can be cleared if the animation is restarted midway
-var passTimer;
-
 d3.select("#play").on("click", function() {
-	markers.each(function(d) {
-		slide(d3.select(this), d, 0);
+	d3.selectAll("g.marker").each(function(d) {
+		translatePlayer(d3.select(this), d, 0);
 	});
 
 	// Clear the existing passTimer before restarting the pass sequence from idx = 0
 	// Also reset the circle indicating the puck carrier
 	clearTimeout(passTimer);
-	circles.style("stroke-opacity", function(d) {
+	d3.selectAll("g.marker").selectAll("circle").style("stroke-opacity", function(d) {
 		if (d.id === carriers[0]) {
 			return 1;
 		} else {
@@ -415,6 +168,627 @@ d3.select("#play").on("click", function() {
 	});
 	setPassTimer(0);
 });
+
+function translatePlayer(element, data, idx) {
+	if (idx < data.paths.length) {
+		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.id === data.id; });
+		var animMarker = animPlayerGroup.select("g.marker");
+		var animPath = animPlayerGroup.selectAll("path").filter(function(d) { return d.order === idx; });
+		animMarker.transition()
+			.duration(function(d) { return d.paths[idx].duration * 1000; })
+			.ease("linear")
+			.attrTween("transform", translateAlong(animPath.node()))
+			.each("end", function(d) {
+				translatePlayer(d3.select(this), d, idx + 1);
+			});
+	}
+}
+
+// Returns an attrTween for translating along the specified path element.
+function translateAlong(path) {
+	var l = path.getTotalLength();
+	return function(d, i, a) {
+		return function(t) {
+		  var p = path.getPointAtLength(t * l);
+		  return "translate(" + p.x + "," + p.y + ")";
+		};
+	};
+}
+
+function initTimeline() {
+
+	// Create the timeline table
+	var rows = d3.select("#table").selectAll("div.player.row")
+		.data(playerData)
+		.enter().append("div")
+			.attr("id", function(d) { return "player-" + d.id; })
+			.attr("class", "player row");
+	rows.append("div")
+		.attr("class", "player-id cell")
+		.text(function(d) { return d.id; });
+	rows.append("div")
+		.attr("class", "label cell")
+		.text(function(d) { return d.label; });
+	rows.append("div")
+		.attr("class", "colour-picker cell");
+	rows.append("div")
+		.attr("class", "timeline cell");
+
+	// Append colour pickers and listeners
+	d3.select("#table").selectAll("div.colour-picker").append("svg")
+		.attr("class", "colour-picker")
+		.style("height", timelineHeight + "px")
+		.attr("width", (2 * timepointCircleR) + "px")
+	d3.select("#table").selectAll("svg.colour-picker").append("circle")
+		.attr("class", "colour-picker")
+		.attr("cx", timepointCircleR)
+		.attr("cy", timelineHeight / 3)
+		.attr("r", timepointCircleR)
+		.style("fill", function(d) { return d.colour; })
+		.on("click", function(d) {
+			var newColour = "blue";
+			if (d.colour === "blue") { newColour = "red"; }
+			updatePlayerColour(d.id, newColour);
+		});
+
+	// Append timeline svgs and timepoints
+	var timelines = d3.select("#table").selectAll("div.timeline")
+		.append("svg")
+			.attr("class", "timeline")
+			.attr("height", timelineHeight + "px")
+			.attr("width", timelineWidth + "px");
+
+	// Append a circle to indicate the active timepoint or waypoint; these should be rendered behind the actual timepoints
+	timelines.append("line")
+		.attr("class", "baseline")
+		.attr("x1", tX(seconds[0]))
+		.attr("x2", tX(seconds[seconds.length - 1]))
+		.attr("y1", timelineHeight / 3)
+		.attr("y2", timelineHeight / 3);
+	timelines.append("circle")
+		.attr("class", "active")
+		.attr("r", 0)
+		.attr("cy", timelineHeight / 3)
+		.style("visibility", "hidden");
+
+	// Append a delete link
+	var bW = 42;
+	var bH= 15;
+	var buttons = timelines.append("g")
+		.attr("class", "button delete");
+	buttons.append("rect")
+		.attr("x", -bW / 2)
+		.attr("y", timelineHeight - bH)
+		.attr("rx", 2)
+		.attr("ry", 2)
+		.attr("width", bW)
+		.attr("height", bH)
+		.style("visibility", "hidden");
+	buttons.append("text")
+		.attr("x", 0)
+		.attr("y", timelineHeight - bH / 2 + 1)
+		.style("visibility", "hidden")
+		.text("DELETE");
+	buttons.on("click", function() {
+		removeWaypoint(activeElement.player, activeElement.time);
+		closePicker();
+	});
+
+	var timepoints = timelines.selectAll("circle.timepoint")
+		.data(seconds)
+	timepoints.enter().append("circle")
+		.attr("class", "timepoint")
+		.attr("cy", timelineHeight / 3)
+		.attr("cx", function(d) { return tX(d); })
+		.attr("r", timepointCircleR);
+	initTimelineListeners();
+
+	// Append a dot in the rink-svg for user to pick skater position
+	// Draw the rectangle above the dot so that all mousemove events register
+	d3.select("#rink").append("circle")
+		.attr("id", "picker-marker")
+		.attr("cx", 0)
+		.attr("cy", 0)
+		.attr("r", activeCircleR)
+		.style("visibility", "hidden");
+	d3.select("#rink").append("rect")
+		.attr("id", "picker-mask")
+		.attr("width", x.range()[1])
+		.attr("height", y.range()[0])
+		.attr("rx", x(rinkRadius))
+		.attr("ry", y(0) - y(rinkRadius))
+		.style("visibility", "hidden");
+}
+
+// Listeners for timepoints
+function initTimelineListeners() {
+	d3.selectAll("svg.timeline").selectAll("circle.timepoint").on("click", function(d) {
+
+		var clickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+
+		if (activeElement.type === "timepoint" && activeElement.player === clickedPlayerId && activeElement.time === d) {
+			// If the currently active timepoint is clicked, then close the picker, which will also clear the active element
+			closePicker();
+		} else if (activeElement.type === "none" || activeElement.type === "timepoint") {
+			// If there's no active element, set it to the clicked timepoint
+			// Or if the user clicks on a timepoint that isn't the currently active timepoint, make the clicked timepoint active
+			activeElement.type = "timepoint";
+			activeElement.time = d;
+			activeElement.player = clickedPlayerId;
+		} else if (activeElement.type === "waypoint") {
+			// If a waypoint is currently active, then clicking a timepoint will transfer the waypoint's x and y positions to the clicked timepoint's player and time
+			// Get the currently active waypoint's x and y positions
+			var activeWaypointData = playerData
+				.filter(function(p) { return p.id === activeElement.player; })[0].waypoints
+				.filter(function(w) { return w.t === activeElement.time; })[0];
+
+			// Add waypoint to the clickedPlayer; remove waypoint from the activeElement player
+			updateWaypoint(clickedPlayerId, d, activeWaypointData.x, activeWaypointData.y);
+			removeWaypoint(activeElement.player, activeElement.time);
+
+			// Close the picker, which will also clear the active element
+			closePicker();
+		}
+
+		// If there's still an active element, highlight the active element and open picker
+		if (activeElement.type !== "none") {
+			highlightActiveElement();
+			openPicker(activeElement.player, activeElement.time);
+		}
+	});
+}
+
+// Listeners for waypoints
+function appendWaypointListeners() {
+	d3.selectAll("svg.timeline").selectAll("circle.waypoint").on("click", function(d) {
+		var clickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
+		if (activeElement.type === "waypoint" && activeElement.player === clickedPlayerId && activeElement.time === d.t) {
+			// If the currently active waypoint is clicked, then close the picker, which will also clear the active element
+			closePicker();
+		} else if (activeElement.type === "none") {
+			// If there's no active element, set it to the clicked waypoint
+			activeElement.type = "waypoint";
+			activeElement.time = d.t;
+			activeElement.player = clickedPlayerId;
+
+			// Highlight the active element and open picker
+			highlightActiveElement();
+			openPicker(activeElement.player, activeElement.time);
+		}
+		// In any other case, clicking a waypoint does nothing. This includes:
+		// If a waypoint is active, and the user clicks on another waypoint
+		// If a timepoint is active, and the user clicks on a waypoint
+	});
+}
+
+// Highlights the timepoint in the timeline of the specified player id
+function highlightActiveElement() {
+	clearActiveElementHighlights();
+	d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
+		.select("circle.active")
+			.attr("cx", tX(activeElement.time))
+			.attr("r", function() {
+				// If the active element is a waypoint, the starting radius for circle.active should be the waypoint circle radius
+				// Otherwise, it's going to feel like there's a delay because circle.active's smaller sizes will be obscured by the waypoint
+				if (activeElement.type === "waypoint") { return waypointCircleR; }
+				else { return 0; }
+			})
+			.style("visibility", "visible")
+			.transition()
+				.duration(function() {
+					if (activeElement.type === "waypoint") { return 250 * (waypointCircleR / activeCircleR); }
+					else { return 250; }
+				})
+				.ease("ease-out")
+				.attr("r", activeCircleR);
+
+	// Display the delete button
+	if (activeElement.type === "waypoint") {
+		d3.selectAll("svg.timeline").filter(function(d) { return d.id === activeElement.player; })
+			.selectAll(".button.delete").selectAll("*")
+			.attr("transform", "translate(" + tX(activeElement.time) + ",0)")
+			.style("visibility", "visible");
+	}
+}
+
+// Hide active highlight and delete action in timelines
+function clearActiveElementHighlights() {
+	d3.selectAll("svg.timeline").filter(function(d) { return d.id !== activeElement.player; })
+		.selectAll("circle.active")
+			.transition()
+				.ease("ease-in")
+				.attr("r", 0)
+				.each("end", function() { d3.select(this).style("visibility", "hidden"); });
+	d3.selectAll(".button.delete").selectAll("*")
+		.style("visibility", "hidden");
+}
+
+function clearActiveElement() {
+	activeElement.type = "none";
+	activeElement.time = null;
+	activeElement.player = null;
+	clearActiveElementHighlights();
+}
+
+function openPicker(player, t) {
+	// Make picker elements visible
+	d3.selectAll("#picker-marker, #picker-mask")
+		.attr("class", "active")
+		.style("visibility", "visible");
+	d3.select("#picker-marker")
+		.attr("cx", -100)
+		.attr("cy", -100);
+
+	// Move the picker marker; snap to the closest whole foot
+	var pxPerFt = cellSize / ftPerCell;
+	var mPos, mX, mY;
+	d3.select("#picker-mask").on("mousemove", function() {
+		mPos = d3.mouse(this);
+		mX = Math.round(mPos[0] / pxPerFt) * pxPerFt;
+		mY = Math.round(mPos[1] / pxPerFt) * pxPerFt;
+		d3.select("#picker-marker").attr("cx", mX)
+			.attr("cy", mY);
+	});
+
+	// Update waypoint data with the picked position, then close the picker
+	d3.select("#picker-mask").on("click", function() {
+		updateWaypoint(player, t, Math.round(x.invert(mX)), Math.round(y.invert(mY)));
+		closePicker();
+	});
+}
+
+// Remove listeners and hide picker
+function closePicker() {
+	// Hide picker elements on rink
+	d3.select("#picker-mask").on("mousemove", null);
+	d3.select("#picker-mask").on("click", null);
+	d3.selectAll("#picker-marker, #picker-mask")
+		.attr("class", "")
+		.style("visibility", "hidden");
+
+	// Clear active element
+	clearActiveElement();
+}
+
+function removeWaypoint(player, t) {
+	// Check if a waypoint for the specified time already exists. If it does, get its index
+	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
+	var existingWaypointIdx = -1;
+	var i = 0;
+	while (existingWaypointIdx < 0 && i < playerToUpdate.waypoints.length) {
+		if (playerToUpdate.waypoints[i].t === t) { existingWaypointIdx = i; }
+		else { i++; }
+	}
+
+	// Remove the waypoint, then update path data and rink
+	if (existingWaypointIdx >= 0) { playerToUpdate.waypoints.splice(existingWaypointIdx, 1); }
+	generateDStrings(playerToUpdate.id - 1);
+	updateRink();
+}
+
+function updateWaypoint(player, t, x, y) {
+
+	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
+
+	// Check if a waypoint for the specified time already exists. If it does, get its index
+	var existingWaypointIdx = -1;
+	var i = 0;
+	while (existingWaypointIdx < 0 && i < playerToUpdate.waypoints.length) {
+		if (playerToUpdate.waypoints[i].t === t) { existingWaypointIdx = i; }
+		else { i++; }
+	}
+
+	// Add or update waypoint, then update path data and rink
+	if (existingWaypointIdx >= 0) {
+		playerToUpdate.waypoints[existingWaypointIdx] = {t: t, x: x, y: y};
+	} else {
+		playerToUpdate.waypoints.push({t: t, x: x, y: y});
+		playerToUpdate.waypoints = playerToUpdate.waypoints.sort(function(a, b) { return a.t - b.t; });
+	}
+	generateDStrings(playerToUpdate.id - 1);
+	updateRink();
+}
+
+function updatePlayerColour(player, newColour) {
+	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
+	playerToUpdate.colour = newColour;
+	updateRink();
+}
+
+function initRink() {
+	// Append subgroups for rink to control layering
+	["rink-map", "players"].forEach(function(name) {
+		d3.select("#rink").append("g").attr("id", name);
+	});
+
+	// Append and style rink
+	var drawRinkMap = new RINK_MAP({parent: d3.select("#rink-map"), fullRink: true, desiredWidth: (rinkHeight / ftPerCell) * cellSize, horizontal: true});
+	drawRinkMap();
+	styleRink();
+
+	// Append groups and subgroups for each player to control layering
+	var players = d3.select("#players").selectAll("g.player")
+		.data(playerData, function(d) { return d.id; })
+		.enter().append("g")
+			.attr("class", "player");
+
+	["paths", "waypoints", "marker"].forEach(function(name) {
+		players.append("g").attr("class", name);
+	});
+
+	// Append marker elements
+	// Markers will be positioned as a group with transformations, so hardcode circle and text positions
+	d3.select("#players").selectAll("g.marker")
+		.append("circle")
+			.attr("cx", 0)
+			.attr("cy", -1) // To better center circle on player number
+			.attr("r", 10)
+			.style("stroke-opacity", 0);
+	d3.select("#players").selectAll("g.marker")
+		.append("text")
+			.attr("x", 0)
+			.attr("y", 0);
+}
+
+function updateRink() {
+
+	// Bind updated data to player groups
+	// Since playerData was initialized to always have 10 players, player groups will never enter or exit
+	var players = d3.select("#players").selectAll("g.player")
+		.data(playerData, function(d) { return d.id; });
+	players.attr("class", function(d) { return "player " + d.colour; });
+
+	// Update paths in the path groups and points in the point group
+	// Using select() propagates the updated g.player data to g.paths: http://stackoverflow.com/questions/10129432/inheritance-in-data-joins
+	var paths = players.select("g.paths").selectAll("path.skater")
+		.data(function(d) { return d.paths; }, function(p) { return p.order + p.dString; });
+	paths.exit().remove();
+	paths.enter().append("path")
+		.attr("class", "skater");
+	paths.attr("d", function(d) { return d.dString; });
+
+	var waypoints = players.select("g.waypoints").selectAll("text.waypoint")
+		.data(function(d) { return d.waypoints; }, function(w) { return w.t; })
+	waypoints.exit().remove();
+	waypoints.enter().append("text")
+		.attr("class", "waypoint");
+	waypoints.attr("x", function(d) { return x(d.x); })
+		.attr("y", function(d) { return y(d.y); })
+		.text(function(d) { return d.t; });
+
+	// Update markers - hide markers for players with no waypoints
+	var markers = players.select("g.marker");
+	markers.style("visibility", function(d) {
+			if (d.waypoints.length === 0) { return "hidden"; }
+			else { return "visible"; }
+		})
+	markers.select("text").text(function(d) { return d.label; });
+
+	// Only update position of players with 1 or more waypoints
+	markers.filter(function(d) { return d.waypoints.length > 0; })
+		.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
+
+	/*
+	*
+	* Update timeline
+	*
+	*/
+
+	// Update timeline dots
+	var rows = d3.select("#table").selectAll("div.player.row")
+		.data(playerData);
+	var timelines = rows.select("div.timeline").select("svg");
+	var waypoints = timelines.selectAll("circle.waypoint")
+		.data(function(d) { return d.waypoints; }, function(w) { return w.t; });
+	waypoints.exit().transition()
+		.attr("r", 0)
+		.each("end", function() { d3.select(this).remove(); });
+	waypoints.enter().append("circle")
+		.attr("class", "waypoint")
+		.attr("r", 0)
+		.transition().ease("linear").attr("r", waypointCircleR);
+	waypoints.attr("cx", function(d) { return tX(d.t); })
+		.attr("cy", timelineHeight / 3);
+
+	// Add listeners for waypoints
+	appendWaypointListeners();
+
+	// Update colour pickers
+	d3.select("#table").selectAll("svg.colour-picker").select("circle.colour-picker")
+		.style("fill", function(d) { return d.colour; });
+};
+
+function generateDStrings(playerIdx) {
+
+	// Create paths from waypoints
+	paths = [];
+	for (var i = 0; i < playerData[playerIdx].waypoints.length - 1; i++) {
+		var nextPoint = [];
+		if (i < playerData[playerIdx].waypoints.length - 2) {
+			nextPoint = [playerData[playerIdx].waypoints[i + 2].x, playerData[playerIdx].waypoints[i + 2].y];
+		}
+		paths.push({
+			order: i,
+			start: [playerData[playerIdx].waypoints[i].x, playerData[playerIdx].waypoints[i].y],
+			end: [playerData[playerIdx].waypoints[i + 1].x, playerData[playerIdx].waypoints[i + 1].y],
+			next: nextPoint,
+			duration: playerData[playerIdx].waypoints[i + 1].t - playerData[playerIdx].waypoints[i].t
+		});
+	}
+	playerData[playerIdx].paths = paths;
+
+	// Create the string for each path's d attribute
+	for (var i = 0; i < playerData[playerIdx].paths.length; i++) {
+
+		var ctrlPt = [x(playerData[playerIdx].paths[i].end[0]), y(playerData[playerIdx].paths[i].end[1])];
+
+		if (playerData[playerIdx].paths[i].start[0] === playerData[playerIdx].paths[i].end[0] && playerData[playerIdx].paths[i].start[1] === playerData[playerIdx].paths[i].end[1]) {
+			// Keep the ctrlPt at the endPt if the player is stationary
+		} else if (playerData[playerIdx].paths[i].next.length === 2) {
+
+			// Increasing delta will increase smoothing by increasing the ctrlPt's offset
+			var delta = 20;
+
+			var rise = y(playerData[playerIdx].paths[i].next[1]) - y(playerData[playerIdx].paths[i].end[1]);
+			rise *= -1; // Adjust rise since higher y values are plotted lower
+			var run = x(playerData[playerIdx].paths[i].next[0]) - x(playerData[playerIdx].paths[i].end[0]);
+			var slope = rise / run;
+
+			if (slope === 0) {
+				if (run >= 0) {
+					// If player will skate right, then ctrlPt is left
+					ctrlPt[0] -= delta;
+				} else {
+					// If player will skate left, then ctrlPt is right
+					ctrlPt[0] += delta;
+				}
+			} else if (slope == Number.POSITIVE_INFINITY || slope == Number.NEGATIVE_INFINITY) {
+				if (rise >= 0) {
+					// If player skates up, then ctrlPt is down
+					ctrlPt[1] += delta;
+				} else {
+					// If player skates down, then ctrlPt is up
+					ctrlPt[1] -= delta;
+				}
+			} else {
+
+				// To keep the ctrlPt close, deltaX and deltaY (the ctrlPt's offset) should not be larger than delta while maintaining the slope value
+				var deltaX, deltaY;
+				if (Math.abs(slope) <= 1) {
+					deltaX = delta;
+					deltaY = delta * Math.abs(slope);
+				} else {
+					deltaX = delta / Math.abs(slope);
+					deltaY = delta;
+				}
+
+				if (slope > 0 && run >= 0) {
+					// If player will skate up and right, then ctrlPt is down and left
+					ctrlPt[0] -= deltaX;
+					ctrlPt[1] += deltaY;
+				} else if (slope > 0 && run < 0) {
+					// If player will skate down and left, then ctrlPt is up and right
+					ctrlPt[0] += deltaX;
+					ctrlPt[1] -= deltaY;
+				} else if (slope < 0 && run >= 0) {
+					// If player will skate down and right, then ctrlPt is up and left
+					ctrlPt[0] -= deltaX;
+					ctrlPt[1] -= deltaY;
+				} else if (slope < 0 && run < 0) {
+					// If player will skate up and left, then ctrlPt is down and right
+					ctrlPt[0] += deltaX;
+					ctrlPt[1] += deltaY;
+				}
+			}
+
+			// Check if the ctrlPt is in the rink - if it isn't set the ctrlPt to the endpoint
+			if (isPointInRink(ctrlPt) === false ) {
+				ctrlPt = [x(playerData[playerIdx].paths[i].end[0]), y(playerData[playerIdx].paths[i].end[1])];
+			}
+
+			// To check where the ctrlPt is located
+			// d3.select("#rink").append("circle")
+			// 	.attr("class", "ctrlPt")
+			// 	.attr("cx", ctrlPt[0])
+			// 	.attr("cy", ctrlPt[1])
+			// 	.attr("r", 2)
+			// 	.attr("fill", "gold");
+		}
+		//d3.selectAll("circle.ctrlPt").remove();
+
+		var dString = "M" + x(playerData[playerIdx].paths[i].start[0]) + "," + y(playerData[playerIdx].paths[i].start[1]);
+		dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
+		dString += " " + x(playerData[playerIdx].paths[i].end[0]) + "," + y(playerData[playerIdx].paths[i].end[1]);
+		playerData[playerIdx].paths[i].dString = dString;
+	}
+
+	// Check if a given point [x, y] is within the rink - coordinates should already be scaled to pixels (not feet)
+	function isPointInRink(point) {
+		var isInRink = false;
+		// Check if point is within the 4 circles
+		// Centers of the top-left, bottom-left, top-right, and bottom-right rink arcs
+		var centres = [];
+		centres[0] = [x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
+		centres[1] = [x(rinkRadius), y(0) - y(rinkRadius)];
+		centres[2] = [x(rinkWidth) - x(rinkRadius), y(rinkHeight) + y(rinkRadius)];
+		centres[3] = [x(rinkWidth) - x(rinkRadius), y(0) - y(rinkRadius)];
+		var i = 0;
+		while (!isInRink && i < centres.length) {
+			var a2 = Math.pow(point[0] - centres[i][0], 2);
+			var b2 = Math.pow(point[1] - centres[i][1], 2);
+			var c2 = Math.pow(x(rinkRadius), 2);
+			if (a2 + b2 < c2) { isInRink = true; }
+			else { i++; }
+		};
+		// Check if point is in the rectangle that goes from one end of the rink to the other
+		if (!isInRink) {
+			if (point[0] > x(0) && point[0] < x(rinkWidth) && point[1] > y(rinkHeight) + y(rinkRadius) && point[1] < y(0) - y(rinkRadius)) {
+				isInRink = true;
+			}
+		}
+		// Check if point is in the rectangle that goes from one side (where benches are) of the rink to the other (where penalty boxes are)
+		if (!isInRink) {
+			if (point[0] > x(0) + x(rinkRadius) && point[0] < x(rinkWidth) - x(rinkRadius) && point[1] > y(rinkHeight) && point[1] < y(0)) {
+				isInRink = true;
+			}
+		}
+		return isInRink;
+	}
+}
+
+
+/*
+*
+* Updates styling from rinkPlot.js
+*
+*/
+
+function styleRink() {
+
+	// Remove translation
+	var rinkMap = d3.select("#rink-map");
+	rinkMap.select("g.zones")
+		.attr("transform", "");
+
+	// Make rink monochrome
+	var rinkStroke = "#ccc";
+	var rinkFill = "#ebebeb";
+	rinkMap.select("g.zones").selectAll("rect")
+		.style("fill", rinkFill)
+	rinkMap.select("g.zones").selectAll("rect.red-line")
+		.style("fill", rinkStroke)
+	rinkMap.select("g.zones").selectAll("path, line, circle")
+		.style("stroke", rinkStroke);
+	rinkMap.select("g.zones").selectAll("circle.red-line")
+		.style("stroke", "none")
+		.style("fill", rinkFill);
+	rinkMap.select("g.zones").selectAll("path.goal-crease")
+		.style("stroke", rinkStroke)
+		.style("fill", "none");
+	rinkMap.selectAll("path.rink-face, circle.red-faceoff")
+		.style("fill", "none");
+
+	// Hide the original half rink-faces from rinkPlot.js because it has a line where the 2 halves meet
+	rinkMap.selectAll(".rink-face")
+		.style("stroke", "none");
+
+	// Redraw a full rink rink-face for a neat outline
+	rinkMap.select("g.zones")
+		.append("rect")
+			.attr("width", x.range()[1])
+			.attr("height", y.range()[0])
+			.attr("rx", x(rinkRadius))
+			.attr("ry", y(0) - y(rinkRadius))
+			.style("fill", "none")
+			.style("stroke", rinkStroke);
+}
+
+
+
+
+
+
+
 
 function setPassTimer(idx) {
 	passTimer = setTimeout(function() {
@@ -462,7 +836,7 @@ function setPassTimer(idx) {
 						.style("fill-opacity", 0);
 		}
 
-		circles.transition()
+		d3.selectAll("g.markers").selectAll("circle").transition()
 			.style("stroke-opacity", function(d) {
 				if (d.id === carriers[idx]) {
 					return 1;
@@ -476,34 +850,5 @@ function setPassTimer(idx) {
 		}
 	}, possessionStartTimes[idx] - possessionStartTimes[idx - 1]);
 }
-
-function slide(element, data, idx) {
-
-	if (idx < data.paths.length) {
-		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.player === data.player; });
-		var animMarker = animPlayerGroup.select("g.marker");
-		var animPath = animPlayerGroup.selectAll("path").filter(function(d) { return d.order === idx; });
-
-		animMarker.transition()
-			.duration(function(d) { return d.paths[idx].duration * 1000; })
-			.ease("linear")
-			.attrTween("transform", translateAlong(animPath.node()))
-			.each("end", function(d) {
-				slide(d3.select(this), d, idx + 1);
-			});
-	}
-}
-
-// Returns an attrTween for translating along the specified path element.
-function translateAlong(path) {
-	var l = path.getTotalLength();
-	return function(d, i, a) {
-		return function(t) {
-		  var p = path.getPointAtLength(t * l);
-		  return "translate(" + p.x + "," + p.y + ")";
-		};
-	};
-}
-
 </script>
 </html>

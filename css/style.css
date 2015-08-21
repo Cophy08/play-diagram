@@ -1,0 +1,168 @@
+body {
+	font-family: Roboto, san-serif;
+	font-size: 12px;
+}
+
+svg {
+	margin: 20px;
+	font-family: Roboto, san-serif;
+	font-size: 12px;
+}
+
+svg.timeline, svg.colour-picker {
+	margin: 0;
+}
+
+/*
+*
+* Rink
+*
+*/
+
+g.marker text {
+	alignment-baseline: middle;
+	text-anchor: middle;
+}
+
+g.marker circle {
+	fill: none;
+	stroke: black;
+}
+
+path.skater {
+	fill: none;
+}
+
+g.player g.marker text {
+	font-weight: 700;
+}
+
+	g.player.blue g.marker text {
+		fill: blue;
+	}
+
+	g.player.red g.marker text {
+		fill: red;
+	}
+
+g.player text.waypoint {
+	font-size: 10px;
+	text-anchor: middle;
+	alignment-baseline: middle;
+}
+
+	g.player.blue text.waypoint {
+		fill: lightskyblue;
+	}
+
+	g.player.red text.waypoint {
+		fill: pink;
+	}
+
+g.player path.skater {
+	stroke-opacity: 0.5;
+}
+
+	g.player.blue path.skater {
+		stroke: lightskyblue;
+	}
+
+	g.player.red path.skater {
+		stroke: pink;
+	}
+
+#picker-marker {
+	fill: gold;
+	fill-opacity: 0.5;
+}
+
+#picker-mask {
+	fill: white; /* Need a fill to detect mouse events */
+	fill-opacity: 0;
+}
+
+	#picker-mask.active {
+		stroke: gold;
+	}
+
+
+/*
+*
+* Timeline
+*
+*/
+
+.cell {
+	display: inline-block;
+	vertical-align: middle;
+	padding: 0;
+	padding-bottom: 16px;
+	margin: 0;
+}
+
+.timeline.cell, .colour-picker.cell {
+	padding: 0;
+}
+.player-id.cell {
+	width: 30px;
+}
+
+.label.cell {
+	width: 50px;
+}
+
+circle.colour-picker {
+	fill-opacity: 0.5;
+}
+.timeline circle.active {
+	fill: none;
+	/*stroke: #ccc;*/
+	stroke: gold;
+	stroke-width: 2px;
+}
+
+line.baseline {
+	stroke: #ddd;
+}
+
+circle.timepoint {
+	fill: white; /* Need a fill so that it's clickable */
+	stroke: #bbb;
+}
+
+	circle.timepoint:hover {
+		stroke: #777;
+	}
+
+circle.waypoint {
+	fill: #aaa;
+}
+
+	circle.waypoint:hover {
+		fill: #777;
+	}
+
+.button.delete {
+	cursor: pointer;
+}
+
+	.button.delete rect {
+		fill: pink;
+	}
+
+	.button.delete text {
+		text-anchor: middle;
+		alignment-baseline: middle;
+		font-size: 10px;
+		fill: firebrick;
+		font-weight: 700;
+	}
+
+	.button.delete:hover rect {
+		fill: lightpink;
+	}
+
+	.button.delete:hover text {
+		fill: darkred;
+	}
+
