@@ -34,7 +34,7 @@ path.skater {
 }
 
 g.player g.marker text {
-	font-weight: 700;
+	font-weight: 500;
 }
 
 	g.player.blue g.marker text {
@@ -104,10 +104,6 @@ g.player path.skater {
 	padding: 0;
 }
 
-.player-id.cell {
-	width: 30px;
-}
-
 /*.label.cell {
 	width: 50px;
 }*/
@@ -124,6 +120,7 @@ input[type=text] {
 		border-bottom: 2px solid #777;
 		padding-bottom: 4px;
 	}
+
 circle.colour-picker {
 	fill-opacity: 0.5;
 }

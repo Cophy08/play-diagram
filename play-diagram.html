@@ -204,9 +204,6 @@ function initTimeline() {
 			.attr("id", function(d) { return "player-" + d.id; })
 			.attr("class", "player row");
 	rows.append("div")
-		.attr("class", "player-id cell")
-		.text(function(d) { return d.id; });
-	rows.append("div")
 		.attr("class", "label cell");
 	rows.append("div")
 		.attr("class", "colour-picker cell");
