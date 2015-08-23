@@ -13,6 +13,16 @@ svg.timeline, svg.colour-picker {
 	margin: 0;
 }
 
+/* Disable highlighting so it doesn't show up while the user is clicking */
+div {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
 /*
 *
 * Rink
@@ -104,6 +114,14 @@ g.player path.skater {
 	width: 60px;
 }
 
+.give-puck.cell {
+	width: 70px;
+}
+
+.player.row .give-puck.cell {
+	padding-bottom: 20px; /* Adjust bottom padding to account for input field */
+}
+
 .timeline.cell, .colour-picker.cell {
 	padding: 0;
 }
@@ -124,6 +142,7 @@ input[type=text] {
 circle.colour-picker {
 	fill-opacity: 0.5;
 }
+
 .timeline circle.active {
 	fill: none;
 	/*stroke: #ccc;*/
@@ -151,6 +170,10 @@ circle.waypoint {
 	circle.waypoint:hover {
 		fill: #777;
 	}
+
+#puck text.waypoint {
+	text-anchor: middle;
+}
 
 .button.delete {
 	cursor: pointer;

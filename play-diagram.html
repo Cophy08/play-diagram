@@ -157,6 +157,8 @@ function initTimeline() {
 			.attr("id", "puck")
 			.attr("class", "puck row");
 	rows.append("div")
+		.attr("class", "give-puck cell");
+	rows.append("div")
 		.attr("class", "label cell")
 		.text("Puck");
 	rows.append("div")
@@ -172,11 +174,31 @@ function initTimeline() {
 			.attr("class", "player row");
 
 	rows.append("div")
+		.attr("class", "give-puck cell")
+		.text("Gets puck");
+	rows.append("div")
 		.attr("class", "label cell");
 	rows.append("div")
 		.attr("class", "colour-picker cell");
 	rows.append("div")
 		.attr("class", "timeline cell");
+
+	// Append listeners to the "give puck" cells
+	d3.select("#table").selectAll(".player.row").selectAll("div.give-puck.cell").on("click", function(d) {
+		if (activeElement.timeline === "puck") {
+			if (activeElement.type === "timepoint" || activeElement.type === "waypoint") {
+				// If a puck timepoint is active, then clicking a player creates a new puck waypoint on the player
+				// If a puck waypoint is active, then clicking on a player updates the waypoint to the player
+				updatePuckWaypoint("player", activeElement.time, null, null, d.id);
+				closePicker();
+			} else {
+				// TODO: are there other cases?
+			}
+		} else {
+			console.log("Can only give puck to a player when a puck timepoint is selected!");
+		}
+	});
+
 
 	// Append player label text fields
 	d3.select("#table").selectAll(".player.row").selectAll("div.label").append("input")
@@ -321,7 +343,7 @@ function initPuckTimelineListeners() {
 			var activeWaypointData = puckWaypoints.filter(function(w) { return w.t === activeElement.time; })[0];
 
 			// Add waypoint to puckWaypoints; remove the old waypoint from puckWaypoints
-			updatePuckWaypoint(activeWaypointData.type, d, activeWaypointData.x, activeWaypointData.y);
+			updatePuckWaypoint(activeWaypointData.type, d, activeWaypointData.x, activeWaypointData.y, null);
 			removePuckWaypoint(activeElement.time);
 
 			// Close the picker, which will also clear the active element
@@ -361,13 +383,15 @@ function initPlayerTimelineListeners() {
 
 		var clickedPlayerId = this.parentNode.parentNode.parentNode.__data__.id;
 
-		if (activeElement.timeline === "player" && activeElement.type === "timepoint" && activeElement.player === clickedPlayerId && activeElement.time === d) {
+		if (activeElement.timeline === "puck" && activeElement.type === "waypoint") {
+			// Clicking a player timepoint does nothing if a puck waypoint is selected
+		} else if (activeElement.timeline === "player" && activeElement.type === "timepoint" && activeElement.player === clickedPlayerId && activeElement.time === d) {
 			// If the currently active timepoint is clicked, then close the picker, which will also clear the active element
 			closePicker();
 		} else if (activeElement.timeline == null || activeElement.type === "timepoint") {
 			// If there's no active element, set it to the clicked timepoint
 			// Or if the user clicks on a timepoint that isn't the currently active timepoint, make the clicked timepoint active
-			// This includes switching from an active puck waypoint to an active player waypoint
+			// This includes switching from an active puck timepoint to an active player timepoint
 			activeElement.timeline = "player";
 			activeElement.type = "timepoint";
 			activeElement.time = d;
@@ -503,7 +527,7 @@ function openPicker() {
 		if (activeElement.timeline === "player") {
 			updatePlayerWaypoint(activeElement.player, activeElement.time, Math.round(x.invert(mX)), Math.round(y.invert(mY)));
 		} else if (activeElement.timeline === "puck") {
-			updatePuckWaypoint("position", activeElement.time, Math.round(x.invert(mX)), Math.round(y.invert(mY)));
+			updatePuckWaypoint("position", activeElement.time, Math.round(x.invert(mX)), Math.round(y.invert(mY)), null);
 		}
 		closePicker();
 	});
@@ -575,7 +599,7 @@ function removePuckWaypoint(t) {
 	updateRink();
 }
 
-function updatePuckWaypoint(type, t, x, y) {
+function updatePuckWaypoint(type, t, x, y, player) {
 
 	// Check if a waypoint for the specified time already exists. If it does, get its index
 	var existingWaypointIdx = -1;
@@ -587,9 +611,9 @@ function updatePuckWaypoint(type, t, x, y) {
 
 	// Add or update waypoint, then update path data and rink
 	if (existingWaypointIdx >= 0) {
-		puckWaypoints[existingWaypointIdx] = {type: type, t: t, x: x, y: y};
+		puckWaypoints[existingWaypointIdx] = { type: type, t: t, x: x, y: y, player: player };
 	} else {
-		puckWaypoints.push({type: type, t: t, x: x, y: y});
+		puckWaypoints.push({ type: type, t: t, x: x, y: y, player: player });
 		puckWaypoints = puckWaypoints.sort(function(a, b) { return a.t - b.t; });
 	}
 	updateRink();
@@ -669,13 +693,13 @@ function updateRink() {
 
 	// Puck waypoints
 	waypoints = d3.select("#puck").select("g.waypoints").selectAll("text.waypoint")
-		.data(puckWaypoints, function(d) { return d.t; });
+		.data(puckWaypoints.filter(function(d) { return d.type === "position"; }), function(d) { return d.t; });
 	waypoints.exit().remove();
 	waypoints.enter().append("text")
 		.attr("class", "waypoint");
 
 	// Player and puck waypoints
-	waypoints = d3.selectAll("text.waypoint");
+	waypoints = d3.select("#rink").selectAll("text.waypoint");
 	waypoints.attr("x", function(d) { return x(d.x); })
 		.attr("y", function(d) { return y(d.y); })
 		.text(function(d) { return d.t; });
@@ -711,7 +735,7 @@ function updateRink() {
 		.attr("r", 0)
 		.transition().ease("linear").attr("r", waypointCircleR);
 
-	// Bind data to puck waypoints
+	// Bind data to puck waypoints - only position waypoints are displayed in the rink
 	waypoints = d3.select("#table").selectAll("div.puck.row").select("svg.timeline").selectAll("circle.waypoint")
 		.data(puckWaypoints, function(d) { return d.t; });
 	waypoints.exit().transition()
@@ -730,6 +754,15 @@ function updateRink() {
 	// Add listeners for waypoints
 	appendPlayerWaypointListeners();
 	appendPuckWaypointListeners();
+
+	var labels = d3.select("#table").selectAll("div.puck.row").select("svg.timeline").selectAll("text.waypoint")
+		.data(puckWaypoints.filter(function(d) { return d.type === "player"; }), function(d) { return d.t; });
+	labels.exit().remove();
+	labels.enter().append("text")
+		.attr("class", "waypoint")
+		.attr("y", 10);
+	labels.attr("x", function(d) { return tX(d.t); })
+		.text(function(d) { return d.player; });
 
 	// Update colour pickers
 	d3.select("#table").selectAll("svg.colour-picker").select("circle.colour-picker")
