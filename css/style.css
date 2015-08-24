@@ -55,19 +55,19 @@ g.player g.marker text {
 		fill: red;
 	}
 
-g.player text.waypoint {
+#rink text.waypoint {
 	font-size: 10px;
 	text-anchor: middle;
 	alignment-baseline: middle;
 }
 
-	g.player.blue text.waypoint {
-		fill: lightskyblue;
-	}
+g.player.blue text.waypoint {
+	fill: lightskyblue;
+}
 
-	g.player.red text.waypoint {
-		fill: pink;
-	}
+g.player.red text.waypoint {
+	fill: pink;
+}
 
 g.player path.skater {
 	stroke-opacity: 0.5;
@@ -106,7 +106,7 @@ g.player path.skater {
 	display: inline-block;
 	vertical-align: middle;
 	padding: 0;
-	padding-bottom: 16px;
+	/*padding-bottom: 16px;*/
 	margin: 0;
 }
 
@@ -118,8 +118,12 @@ g.player path.skater {
 	width: 70px;
 }
 
-.player.row .give-puck.cell {
-	padding-bottom: 20px; /* Adjust bottom padding to account for input field */
+.player.row .label.cell {
+	padding-bottom: 16px;
+}
+
+.give-puck.cell {
+	padding-bottom: 19px;
 }
 
 .timeline.cell, .colour-picker.cell {
@@ -127,6 +131,7 @@ g.player path.skater {
 }
 
 input[type=text] {
+	margin: 0;
 	/*padding: 5px;*/
 	border: none;
 	border-bottom: 1px solid #ccc;
@@ -171,8 +176,9 @@ circle.waypoint {
 		fill: #777;
 	}
 
-#puck text.waypoint {
-	text-anchor: middle;
+#table text.waypoint {
+	font-size: 10px;
+	alignment-baseline: middle;
 }
 
 .button.delete {
