@@ -13,6 +13,16 @@ svg.timeline, svg.colour-picker {
 	margin: 0;
 }
 
+/* Disable highlighting so it doesn't show up while the user is clicking */
+div {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
 /*
 *
 * Rink
@@ -45,19 +55,19 @@ g.player g.marker text {
 		fill: red;
 	}
 
-g.player text.waypoint {
+#rink text.waypoint {
 	font-size: 10px;
 	text-anchor: middle;
 	alignment-baseline: middle;
 }
 
-	g.player.blue text.waypoint {
-		fill: lightskyblue;
-	}
+g.player.blue text.waypoint {
+	fill: lightskyblue;
+}
 
-	g.player.red text.waypoint {
-		fill: pink;
-	}
+g.player.red text.waypoint {
+	fill: pink;
+}
 
 g.player path.skater {
 	stroke-opacity: 0.5;
@@ -96,34 +106,48 @@ g.player path.skater {
 	display: inline-block;
 	vertical-align: middle;
 	padding: 0;
-	padding-bottom: 16px;
+	/*padding-bottom: 16px;*/
 	margin: 0;
+}
+
+.label.cell {
+	width: 60px;
+}
+
+.give-puck.cell {
+	width: 70px;
+}
+
+.player.row .label.cell {
+	padding-bottom: 16px;
+}
+
+.give-puck.cell {
+	padding-bottom: 19px;
 }
 
 .timeline.cell, .colour-picker.cell {
 	padding: 0;
 }
 
-/*.label.cell {
-	width: 50px;
-}*/
-
 input[type=text] {
-	padding: 5px;
+	margin: 0;
+	/*padding: 5px;*/
 	border: none;
 	border-bottom: 1px solid #ccc;
-	margin: 0px 10px;
+	padding-bottom: 4px;
 }
 
 	input[type=text]:focus {
 		outline: none;
-		border-bottom: 2px solid #777;
-		padding-bottom: 4px;
+		border-bottom: 3px solid #777;
+		padding-bottom: 3px;
 	}
 
 circle.colour-picker {
 	fill-opacity: 0.5;
 }
+
 .timeline circle.active {
 	fill: none;
 	/*stroke: #ccc;*/
@@ -151,6 +175,11 @@ circle.waypoint {
 	circle.waypoint:hover {
 		fill: #777;
 	}
+
+#table text.waypoint {
+	font-size: 10px;
+	alignment-baseline: middle;
+}
 
 .button.delete {
 	cursor: pointer;
