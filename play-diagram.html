@@ -89,18 +89,16 @@ puckSeconds.forEach(function(s) {
 * Timeline configuration
 *
 */
-var activeCircleR = 8;
-var waypointCircleR = 5;
+var highlightCircleR = 8;
 var timepointCircleR = 4;
 
 var timelineWidth = 900;
 var timelineHeight = 40;
 var puckTimelineHeight = 60;
 
-var tX = d3.scale.ordinal()
-	.domain(puckSeconds)
-	.rangeRoundPoints([0, timelineWidth], 1);
-
+var tX = d3.scale.linear()
+	.domain(d3.extent(puckSeconds))
+	.range([20, timelineWidth - 20]);
 
 // Stores the active element in the timeline
 // timeline: puck, player
@@ -350,6 +348,81 @@ function appendPlayerTimepointListeners() {
 			// If an undefined timepoint is active, and the user clicks on a defined timepoint
 		}
 	});
+
+	/*
+	*
+	* Prototype drag and drop
+	*
+	*/
+	var dragPlayer;
+	var dragData;
+	var isDefined;
+	var targetT;
+	var dragListener = d3.behavior.drag()
+		.on("dragstart", function() {
+
+			dragPlayer = this.parentNode.__data__.id;
+			dragData = this.__data__;
+			targetT = dragData.t;
+
+			// Cancel drag events if the dragged timepoint is not defined
+			isDefined = true;
+			if (dragData.x == null || dragData.y == null) {
+				isDefined = false;
+				dragPlayer = null;
+				dragData = null;
+				targetT = null;
+				return;
+			}
+
+			// Append a marker to drag
+			var dragPt = d3.select(this.parentNode).append("circle")
+				.attr("id", "drag-point")
+				.attr("r", highlightCircleR)
+				.attr("cy", timelineHeight - 28)
+				.style("fill", "black")
+				.style("fill-opacity", 0.2);
+		})
+		.on("drag", function() {
+			if (!isDefined) { return; }
+
+			var mX = d3.mouse(this)[0];
+			d3.select("#drag-point").attr("cx", mX);
+
+			// Check if user is within .2 seconds of a timepoint
+			var rounded = Math.round(tX.invert(mX) * 10) / 10; // Round to the nearest .1 second
+			var decimal = Math.round((rounded % 1) * 10) / 10; // Gets the decimal portion of number
+			var isClose = false;
+			if (decimal <= 0.15 || decimal >= 0.85) { isClose = true; }
+
+			if (isClose) {
+				// When rounded is a whole number, then filter for the timepoint at t = rounded
+				rounded = Math.round(rounded);
+				if (rounded !== targetT) {
+
+					targetT = rounded;
+
+					// Clear existing purple highlights and apply purple highlight to new target
+					d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
+					var target = d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").filter(function(pt) { return pt.t === targetT; });
+					target.style("stroke", "purple");
+				}
+			} else if (!isClose) {
+				// If rounded is not a whole number, then clear all purple highlights
+				d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
+				targetT = null; // Or should targetT be reset to dragT?
+			}
+
+		})
+		.on("dragend", function() {
+			if (!isDefined) { return; }
+
+			d3.select("#drag-point").remove();
+			dragPlayer = null;
+			dragData = null;
+		});
+
+	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").call(dragListener);
 }
 
 function initTimeline() {
@@ -451,7 +524,7 @@ function initTimeline() {
 	// Append highlight for the active element behind timepoints
 	table.selectAll("svg.timeline").append("circle")
 		.attr("class", "highlight")
-		.attr("r", activeCircleR);
+		.attr("r", highlightCircleR);
 	table.select(".puck.row").select("circle.highlight")
 		.attr("cy", puckTimelineHeight - 28);
 	table.selectAll(".player.row").select("circle.highlight")
@@ -514,7 +587,7 @@ function initTimeline() {
 		.attr("id", "picker-marker")
 		.attr("cx", 0)
 		.attr("cy", 0)
-		.attr("r", activeCircleR)
+		.attr("r", highlightCircleR)
 		.style("visibility", "hidden");
 	d3.select("#rink").append("rect")
 		.attr("id", "picker-mask")
