@@ -234,8 +234,11 @@ function openPicker() {
 		closePicker();
 	});
 
-	// If the active element is a puck timepoint or waypoint, display the puck carrier selectors
-	d3.selectAll("div.give-puck.cell").select("a").style("display", "");
+	// If the active timepoint is a puck timepoint or waypoint, display the puck carrier selectors and hide the label input fields
+	if (activeTimepoint.timeline === "puck") {
+		d3.select("#table").selectAll("input").style("display", "none");
+		d3.select("#table").selectAll(".carrier.button").style("display", "");
+	}
 }
 
 // Remove listeners and hide picker
@@ -247,8 +250,9 @@ function closePicker() {
 		.attr("class", "")
 		.style("visibility", "hidden");
 
-	// Hide puck carreir selectors
-	d3.selectAll("div.give-puck.cell").select("a").style("display", "none");
+	// Hide puck carreir selectors and display the label input fields
+	d3.select("#table").selectAll(".carrier.button").style("display", "none");
+	d3.select("#table").selectAll("input").style("display", "");
 
 	// Clear active element
 	clearActiveTimepoint();
@@ -290,227 +294,6 @@ function updatePlayerLabel(player, newLabel) {
 	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
 	playerToUpdate.label = newLabel;
 	updateRink();
-}
-
-
-function initTimeline() {
-
-	var table = d3.select("#table");
-
-	// Append a row for the puck and each player
-	table.selectAll("div.puck.row")
-		.data([puckTimepoints])
-		.enter().append("div")
-			.attr("class", "puck row");
-	table.selectAll("div.player.row")
-		.data(playerData)
-		.enter().append("div")
-			.attr("id", function(d) { return "player-" + d.id; })
-			.attr("class", "player row");
-
-	// Append columns to each row
-	var rows = table.selectAll(".row");
-	["label", "colour-picker", "timeline"].forEach(function(name) {
-		rows.append("div")
-			.attr("class", name + " cell");
-	});
-
-	/*
-	*
-	* Append content to label cell
-	*
-	*/
-
-	table.select(".puck.row").select(".label.cell").text("Puck");
-	table.selectAll(".player.row").select(".label.cell").append("input")
-		.attr("id", function(d) { return "label-" + d.id; })
-		.attr("type", "text")
-		.attr("size", 5)
-		.attr("maxlength", 3)
-		.property("value", function(d) { return d.label; })
-		.on("blur", function(d) {
-			// Update player label when text field loses focus - only update if the value has changed
-			var newLabel = document.getElementById("label-" + d.id).value;
-			if (d.label !== newLabel) { updatePlayerLabel(d.id, newLabel); }
-		});
-
-	/*
-	*
-	* Append content to colour-picker cells
-	*
-	*/
-
-	table.selectAll(".colour-picker.cell").append("svg")
-		.attr("class", "colour-picker")
-		.attr("width", (2 * timepointCircleR) + "px")
-		.style("background", "#ccc");
-	table.select(".puck.row").select("svg.colour-picker")
-		.style("height", puckTimelineHeight + "px");
-	table.selectAll(".player.row").select("svg.colour-picker")
-		.style("height", timelineHeight + "px");
-	table.selectAll("svg.colour-picker").append("circle")
-		.attr("class", "colour-picker")
-		.attr("cx", timepointCircleR)
-		.attr("cy", function(d) {
-			if (d.id) { return timelineHeight - 28; }
-			else { return puckTimelineHeight - 28; }
-		})
-		.attr("r", timepointCircleR)
-		.style("fill", function(d) {
-			if (!d.colour) { return "black"; }
-			else { return d.colour; }
-		})
-		.on("click", function(d) {
-			var newColour = "blue";
-			if (d.colour === "blue") { newColour = "red"; }
-			updatePlayerColour(d.id, newColour);
-		});
-
-	/*
-	*
-	* Append content to timeline cells
-	*
-	*/
-
-	var timelines = table.selectAll(".timeline.cell").append("svg")
-		.attr("class", "timeline")
-		.attr("height", function(d) {
-			if (d.id) { return timelineHeight + "px"; }
-			else { return puckTimelineHeight + "px"; }
-		})
-		.attr("width", timelineWidth + "px");
-
-	// Append highlight for the active element behind timepoints
-	table.selectAll("svg.timeline").append("circle")
-		.attr("class", "highlight")
-		.attr("r", activeCircleR)
-		.style("fill", "gold");
-	table.select(".puck.row").select("circle.highlight")
-		.attr("cy", puckTimelineHeight - 28);
-	table.selectAll(".player.row").select("circle.highlight")
-		.attr("cy", timelineHeight - 28);
-	clearActiveTimepointHighlight();
-
-	// Append timepoints - bind timepoints to the puck and player waypoints, using t as the key
-	table.select(".puck.row").select("svg.timeline").selectAll("circle.timepoint")
-		.data(function(d) { return d; }, function(d) { return d.t; })
-		.enter().append("circle")
-			.attr("class", "timepoint")
-			.attr("cy", puckTimelineHeight - 28);
-	table.selectAll(".player.row").select("svg.timeline").selectAll("circle.timepoint")
-		.data(function(d) { return d.timepoints; }, function(d) { return d.t; })
-		.enter().append("circle")
-			.attr("class", "timepoint")
-			.attr("cy", timelineHeight - 28);
-	table.selectAll(".timeline.cell").selectAll("circle.timepoint")
-		.attr("cx", function(d) { return tX(d.t); })
-		.attr("r", timepointCircleR);
-
-	appendPuckTimepointListeners();
-	appendPlayerTimepointListeners();
-
-
-	// TODO: LISTENERS TO GIVE PUCK TO A PLAYER
-
-
-
-	// TODO: DELETE LINK
-	// Append a delete link
-	var bW = 42;
-	var bH= 15;
-	var buttons = timelines.append("g")
-		.attr("class", "button delete");
-	buttons.append("rect")
-		.attr("x", -bW / 2)
-		.attr("y", function(d) {
-			if (d.id) { return timelineHeight - bH; }
-			else { return puckTimelineHeight - bH; }
-		})
-		.attr("rx", 2)
-		.attr("ry", 2)
-		.attr("width", bW)
-		.attr("height", bH)
-		.style("visibility", "hidden");
-	buttons.append("text")
-		.attr("x", 0)
-		.attr("y", function(d) {
-			if (d.id) { return timelineHeight - bH / 2 + 1; }
-			else { return puckTimelineHeight - bH / 2 + 1; }
-		})
-		.style("visibility", "hidden")
-		.text("DELETE");
-
-	// Append delete listeners
-	table.select(".puck.row").select(".button.delete").on("click", function() {
-		updatePuckTimepoint(null, activeTimepoint.t, null, null, null);
-		closePicker();
-	});
-	table.selectAll(".player.row").select(".button.delete").on("click", function() {
-		updatePlayerTimepoint(activeTimepoint.player, activeTimepoint.t, null, null);
-		closePicker();
-	});
-
-	// Append a dot in the rink-svg for user to pick skater position
-	// Draw the rectangle above the dot so that all mousemove events register
-	d3.select("#rink").append("circle")
-		.attr("id", "picker-marker")
-		.attr("cx", 0)
-		.attr("cy", 0)
-		.attr("r", activeCircleR)
-		.style("visibility", "hidden");
-	d3.select("#rink").append("rect")
-		.attr("id", "picker-mask")
-		.attr("width", x.range()[1])
-		.attr("height", y.range()[0])
-		.attr("rx", x(rinkRadius))
-		.attr("ry", y(0) - y(rinkRadius))
-		.style("visibility", "hidden");
-}
-
-function appendPuckTimepointListeners() {
-	d3.select("#table").select(".puck.row").selectAll("circle.timepoint").on("click", function(clicked) {
-		// Listener behaviour depends on whether or not the clicked timepoint is already defined with an event
-		var isTimepointDefined = false;
-		if (clicked.type === "position" || clicked.type === "player") { isTimepointDefined = true; }
-		if (!isTimepointDefined) {
-			if (activeTimepoint.timeline === "puck" && activeTimepoint.defined === false && activeTimepoint.t === clicked.t) {
-				// If the active timepoint is clicked again, close the picker
-				closePicker();
-			} else if (activeTimepoint.timeline == null || activeTimepoint.defined === false) {
-				// If there's no active element, make the clicked timepoint active
-				// Or if the user clicks on another timepoint, then make the clicked timepoint active - includes switching between player and puck timepoints
-				activeTimepoint.timeline = "puck";
-				activeTimepoint.defined = false;
-				activeTimepoint.t = clicked.t;
-				activeTimepoint.player = null;
-				// Open the picker for the active timepoint
-				highlightActiveTimepoint();
-				openPicker();
-			} else if (activeTimepoint.defined === true) {
-				// If a defined timepoint is active, then clicking an undefined timepoint will transfer the defined timepoint's x, y coordinates to the clicked timepoint
-				activeTimepointData = puckTimepoints.filter(function(p) { return p.t === activeTimepoint.t })[0];
-				updatePuckTimepoint(activeTimepointData.type, clicked.t, activeTimepointData.x, activeTimepointData.y, activeTimepointData.player);
-				updatePuckTimepoint(null, activeTimepoint.t, null, null, null);
-				closePicker();
-			}
-		} else if (isTimepointDefined) {
-			if (activeTimepoint.timeline === "player") {
-				// Clicking a defined puck timepoint does nothing if a player timepoint is active
-			} else if (activeTimepoint.defined === true && activeTimepoint.t === clicked.t) {
-				// If the active defined timepoint is clicked again, close the picker
-				closePicker();
-			} else if (activeTimepoint.timeline == null) {
-				// If there's no active element, make the clicked defined timepoint active
-				activeTimepoint.timeline = "puck";
-				activeTimepoint.defined = true;
-				activeTimepoint.t = clicked.t;
-				activeTimepoint.player = null;
-				// Open the picker for the active defined timepoint
-				highlightActiveTimepoint();
-				openPicker();
-			}
-		}
-	});
 }
 
 function appendPlayerTimepointListeners() {
@@ -569,6 +352,227 @@ function appendPlayerTimepointListeners() {
 	});
 }
 
+function initTimeline() {
+
+	var table = d3.select("#table");
+
+	// Append a row for the puck and each player
+	table.selectAll("div.puck.row")
+		.data([puckTimepoints])
+		.enter().append("div")
+			.attr("class", "puck row");
+	table.selectAll("div.player.row")
+		.data(playerData)
+		.enter().append("div")
+			.attr("id", function(d) { return "player-" + d.id; })
+			.attr("class", "player row");
+
+	// Append columns to each row
+	var rows = table.selectAll(".row");
+	["label", "colour-picker", "timeline"].forEach(function(name) {
+		rows.append("div")
+			.attr("class", name + " cell");
+	});
+
+	/*
+	*
+	* Append content to label cell
+	*
+	*/
+
+	table.select(".puck.row").select(".label.cell").text("Puck");
+	table.selectAll(".player.row").select(".label.cell").append("input")
+		.attr("id", function(d) { return "label-" + d.id; })
+		.attr("type", "text")
+		.attr("size", 5)
+		.attr("maxlength", 3)
+		.property("value", function(d) { return d.label; })
+		.on("blur", function(d) {
+			// Update player label when text field loses focus - only update if the value has changed
+			var newLabel = document.getElementById("label-" + d.id).value;
+			if (d.label !== newLabel) { updatePlayerLabel(d.id, newLabel); }
+		});
+
+	// Append puck carrier selector
+	table.selectAll(".player.row").select(".label.cell").append("div")
+		.attr("class", "carrier button")
+		.text(function(d) { return d.label; })
+		.style("display", "none")
+		.on("click", function(d) {
+			updatePuckTimepoint("player", activeTimepoint.t, null, null, d.id);
+			closePicker();
+		});
+
+	/*
+	*
+	* Append content to colour-picker cells
+	*
+	*/
+
+	table.selectAll(".colour-picker.cell").append("svg")
+		.attr("class", "colour-picker")
+		.attr("width", (2 * timepointCircleR) + "px");
+	table.select(".puck.row").select("svg.colour-picker")
+		.style("height", puckTimelineHeight + "px");
+	table.selectAll(".player.row").select("svg.colour-picker")
+		.style("height", timelineHeight + "px");
+	table.selectAll("svg.colour-picker").append("circle")
+		.attr("class", "colour-picker")
+		.attr("cx", timepointCircleR)
+		.attr("cy", function(d) {
+			if (d.id) { return timelineHeight - 28; }
+			else { return puckTimelineHeight - 28; }
+		})
+		.attr("r", timepointCircleR)
+		.style("fill", function(d) {
+			if (!d.colour) { return "black"; }
+			else { return d.colour; }
+		})
+		.on("click", function(d) {
+			var newColour = "blue";
+			if (d.colour === "blue") { newColour = "red"; }
+			updatePlayerColour(d.id, newColour);
+		});
+
+	/*
+	*
+	* Append content to timeline cells
+	*
+	*/
+
+	var timelines = table.selectAll(".timeline.cell").append("svg")
+		.attr("class", "timeline")
+		.attr("height", function(d) {
+			if (d.id) { return timelineHeight + "px"; }
+			else { return puckTimelineHeight + "px"; }
+		})
+		.attr("width", timelineWidth + "px");
+
+	// Append highlight for the active element behind timepoints
+	table.selectAll("svg.timeline").append("circle")
+		.attr("class", "highlight")
+		.attr("r", activeCircleR);
+	table.select(".puck.row").select("circle.highlight")
+		.attr("cy", puckTimelineHeight - 28);
+	table.selectAll(".player.row").select("circle.highlight")
+		.attr("cy", timelineHeight - 28);
+
+	// Append timepoints - bind timepoints to the puck and player waypoints, using t as the key
+	table.select(".puck.row").select("svg.timeline").selectAll("circle.timepoint")
+		.data(function(d) { return d; }, function(d) { return d.t; })
+		.enter().append("circle")
+			.attr("class", "timepoint")
+			.attr("cy", puckTimelineHeight - 28);
+	table.selectAll(".player.row").select("svg.timeline").selectAll("circle.timepoint")
+		.data(function(d) { return d.timepoints; }, function(d) { return d.t; })
+		.enter().append("circle")
+			.attr("class", "timepoint")
+			.attr("cy", timelineHeight - 28);
+	table.selectAll(".timeline.cell").selectAll("circle.timepoint")
+		.attr("cx", function(d) { return tX(d.t); })
+		.attr("r", timepointCircleR);
+
+	appendPuckTimepointListeners();
+	appendPlayerTimepointListeners();
+
+	// Append a delete link
+	var bW = 42;
+	var bH= 15;
+	var buttons = timelines.append("g")
+		.attr("class", "button delete");
+	buttons.append("rect")
+		.attr("x", -bW / 2)
+		.attr("y", function(d) {
+			if (d.id) { return timelineHeight - bH; }
+			else { return puckTimelineHeight - bH; }
+		})
+		.attr("rx", 2)
+		.attr("ry", 2)
+		.attr("width", bW)
+		.attr("height", bH);
+	buttons.append("text")
+		.attr("x", 0)
+		.attr("y", function(d) {
+			if (d.id) { return timelineHeight - bH / 2 + 1; }
+			else { return puckTimelineHeight - bH / 2 + 1; }
+		})
+		.text("DELETE");
+
+	// Append delete listeners
+	table.select(".puck.row").select(".button.delete").on("click", function() {
+		updatePuckTimepoint(null, activeTimepoint.t, null, null, null);
+		closePicker();
+	});
+	table.selectAll(".player.row").select(".button.delete").on("click", function() {
+		updatePlayerTimepoint(activeTimepoint.player, activeTimepoint.t, null, null);
+		closePicker();
+	});
+
+	// Append a dot in the rink-svg for user to pick skater position
+	// Draw the rectangle above the dot so that all mousemove events register
+	d3.select("#rink").append("circle")
+		.attr("id", "picker-marker")
+		.attr("cx", 0)
+		.attr("cy", 0)
+		.attr("r", activeCircleR)
+		.style("visibility", "hidden");
+	d3.select("#rink").append("rect")
+		.attr("id", "picker-mask")
+		.attr("width", x.range()[1])
+		.attr("height", y.range()[0])
+		.attr("rx", x(rinkRadius))
+		.attr("ry", y(0) - y(rinkRadius))
+		.style("visibility", "hidden");
+
+	clearActiveTimepointHighlight();
+}
+
+function appendPuckTimepointListeners() {
+	d3.select("#table").select(".puck.row").selectAll("circle.timepoint").on("click", function(clicked) {
+		// Listener behaviour depends on whether or not the clicked timepoint is already defined with an event
+		var isTimepointDefined = false;
+		if (clicked.type === "position" || clicked.type === "player") { isTimepointDefined = true; }
+		if (!isTimepointDefined) {
+			if (activeTimepoint.timeline === "puck" && activeTimepoint.defined === false && activeTimepoint.t === clicked.t) {
+				// If the active timepoint is clicked again, close the picker
+				closePicker();
+			} else if (activeTimepoint.timeline == null || activeTimepoint.defined === false) {
+				// If there's no active element, make the clicked timepoint active
+				// Or if the user clicks on another timepoint, then make the clicked timepoint active - includes switching between player and puck timepoints
+				activeTimepoint.timeline = "puck";
+				activeTimepoint.defined = false;
+				activeTimepoint.t = clicked.t;
+				activeTimepoint.player = null;
+				// Open the picker for the active timepoint
+				highlightActiveTimepoint();
+				openPicker();
+			} else if (activeTimepoint.defined === true) {
+				// If a defined timepoint is active, then clicking an undefined timepoint will transfer the defined timepoint's x, y coordinates to the clicked timepoint
+				activeTimepointData = puckTimepoints.filter(function(p) { return p.t === activeTimepoint.t })[0];
+				updatePuckTimepoint(activeTimepointData.type, clicked.t, activeTimepointData.x, activeTimepointData.y, activeTimepointData.player);
+				updatePuckTimepoint(null, activeTimepoint.t, null, null, null);
+				closePicker();
+			}
+		} else if (isTimepointDefined) {
+			if (activeTimepoint.timeline === "player") {
+				// Clicking a defined puck timepoint does nothing if a player timepoint is active
+			} else if (activeTimepoint.defined === true && activeTimepoint.t === clicked.t) {
+				// If the active defined timepoint is clicked again, close the picker
+				closePicker();
+			} else if (activeTimepoint.timeline == null) {
+				// If there's no active element, make the clicked defined timepoint active
+				activeTimepoint.timeline = "puck";
+				activeTimepoint.defined = true;
+				activeTimepoint.t = clicked.t;
+				activeTimepoint.player = null;
+				// Open the picker for the active defined timepoint
+				highlightActiveTimepoint();
+				openPicker();
+			}
+		}
+	});
+}
+
 function initRink() {
 	// Append subgroups for rink to control layering
 	["rink-map", "players", "puck"].forEach(function(name) {
@@ -615,12 +619,12 @@ function updateRink() {
 
 	// Update paths in the path groups and points in the point group
 	// Using select() propagates the updated g.player data to g.paths: http://stackoverflow.com/questions/10129432/inheritance-in-data-joins
-	// var paths = players.select("g.paths").selectAll("path.skater")
-	// 	.data(function(d) { return d.paths; }, function(p) { return p.order + p.dString; });
-	// paths.exit().remove();
-	// paths.enter().append("path")
-	// 	.attr("class", "skater");
-	// paths.attr("d", function(d) { return d.dString; });
+	var paths = players.select("g.paths").selectAll("path.skater")
+		.data(function(d) { return d.paths; }, function(p) { return p.order + p.dString; });
+	paths.exit().remove();
+	paths.enter().append("path")
+		.attr("class", "skater");
+	paths.attr("d", function(d) { return d.dString; });
 
 	// Defined player timepoints
 	var timepoints = players.select("g.timepoints").selectAll("text.timepoint")
@@ -645,16 +649,20 @@ function updateRink() {
 		.text(function(d) { return d.t; });
 
 	// Update markers - hide markers for players with no waypoints
-	// var markers = players.select("g.marker");
-	// markers.style("visibility", function(d) {
-	// 		if (d.waypoints.length === 0) { return "hidden"; }
-	// 		else { return "visible"; }
-	// 	})
-	// markers.select("text").text(function(d) { return d.label; });
+	var markers = players.select("g.marker");
+	markers.style("visibility", function(d) {
+			if (d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }).length === 0) { return "hidden"; }
+			else { return "visible"; }
+		})
+	markers.select("text").text(function(d) { return d.label; });
 
-	// Only update position of players with 1 or more waypoints
-	// markers.filter(function(d) { return d.waypoints.length > 0; })
-	// 	.attr("transform", function(d) { return "translate(" + x(d.waypoints[0].x) + "," + y(d.waypoints[0].y) + ")"; });
+	// Only update position of players with 1 or more defined timepoints
+	markers.filter(function(d) { return d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }).length > 0; })
+		.attr("transform", function(d) {
+			// Get the coordinates from the first defined timepoint
+			var firstTimepoint = d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; })[0];
+			return "translate(" + x(firstTimepoint.x) + "," + y(firstTimepoint.y) + ")";
+		});
 
 	/*
 	*
@@ -667,34 +675,38 @@ function updateRink() {
 		.data(playerData, function(d) { return d.id; });
 	var timepoints = d3.selectAll(".player.row").selectAll("circle.timepoint")
 		.data(function(d) { return d.timepoints; }, function(p) { return p.t; });
-	timepoints.style("fill", function(d) {
-			if (d.x == null || d.y == null) { return "white"; }
-			else { return "#ccc"; }
+	timepoints.classed("defined", function(d) {
+			if (d.x == null || d.y == null) { return false; }
+			else { return true; }
 		});
 
 	// Bind data to puck timepoints - only position waypoints are displayed in the rink
 	timepoints = d3.select("#table").select(".puck.row").select("svg.timeline").selectAll("circle.timepoint")
 		.data(puckTimepoints, function(d) { return d.t; });
-	timepoints.style("fill", function(d) {
-			if (d.type == null) { return "white"; }
-			else { return "#ccc"; }
+	timepoints.classed("defined", function(d) {
+			if (d.type == null) { return false; }
+			else { return true; }
 		});
 
+	// Update labels on the puck carrier selectors
+	 d3.select("#table").selectAll(".button.carrier")
+		.text(function(d) { return d.label; })
 
-	// var labels = d3.select("#table").selectAll("div.puck.row").select("svg.timeline").selectAll("text.waypoint")
-	// 	.data(puckWaypoints.filter(function(d) { return d.type === "player"; }), function(d) { return d.t; });
-	// labels.exit().remove();
-	// labels.enter().append("text")
-	// 	.attr("class", "waypoint")
-	// 	.attr("y", puckTimelineHeight - 28);
-	// labels.attr("x", function(d) { return tX(d.t); })
-	// 	.attr("transform", function(d) {
-	// 		return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 28) + ")";
-	// 	})
-	// 	.text(function(d) {
-	// 		var label = playerData.filter(function(p) { return p.id === d.player; })[0].label;
-	// 		return label;
-	// 	});
+	// Update puck carrier labels
+	var labels = d3.select("#table").select(".puck.row").select("svg.timeline").selectAll("text.carrier")
+		.data(puckTimepoints.filter(function(d) { return d.type === "player"; }), function(d) { return d.t; });
+	labels.exit().remove();
+	labels.enter().append("text")
+		.attr("class", "carrier")
+		.attr("y", puckTimelineHeight - 28);
+	labels.attr("x", function(d) { return tX(d.t); })
+		.attr("transform", function(d) {
+			return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 28) + ")";
+		})
+		.text(function(d) {
+			var label = playerData.filter(function(p) { return p.id === d.player; })[0].label;
+			return label;
+		});
 
 	// Update colour pickers
 	d3.select("#table").selectAll("svg.colour-picker").select("circle.colour-picker")
@@ -703,38 +715,37 @@ function updateRink() {
 
 function generateDStrings(playerIdx) {
 
-	// Create paths from waypoints
-	paths = [];
-	for (var i = 0; i < playerData[playerIdx].timepoints.length - 1; i++) {
+	// Create paths from defined timepoints
+	var definedTimepoints = playerData[playerIdx].timepoints.filter(function(d) { return d.x != null && d.y != null; });
+	var paths = [];
+	for (var i = 0; i < definedTimepoints.length - 1; i++) {
 		var nextPoint = [];
-		if (i < playerData[playerIdx].timepoints.length - 2) {
-			nextPoint = [playerData[playerIdx].timepoints[i + 2].x, playerData[playerIdx].timepoints[i + 2].y];
+		if (i < definedTimepoints.length - 2) {
+			nextPoint = [definedTimepoints[i + 2].x, definedTimepoints[i + 2].y];
 		}
 		paths.push({
 			order: i,
-			start: [playerData[playerIdx].timepoints[i].x, playerData[playerIdx].timepoints[i].y],
-			end: [playerData[playerIdx].timepoints[i + 1].x, playerData[playerIdx].timepoints[i + 1].y],
+			start: [definedTimepoints[i].x, definedTimepoints[i].y],
+			end: [definedTimepoints[i + 1].x, definedTimepoints[i + 1].y],
 			next: nextPoint,
-			duration: playerData[playerIdx].timepoints[i + 1].t - playerData[playerIdx].timepoints[i].t
+			duration: definedTimepoints[i + 1].t - definedTimepoints[i].t
 		});
 	}
-	playerData[playerIdx].paths = paths;
 
 	// Create the string for each path's d attribute
-	for (var i = 0; i < playerData[playerIdx].paths.length; i++) {
+	for (var i = 0; i < paths.length; i++) {
 
-		var ctrlPt = [x(playerData[playerIdx].paths[i].end[0]), y(playerData[playerIdx].paths[i].end[1])];
+		var ctrlPt = [x(paths[i].end[0]), y(paths[i].end[1])];
 
-		if (playerData[playerIdx].paths[i].start[0] === playerData[playerIdx].paths[i].end[0] && playerData[playerIdx].paths[i].start[1] === playerData[playerIdx].paths[i].end[1]) {
+		if (paths[i].start[0] === paths[i].end[0] && paths[i].start[1] === paths[i].end[1]) {
 			// Keep the ctrlPt at the endPt if the player is stationary
-		} else if (playerData[playerIdx].paths[i].next.length === 2) {
-
+		} else if (paths[i].next.length === 2) {
 			// Increasing delta will increase smoothing by increasing the ctrlPt's offset
 			var delta = 20;
 
-			var rise = y(playerData[playerIdx].paths[i].next[1]) - y(playerData[playerIdx].paths[i].end[1]);
+			var rise = y(paths[i].next[1]) - y(paths[i].end[1]);
 			rise *= -1; // Adjust rise since higher y values are plotted lower
-			var run = x(playerData[playerIdx].paths[i].next[0]) - x(playerData[playerIdx].paths[i].end[0]);
+			var run = x(paths[i].next[0]) - x(paths[i].end[0]);
 			var slope = rise / run;
 
 			if (slope === 0) {
@@ -786,7 +797,7 @@ function generateDStrings(playerIdx) {
 
 			// Check if the ctrlPt is in the rink - if it isn't set the ctrlPt to the endpoint
 			if (isPointInRink(ctrlPt) === false ) {
-				ctrlPt = [x(playerData[playerIdx].paths[i].end[0]), y(playerData[playerIdx].paths[i].end[1])];
+				ctrlPt = [x(paths[i].end[0]), y(paths[i].end[1])];
 			}
 
 			// To check where the ctrlPt is located
@@ -799,11 +810,13 @@ function generateDStrings(playerIdx) {
 		}
 		//d3.selectAll("circle.ctrlPt").remove();
 
-		var dString = "M" + x(playerData[playerIdx].paths[i].start[0]) + "," + y(playerData[playerIdx].paths[i].start[1]);
+		var dString = "M" + x(paths[i].start[0]) + "," + y(paths[i].start[1]);
 		dString += " S" + ctrlPt[0] + "," + ctrlPt[1];
-		dString += " " + x(playerData[playerIdx].paths[i].end[0]) + "," + y(playerData[playerIdx].paths[i].end[1]);
-		playerData[playerIdx].paths[i].dString = dString;
+		dString += " " + x(paths[i].end[0]) + "," + y(paths[i].end[1]);
+		paths[i].dString = dString;
 	}
+
+	playerData[playerIdx].paths = paths;
 
 	// Check if a given point [x, y] is within the rink - coordinates should already be scaled to pixels (not feet)
 	function isPointInRink(point) {
