@@ -25,7 +25,7 @@ div {
 
 /*
 *
-* Rink
+* Rink elements
 *
 */
 
@@ -55,7 +55,7 @@ g.player g.marker text {
 		fill: red;
 	}
 
-#rink text.waypoint {
+text.waypoint {
 	font-size: 10px;
 	text-anchor: middle;
 	alignment-baseline: middle;
@@ -98,7 +98,7 @@ g.player path.skater {
 
 /*
 *
-* Timeline
+* Timeline elements
 *
 */
 
@@ -106,33 +106,20 @@ g.player path.skater {
 	display: inline-block;
 	vertical-align: middle;
 	padding: 0;
-	/*padding-bottom: 16px;*/
 	margin: 0;
 }
 
-.label.cell {
-	width: 60px;
-}
+	.cell.label {
+		width: 60px;
+	}
 
-.give-puck.cell {
-	width: 70px;
-}
+	.cell.give-puck {
+		width: 70px;
+	}
 
-.player.row .label.cell {
-	padding-bottom: 16px;
-}
-
-.give-puck.cell {
-	padding-bottom: 19px;
-}
-
-.timeline.cell, .colour-picker.cell {
-	padding: 0;
-}
 
 input[type=text] {
 	margin: 0;
-	/*padding: 5px;*/
 	border: none;
 	border-bottom: 1px solid #ccc;
 	padding-bottom: 4px;
@@ -144,19 +131,8 @@ input[type=text] {
 		padding-bottom: 3px;
 	}
 
-circle.colour-picker {
-	fill-opacity: 0.5;
-}
-
-.timeline circle.active {
-	fill: none;
-	/*stroke: #ccc;*/
-	stroke: gold;
-	stroke-width: 2px;
-}
-
-line.baseline {
-	stroke: #ddd;
+circle.highlight {
+	fill: gold;
 }
 
 circle.timepoint {
@@ -168,15 +144,19 @@ circle.timepoint {
 		stroke: #777;
 	}
 
-circle.waypoint {
-	fill: #aaa;
-}
-
-	circle.waypoint:hover {
-		fill: #777;
+	circle.timepoint.defined {
+		fill: pink;
+		stroke: red;
 	}
 
-#table text.waypoint {
+	circle.timepoint.defined:hover {
+		fill: red;
+		stroke: red;
+	}
+
+
+text.carrier {
+	fill: red;
 	font-size: 10px;
 	alignment-baseline: middle;
 }
@@ -184,11 +164,9 @@ circle.waypoint {
 .button.delete {
 	cursor: pointer;
 }
-
 	.button.delete rect {
 		fill: pink;
 	}
-
 	.button.delete text {
 		text-anchor: middle;
 		alignment-baseline: middle;
@@ -196,11 +174,9 @@ circle.waypoint {
 		fill: firebrick;
 		font-weight: 700;
 	}
-
 	.button.delete:hover rect {
 		fill: lightpink;
 	}
-
 	.button.delete:hover text {
 		fill: darkred;
 	}
