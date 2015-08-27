@@ -45,7 +45,7 @@ var y = d3.scale.linear()
 
 // Initialize player data
 var playerData = [];
-var playerSeconds = d3.range(0, 30 + 1, 1);
+var playerSeconds = d3.range(0, 20 + 1, 1);
 var playerIds = d3.range(1, 10 + 1, 1);
 
 playerIds.forEach(function(p) {
@@ -72,7 +72,7 @@ playerData.forEach(function(p) {
 });
 
 // Puck data
-var puckSeconds = d3.range(0, 30 + 0.5, 0.5);
+var puckSeconds = d3.range(0, 20 + 0.5, 0.5);
 var puckTimepoints = [];
 puckSeconds.forEach(function(s) {
 	puckTimepoints.push({
@@ -107,7 +107,6 @@ var tX = d3.scale.linear()
 // time: time of the timepoint or waypoint
 var activeTimepoint = {
 	timeline: null,
-	defined: false,
 	player: null,
 	t: null
 }
@@ -178,7 +177,12 @@ function highlightActiveTimepoint() {
 	activeRow.select("circle.highlight")
 		.attr("cx", function(d) { return tX(activeTimepoint.t); })
 		.style("visibility", "visible");
-	if (activeTimepoint.defined === true) {
+
+	var activeTimepointData = activeRow.selectAll("circle.timepoint").filter(function(pt) { return pt.t === activeTimepoint.t; })[0][0].__data__;
+
+	// Display delete button if the active timepoint is defined
+	if ((activeTimepoint.timeline === "puck" && activeTimepointData.type != null)
+		|| (activeTimepoint.timeline === "player" && activeTimepointData.x != null & activeTimepointData.y != null)) {
 		activeRow.select(".button.delete").selectAll("*")
 			.attr("transform", "translate(" + tX(activeTimepoint.t) + ",0)")
 			.style("visibility", "visible");
@@ -195,7 +199,6 @@ function clearActiveTimepointHighlight() {
 
 function clearActiveTimepoint() {
 	activeTimepoint.timeline = null;
-	activeTimepoint.defined = false;
 	activeTimepoint.t = null;
 	activeTimepoint.player = null;
 	clearActiveTimepointHighlight();
@@ -295,69 +298,33 @@ function updatePlayerLabel(player, newLabel) {
 }
 
 function appendPlayerTimepointListeners() {
+	// Click listeners
 	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").on("click", function(clicked) {
 		var clickedPlayerId = this.parentNode.__data__.id;
-		// Listener behaviour depends on whether or not the clicked timepoint is already defined with an event
-		var isTimepointDefined = false;
-		if (clicked.x != null || clicked.y != null) { isTimepointDefined = true; }
-		if (!isTimepointDefined) {
-			if (activeTimepoint.timeline === "puck" && activeTimepoint.defined === true) {
-				// Clicking a player defined timepoint does nothing if a defined puck timepoint is active
-			} else if (activeTimepoint.timeline === "player" && activeTimepoint.defined === false && activeTimepoint.player === clickedPlayerId && activeTimepoint.t === clicked.t) {
-				// If the currently active timepoint is clicked, then close the picker, which will also clear the active element
-				closePicker();
-			} else if (activeTimepoint.timeline == null || activeTimepoint.defined === false) {
-				// If there's no active element, make the clicked timepoint active
-				// Or if the user clicks on another timepoint, then make the clicked timepoint active - includes switching between player and puck timepoints
-				activeTimepoint.timeline = "player";
-				activeTimepoint.defined = false;
-				activeTimepoint.t = clicked.t;
-				activeTimepoint.player = clickedPlayerId;
-				// Open the picker for the new active timepoint
-				highlightActiveTimepoint();
-				openPicker();
-			} else if (activeTimepoint.defined === true) {
-				// If a defined timepoint is active, then clicking an undefined timepoint will transfer the defined timepoint's x, y coordinates to the clicked timepoint
-				var activeTimepointData = playerData
-					.filter(function(p) { return p.id === activeTimepoint.player; })[0].timepoints
-					.filter(function(pt) { return pt.t === activeTimepoint.t; })[0];
-				// Update waypoint for the clicked player; clear data from the activeTimepoint player
-				updatePlayerTimepoint(clickedPlayerId, clicked.t, activeTimepointData.x, activeTimepointData.y);
-				updatePlayerTimepoint(activeTimepoint.player, activeTimepoint.t, null, null);
-				// Close the picker, which will also clear the active element
-				closePicker();
-			}
-		} else if (isTimepointDefined) {
-			if (activeTimepoint.timeline === "puck") {
-				// Clicking a defined player timepoint does nothing if a defined puck timepoint is active
-			} else if (activeTimepoint.defined === true && activeTimepoint.player === clickedPlayerId && activeTimepoint.t === clicked.t) {
-				// If the active defined timepoint is clicked again, then close the picker
-				closePicker();
-			} else if (activeTimepoint.timeline == null) {
-				// If there's no active element, make the clicked timepoint active
-				activeTimepoint.timeline = "player";
-				activeTimepoint.defined = true;
-				activeTimepoint.t = clicked.t;
-				activeTimepoint.player = clickedPlayerId;
-				// Open the picker for the new active timepoint
-				highlightActiveTimepoint();
-				openPicker();
-			}
-			// In any other case, clicking a defined timepoint does nothing. This includes:
-			// If a defined timepoint is active, and the user clicks on another defined timepoint
-			// If an undefined timepoint is active, and the user clicks on a defined timepoint
+		if (activeTimepoint.timeline === "player" && activeTimepoint.player === clickedPlayerId && activeTimepoint.t === clicked.t) {
+			// If the active timepoint is clicked again, then close the picker
+			closePicker();
+		} else {
+			// Otherwise, clicking on a timepoint makes it active
+			activeTimepoint.timeline = "player";
+			activeTimepoint.t = clicked.t;
+			activeTimepoint.player = clickedPlayerId;
+			// Open the picker for the new active timepoint
+			highlightActiveTimepoint();
+			openPicker();
 		}
 	});
 
 	/*
 	*
-	* Prototype drag and drop
+	* Drag listener
 	*
 	*/
-	var dragPlayer;
 	var dragData;
+	var dragPlayer;
 	var isDefined;
 	var targetT;
+	var undefinedTimes;
 	var dragListener = d3.behavior.drag()
 		.on("dragstart", function() {
 
@@ -365,15 +332,19 @@ function appendPlayerTimepointListeners() {
 			dragData = this.__data__;
 			targetT = dragData.t;
 
-			// Cancel drag events if the dragged timepoint is not defined
+			// Cancel drag events if the dragged timepoint is not defined. Also cancel if there's an active timepoint
 			isDefined = true;
-			if (dragData.x == null || dragData.y == null) {
+			if (dragData.x == null || dragData.y == null || activeTimepoint.timeline != null) {
 				isDefined = false;
 				dragPlayer = null;
 				dragData = null;
 				targetT = null;
 				return;
 			}
+
+			// Get valid targets - all undefined times
+			var undefinedTimepoints = d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)");
+			undefinedTimes = undefinedTimepoints.data().map(function(pt) { return pt.t; });
 
 			// Append a marker to drag
 			var dragPt = d3.select(this.parentNode).append("circle")
@@ -384,42 +355,61 @@ function appendPlayerTimepointListeners() {
 				.style("fill-opacity", 0.2);
 		})
 		.on("drag", function() {
-			if (!isDefined) { return; }
+			if (!isDefined || activeTimepoint == null) { return; } // Cancel drag events if the dragged timepoint is not defined. Also cancel if there's an active timepoint
 
 			var mX = d3.mouse(this)[0];
 			d3.select("#drag-point").attr("cx", mX);
 
-			// Check if user is within .2 seconds of a timepoint
-			var rounded = Math.round(tX.invert(mX) * 10) / 10; // Round to the nearest .1 second
-			var decimal = Math.round((rounded % 1) * 10) / 10; // Gets the decimal portion of number
+			// Check if user is within .15 seconds of a timepoint
+			var rounded = Math.round(tX.invert(mX) * 100) / 100; // Round to the nearest .01 second
+			var decimal = Math.round((rounded % 1) * 100) / 100; // Gets the decimal portion of number
 			var isClose = false;
-			if (decimal <= 0.15 || decimal >= 0.85) { isClose = true; }
+			if (decimal <= 0 + 0.15 || decimal >= 1 - 0.15) { isClose = true; }
 
 			if (isClose) {
-				// When rounded is a whole number, then filter for the timepoint at t = rounded
+				// When rounded is near a multiple of 1 (i.e., user is near a timepoint), set rounded to the nearest multiple of 1
 				rounded = Math.round(rounded);
-				if (rounded !== targetT) {
 
+				if (undefinedTimes.indexOf(rounded) < 0) {
+					// If the timepoint at t = rounded is defined, then reset targetT to the initial dragged timepoint
+					targetT = dragData.t;
+					d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
+				} else if (rounded !== targetT) {
+					// If the timepoint at t = rounded is undefined, and rounded != the current targetT, then update targetT to rounded
 					targetT = rounded;
-
 					// Clear existing purple highlights and apply purple highlight to new target
 					d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
 					var target = d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").filter(function(pt) { return pt.t === targetT; });
 					target.style("stroke", "purple");
 				}
 			} else if (!isClose) {
-				// If rounded is not a whole number, then clear all purple highlights
+				// If rounded is not a whole number (i.e., user is not near a timepoint), then reset targetT to the initial dragged timepoint
+				targetT = dragData.t;
 				d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
-				targetT = null; // Or should targetT be reset to dragT?
 			}
-
 		})
 		.on("dragend", function() {
-			if (!isDefined) { return; }
+			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
 
-			d3.select("#drag-point").remove();
-			dragPlayer = null;
-			dragData = null;
+			// Transition drag-point to the target
+			// Especially needed to highlight the case where the drag-point returns to its starting point (because user chose an invalid target)
+			d3.select("#drag-point").transition()
+				.attr("cx", tX(targetT))
+				.each("end", function() {
+					// Remove drag effects
+					d3.select(this).remove();
+					d3.select("#player-" + dragPlayer).selectAll("circle.timepoint").style("stroke", "");
+
+					// Update data
+					updatePlayerTimepoint(dragPlayer, dragData.t, null, null);
+					updatePlayerTimepoint(dragPlayer, targetT, dragData.x, dragData.y);
+
+					// Reset all the drag variables
+					dragPlayer = null;
+					dragData = null;
+					targetT = null;
+					undefinedTimes = null;
+				});
 		});
 
 	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").call(dragListener);
@@ -521,6 +511,18 @@ function initTimeline() {
 		})
 		.attr("width", timelineWidth + "px");
 
+	// Append baselines
+	timelines.append("line")
+		.attr("class", "baseline")
+		.attr("x1", tX.range()[0])
+		.attr("x2", tX.range()[1]);
+	d3.selectAll(".player.row").select("line.baseline")
+		.attr("y1", timelineHeight - 28)
+		.attr("y2", timelineHeight - 28);
+	d3.select(".puck.row").select("line.baseline")
+		.attr("y1", puckTimelineHeight - 28)
+		.attr("y2", puckTimelineHeight - 28);
+
 	// Append highlight for the active element behind timepoints
 	table.selectAll("svg.timeline").append("circle")
 		.attr("class", "highlight")
@@ -602,48 +604,115 @@ function initTimeline() {
 
 function appendPuckTimepointListeners() {
 	d3.select("#table").select(".puck.row").selectAll("circle.timepoint").on("click", function(clicked) {
-		// Listener behaviour depends on whether or not the clicked timepoint is already defined with an event
-		var isTimepointDefined = false;
-		if (clicked.type === "position" || clicked.type === "player") { isTimepointDefined = true; }
-		if (!isTimepointDefined) {
-			if (activeTimepoint.timeline === "puck" && activeTimepoint.defined === false && activeTimepoint.t === clicked.t) {
-				// If the active timepoint is clicked again, close the picker
-				closePicker();
-			} else if (activeTimepoint.timeline == null || activeTimepoint.defined === false) {
-				// If there's no active element, make the clicked timepoint active
-				// Or if the user clicks on another timepoint, then make the clicked timepoint active - includes switching between player and puck timepoints
-				activeTimepoint.timeline = "puck";
-				activeTimepoint.defined = false;
-				activeTimepoint.t = clicked.t;
-				activeTimepoint.player = null;
-				// Open the picker for the active timepoint
-				highlightActiveTimepoint();
-				openPicker();
-			} else if (activeTimepoint.defined === true) {
-				// If a defined timepoint is active, then clicking an undefined timepoint will transfer the defined timepoint's x, y coordinates to the clicked timepoint
-				activeTimepointData = puckTimepoints.filter(function(p) { return p.t === activeTimepoint.t })[0];
-				updatePuckTimepoint(activeTimepointData.type, clicked.t, activeTimepointData.x, activeTimepointData.y, activeTimepointData.player);
-				updatePuckTimepoint(null, activeTimepoint.t, null, null, null);
-				closePicker();
-			}
-		} else if (isTimepointDefined) {
-			if (activeTimepoint.timeline === "player") {
-				// Clicking a defined puck timepoint does nothing if a player timepoint is active
-			} else if (activeTimepoint.defined === true && activeTimepoint.t === clicked.t) {
-				// If the active defined timepoint is clicked again, close the picker
-				closePicker();
-			} else if (activeTimepoint.timeline == null) {
-				// If there's no active element, make the clicked defined timepoint active
-				activeTimepoint.timeline = "puck";
-				activeTimepoint.defined = true;
-				activeTimepoint.t = clicked.t;
-				activeTimepoint.player = null;
-				// Open the picker for the active defined timepoint
-				highlightActiveTimepoint();
-				openPicker();
-			}
+		if (activeTimepoint.timeline === "puck" && activeTimepoint.t === clicked.t) {
+			// If the active timepoint is clicked again, then close the picker
+			closePicker();
+		} else {
+			// Otherwise, clicking on a timepoint makes it active
+			activeTimepoint.timeline = "puck";
+			activeTimepoint.t = clicked.t;
+			activeTimepoint.player = null;
+			// Open the picker for the new active timepoint
+			highlightActiveTimepoint();
+			openPicker();
 		}
 	});
+
+	/*
+	*
+	* Drag listener
+	*
+	*/
+	var dragData;
+	var isDefined;
+	var targetT;
+	var undefinedTimes;
+	var dragListener = d3.behavior.drag()
+		.on("dragstart", function() {
+
+			dragData = this.__data__;
+			targetT = dragData.t;
+
+			// Cancel drag events if the dragged timepoint is not defined. Also cancel if there's an active timepoint
+			isDefined = true;
+			if (dragData.type == null || activeTimepoint.timeline != null) {
+				isDefined = false;
+				dragData = null;
+				targetT = null;
+				return;
+			}
+
+			// Get valid targets - all undefined times
+			var undefinedTimepoints = d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)");
+			undefinedTimes = undefinedTimepoints.data().map(function(pt) { return pt.t; });
+
+			// Append a marker to dragged
+			var dragPt = d3.select(this.parentNode).append("circle")
+				.attr("id", "drag-point")
+				.attr("r", highlightCircleR)
+				.attr("cy", puckTimelineHeight - 28)
+				.style("fill", "black")
+				.style("fill-opacity", 0.2);
+		})
+		.on("drag", function() {
+			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
+
+			var mX = d3.mouse(this)[0];
+			d3.select("#drag-point").attr("cx", mX);
+
+			// Check if user is within .15 seconds of a timepoint
+			var delta = 0.15;
+			var rounded = Math.round(tX.invert(mX) * 100) / 100; // Round to the nearest .01 second
+			var decimal = Math.round((rounded % 1) * 100) / 100; // Gets the decimal portion of number
+			var isClose = false;
+			if (decimal <= 0 + delta || decimal >= 1 - delta || (decimal <= 0.5 + delta && decimal >= 0.5 - delta)) { isClose = true; }
+
+			if (isClose) {
+				// When rounded is near a multiple of 0.5 (i.e., user is near a timepoint), set rounded to the nearest multiple of 0.5
+				rounded = Math.round(rounded / 0.5) * 0.5;
+
+				if (undefinedTimes.indexOf(rounded) < 0) {
+					// If the timepoint at t = rounded is defined, then reset targetT to the initial dragged timepoint
+					targetT = dragData.t;
+					d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
+				} else if (rounded !== targetT) {
+					// If the timepoint at t = rounded is undefined, and rounded != the current targetT, then update targetT to rounded
+					targetT = rounded;
+					// Clear existing purple highlights and apply purple highlight to new target
+					d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
+					var target = d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").filter(function(pt) { return pt.t === targetT; });
+					target.style("stroke", "purple");
+				}
+			} else if (!isClose) {
+				// If rounded is not a whole number (i.e., user is not near a timepoint), then reset targetT to the initial dragged timepoint
+				targetT = dragData.t;
+				d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
+			}
+		})
+		.on("dragend", function() {
+			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
+
+			// Transition drag-point to the target
+			// Especially needed to highlight the case where the drag-point returns to its starting point (because user chose an invalid target)
+			d3.select("#drag-point").transition()
+				.attr("cx", tX(targetT))
+				.each("end", function() {
+					// Remove drag effects
+					d3.select(this).remove();
+					d3.select(".puck.row").selectAll("circle.timepoint").style("stroke", "");
+
+					// Update data
+					updatePuckTimepoint(null, dragData.t, null, null, null);
+					updatePuckTimepoint(dragData.type, targetT, dragData.x, dragData.y, dragData.player);
+
+					// Reset all the drag variables
+					dragData = null;
+					targetT = null;
+					undefinedTimes = null;
+				});
+		});
+
+	d3.select("#table").select(".puck.row").selectAll("circle.timepoint").call(dragListener);
 }
 
 function initRink() {
