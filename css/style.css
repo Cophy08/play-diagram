@@ -131,6 +131,10 @@ input[type=text] {
 		padding-bottom: 3px;
 	}
 
+line.baseline {
+	stroke: #ddd;
+}
+
 circle.highlight {
 	fill: gold;
 }
