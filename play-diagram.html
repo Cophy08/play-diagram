@@ -133,23 +133,54 @@ initTimeline();
 *
 */
 
+var animationTimer;
+var animationTime;
+
 d3.select("#play").on("click", function() {
-	d3.selectAll("g.player").selectAll("g.marker").each(function(d) {
-		translatePlayer(d3.select(this), d, 0);
+
+	// Record the time of each player's first timepoint
+	var startTimes = [];
+	playerData.forEach(function(p) {
+		var firstTimepoint = p.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; })[0];
+		if (firstTimepoint) {
+			startTimes.push({ player: p.id, t: firstTimepoint.t });
+		}
 	});
+
+	// Clear any existing animation before starting the animation again
+	clearInterval(animationTimer);
+	updateRink();
+	animationTime = 0;
+	startAnimations(); // Initial call so that it starts right away
+	animationTimer = setInterval(function() { startAnimations(); }, 500); // Delays before calling startAnimation for the first time
+
+
+	function startAnimations() {
+		// Get players whose first waypoint is at animationTime
+		var startPlayers = startTimes.filter(function(s) { return s.t * 1000 === animationTime; })
+			.map(function(s) { return s.player; });
+		// Start animation for those players
+		if (startPlayers.length > 0) {
+			d3.selectAll("g.player").filter(function(d) { return startPlayers.indexOf(d.id) >= 0; })
+				.selectAll("g.marker")
+					.each(function(d) { translatePlayer(d, 0); });
+		}
+		// Stop starting animations or increment animationTime
+		if (animationTime === d3.max(playerSeconds) * 1000) { clearInterval(animationTimer); }
+		else { animationTime += 500; }
+	}
 });
 
-function translatePlayer(element, data, idx) {
-	if (idx < data.paths.length) {
-		var animPlayerGroup = d3.selectAll("g.player").filter(function(d) { return d.id === data.id; });
-		var animMarker = animPlayerGroup.select("g.marker");
-		var animPath = animPlayerGroup.selectAll("path").filter(function(d) { return d.order === idx; });
-		animMarker.transition()
-			.duration(function(d) { return d.paths[idx].duration * 1000; })
+function translatePlayer(data, pathIdx) {
+	if (pathIdx < data.paths.length) {
+		var animGroup = d3.selectAll("g.player").filter(function(d) { return d.id === data.id; });
+		var animPath = animGroup.selectAll("path").filter(function(d) { return d.order === pathIdx; });
+		animGroup.select("g.marker").transition()
+			.duration(function(d) { return d.paths[pathIdx].duration * 1000; })
 			.ease("linear")
 			.attrTween("transform", translateAlong(animPath.node()))
 			.each("end", function(d) {
-				translatePlayer(d3.select(this), d, idx + 1);
+				translatePlayer(d, pathIdx + 1);
 			});
 	}
 }
@@ -361,8 +392,8 @@ function initRink() {
 	// Remove rinkPlot.js's translation and draw a full outline for the rink
 	var drawRinkMap = new RINK_MAP({parent: d3.select("#rink-map"), fullRink: true, desiredWidth: (rinkHeight / ftPerCell) * cellSize, horizontal: true});
 	drawRinkMap();
-	d3.select("#rink").attr("transform", "");
-	d3.select("#rink-map").select("g.zones").append("rect")
+	d3.select("#rink-map").select("g.zones").attr("transform", "");
+	d3.select("#rink-map").append("rect")
 		.attr("width", x.range()[1])
 		.attr("height", y.range()[0])
 		.attr("rx", x(rinkRadius))

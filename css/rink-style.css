@@ -25,7 +25,7 @@ circle.red-line {
 
 /* Goal crease area */
 .goal-crease {
-    fill: #ebebeb;
+    fill: none;
     stroke: #ccc;
 }
 

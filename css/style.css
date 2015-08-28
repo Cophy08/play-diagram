@@ -1,16 +1,6 @@
-body {
+body, svg {
 	font-family: Roboto, san-serif;
 	font-size: 12px;
-}
-
-svg {
-	margin: 20px;
-	font-family: Roboto, san-serif;
-	font-size: 12px;
-}
-
-svg.timeline, svg.colour-picker {
-	margin: 0;
 }
 
 /* Disable highlighting so it doesn't show up while the user is clicking */
