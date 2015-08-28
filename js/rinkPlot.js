@@ -2,7 +2,7 @@ var RINK_MAP = function RinkMap(config){
 
     // all distances are in FT
     var RINK_CONFIG =
-    {
+    {   
         RINK_LENGTH: 200,
         RINK_WIDTH: 85,
         BLUE_LINE_WIDTH: 1,
@@ -28,7 +28,7 @@ var RINK_MAP = function RinkMap(config){
         TRAPEZOID_BOTTOM: 28
     };
 
-    var RINK_COLOR =
+    var RINK_COLOR = 
     {
         BLUE_LINE: "blue",
         RINK_FILL: "white",
@@ -68,7 +68,7 @@ var RINK_MAP = function RinkMap(config){
 
     // CREATE CHART
     function chart() {
-
+        
         function rinkLine(x, group, type){
             var lineWidth = RINK_CONFIG.BLUE_LINE_WIDTH;
             if (type === "center-line"){
@@ -88,8 +88,8 @@ var RINK_MAP = function RinkMap(config){
             group.append("path")
                 .attr("d", rounded_rect(0,0, RINK_CONFIG.RINK_LENGTH *0.5, RINK_CONFIG.RINK_WIDTH, RINK_CONFIG.BOARDS_RADIUS, true, false, true, false))
                 .attr("class", "rink-face")
-                .attr("stroke-width", RINK_CONFIG.ZONE_LINE_WIDTH)
-
+                .attr("stroke-width", RINK_CONFIG.ZONE_LINE_WIDTH) 
+            
         }
 
         // From stackOverflow http://stackoverflow.com/questions/12115691/svg-d3-js-rounded-corner-on-one-corner-of-a-rectangle
@@ -138,14 +138,14 @@ var RINK_MAP = function RinkMap(config){
                 .append("path")
                 .attr("d", creaseFunction(creaseData))
                 .attr("stroke-width", RINK_CONFIG.ZONE_LINE_WIDTH)
-                .attr("class", "goal-crease");
+                .attr("class", "goal-crease");   
         }
 
         // Create red-line at xPos to scale
         function redLine(x, group){
             var yDistance = RINK_CONFIG.BOARDS_RADIUS - Math.sqrt((2 * RINK_CONFIG.RED_TO_BOARDS * RINK_CONFIG.BOARDS_RADIUS) - (RINK_CONFIG.RED_TO_BOARDS * RINK_CONFIG.RED_TO_BOARDS));
             group
-                .append("rect")
+                .append("rect") 
                 .attr("x", x)
                 .attr("y", yDistance)
                 .attr("width", RINK_CONFIG.ZONE_LINE_WIDTH)
@@ -167,7 +167,7 @@ var RINK_MAP = function RinkMap(config){
             var faceOff = group.append("g")
               .attr("class", "faceoff");
 
-
+            
             // outer face-off circle
             faceOff.append("circle")
                 .attr("cx", x)
@@ -296,7 +296,7 @@ var RINK_MAP = function RinkMap(config){
                 .attr("d", dStringCreator(circleData))
                 .attr("class", "neutral-faceoff")
                 .attr("stroke-width", RINK_CONFIG.ZONE_LINE_WIDTH)
-                .attr("fill", "none");
+                .attr("fill", "none");    
         }
 
         var dStringCreator = function(input){
@@ -318,7 +318,7 @@ var RINK_MAP = function RinkMap(config){
         function refereeCrease(xPos, group){
             var creaseData = [  {"x": xPos - RINK_CONFIG.REF_CREASE_RADIUS, "y": RINK_CONFIG.RINK_WIDTH, "type": "M"},
                                 {"x": xPos, "y": RINK_CONFIG.RINK_WIDTH - RINK_CONFIG.REF_CREASE_RADIUS, "type": "A", "radius": RINK_CONFIG.REF_CREASE_RADIUS, "dir": 1}];
-
+            
             group
                 .append("path")
                 .attr("d", dStringCreator(creaseData))
@@ -371,7 +371,8 @@ var RINK_MAP = function RinkMap(config){
         generateRinkElements(zone1Elements);
 
         function generateRinkElements(zoneGroup){
-            // CENTER LINE
+            // RINK OUT LINE, CENTER LINE
+            rinkOutLine(zoneGroup);
             rinkLine(0.5 * RINK_CONFIG.RINK_LENGTH, zoneGroup, "center-line");
 
             // NEUTRAL ZONE
@@ -391,14 +392,11 @@ var RINK_MAP = function RinkMap(config){
             trapezoid(0, zoneGroup);
             goalCrease(RINK_CONFIG.RED_TO_BOARDS, zoneGroup);
 
-            // RINK OUTLINE
-            rinkOutLine(zoneGroup);
-
             // Show danger if flagged
             if (p.showDanger){
-              dangerZones(DANGER_ZONES, zoneGroup);
+              dangerZones(DANGER_ZONES, zoneGroup);  
             }
-
+            
             waterMark(RINK_CONFIG.RED_TO_BOARDS /2, RINK_CONFIG.RINK_WIDTH/2, p.watermark, zoneGroup);
 
         }
@@ -423,7 +421,7 @@ var RINK_MAP = function RinkMap(config){
                 p.parent.selectAll(".zone1")
                     .attr("transform", "rotate(-90)translate(" + (-1 * (RINK_CONFIG.RINK_LENGTH)) +",0)");
                 p.parent.selectAll(".zone2")
-                    .attr("transform", "scale(-1,1)rotate(90)");
+                    .attr("transform", "scale(-1,1)rotate(90)");                  
             }
         }
         else{
@@ -431,7 +429,7 @@ var RINK_MAP = function RinkMap(config){
             if (!p.horizontal){
                 p.parent.selectAll(".zone1")
                     .attr("transform", "rotate(-90)translate(" + (-1*(RINK_CONFIG.RINK_LENGTH/2)) +",0)");
-
+           
             }
         }
         // move for margins

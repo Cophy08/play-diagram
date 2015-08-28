@@ -6,6 +6,7 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet" type="text/css">
 	<script type="text/javascript" src="js/rinkPlot.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/rink-style.css">
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
@@ -357,9 +358,17 @@ function initRink() {
 	});
 
 	// Append and style rink
+	// Remove rinkPlot.js's translation and draw a full outline for the rink
 	var drawRinkMap = new RINK_MAP({parent: d3.select("#rink-map"), fullRink: true, desiredWidth: (rinkHeight / ftPerCell) * cellSize, horizontal: true});
 	drawRinkMap();
-	styleRink();
+	d3.select("#rink").attr("transform", "");
+	d3.select("#rink-map").select("g.zones").append("rect")
+		.attr("width", x.range()[1])
+		.attr("height", y.range()[0])
+		.attr("rx", x(rinkRadius))
+		.attr("ry", y(0) - y(rinkRadius))
+		.style("fill", "none")
+		.style("stroke", "#ccc");
 
 	// Append groups and subgroups for each player to control layering
 	var players = d3.select("#players").selectAll("g.player")
@@ -989,50 +998,5 @@ function generateDStrings(playerIdx) {
 	}
 }
 
-/*
-*
-* Updates styling from rinkPlot.js
-*
-*/
-
-function styleRink() {
-
-	// Remove translation
-	var rinkMap = d3.select("#rink-map");
-	rinkMap.select("g.zones")
-		.attr("transform", "");
-
-	// Make rink monochrome
-	var rinkStroke = "#ccc";
-	var rinkFill = "#ebebeb";
-	rinkMap.select("g.zones").selectAll("rect")
-		.style("fill", rinkFill)
-	rinkMap.select("g.zones").selectAll("rect.red-line")
-		.style("fill", rinkStroke)
-	rinkMap.select("g.zones").selectAll("path, line, circle")
-		.style("stroke", rinkStroke);
-	rinkMap.select("g.zones").selectAll("circle.red-line")
-		.style("stroke", "none")
-		.style("fill", rinkFill);
-	rinkMap.select("g.zones").selectAll("path.goal-crease")
-		.style("stroke", rinkStroke)
-		.style("fill", "none");
-	rinkMap.selectAll("path.rink-face, circle.red-faceoff")
-		.style("fill", "none");
-
-	// Hide the original half rink-faces from rinkPlot.js because it has a line where the 2 halves meet
-	rinkMap.selectAll(".rink-face")
-		.style("stroke", "none");
-
-	// Redraw a full rink rink-face for a neat outline
-	rinkMap.select("g.zones")
-		.append("rect")
-			.attr("width", x.range()[1])
-			.attr("height", y.range()[0])
-			.attr("rx", x(rinkRadius))
-			.attr("ry", y(0) - y(rinkRadius))
-			.style("fill", "none")
-			.style("stroke", rinkStroke);
-}
 </script>
 </html>

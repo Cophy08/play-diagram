@@ -1,33 +1,43 @@
-.blue-line{
-    fill: blue;
+/* Blue lines */
+.blue-line {
+    fill: #ebebeb;
 }
 
-.red-line{
-    fill: red;
+/* Goal crease */
+rect.red-line {
+    fill: #ccc;
 }
 
-.red-faceoff{
-    stroke: red;
+/* Face off dots */
+circle.red-line {
+    fill: #ebebeb;
 }
 
-.rink-face{
-    stroke: gray;
-    fill: white;
+/* Face off circles */
+.red-faceoff {
+    stroke: #ccc;
 }
 
-.goal-crease{
-    fill: lightblue;
-    stroke: red;
+/* Use d3.js to draw a full rink-face instead */
+.rink-face {
+    display: none;
 }
 
-.center-line{
-    fill: red;
+/* Goal crease area */
+.goal-crease {
+    fill: #ebebeb;
+    stroke: #ccc;
 }
 
-.neutral-faceoff{
-    stroke: blue;
+.center-line {
+    fill: #ebebeb;
 }
 
-.danger-line{
+/* Center ice face off circle */
+.neutral-faceoff {
+    stroke: #ccc;
+}
+
+.danger-line {
     stroke: gray;
 }
