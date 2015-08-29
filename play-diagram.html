@@ -620,9 +620,11 @@ function updateRink() {
 		.attr("transform", function(d) {
 			return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 28) + ")";
 		})
+		.style("fill", function(d) {
+			return playerData.filter(function(p) { return p.id === d.player; })[0].colour;
+		})
 		.text(function(d) {
-			var label = playerData.filter(function(p) { return p.id === d.player; })[0].label;
-			return label;
+			return playerData.filter(function(p) { return p.id === d.player; })[0].label;
 		});
 
 	// Update colour pickers
