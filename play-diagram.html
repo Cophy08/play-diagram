@@ -135,9 +135,9 @@ initTimeline();
 
 var animationTimer;
 var animationTime;
+var tick = 500;
 
 d3.select("#play").on("click", function() {
-
 	// Record the time of each player's first timepoint
 	var startTimes = [];
 	playerData.forEach(function(p) {
@@ -147,27 +147,35 @@ d3.select("#play").on("click", function() {
 		}
 	});
 
-	// Clear any existing animation before starting the animation again
+	// Clear timer and reset marker positions - use a transition to clear existing transitions
+	// Hide all player markers - each player's marker will be displayed at his first timepoint
 	clearInterval(animationTimer);
+	d3.select("#rink").selectAll("g.player").selectAll("g.marker").transition().duration(0)
+		.style("visibility", "hidden");
 	updateRink();
+
+	// Restart animation timer
 	animationTime = 0;
 	startAnimations(); // Initial call so that it starts right away
-	animationTimer = setInterval(function() { startAnimations(); }, 500); // Delays before calling startAnimation for the first time
-
+	animationTimer = setInterval(function() { startAnimations(); }, tick); // Delays before calling startAnimation for the first time
 
 	function startAnimations() {
 		// Get players whose first waypoint is at animationTime
 		var startPlayers = startTimes.filter(function(s) { return s.t * 1000 === animationTime; })
 			.map(function(s) { return s.player; });
-		// Start animation for those players
+		// Start animation - when a player's animation starts, his marker becomes visible
 		if (startPlayers.length > 0) {
 			d3.selectAll("g.player").filter(function(d) { return startPlayers.indexOf(d.id) >= 0; })
 				.selectAll("g.marker")
+					.style("visibility", "visible")
 					.each(function(d) { translatePlayer(d, 0); });
 		}
 		// Stop starting animations or increment animationTime
-		if (animationTime === d3.max(playerSeconds) * 1000) { clearInterval(animationTimer); }
-		else { animationTime += 500; }
+		if (animationTime === d3.max(playerSeconds) * 1000) {
+			clearInterval(animationTimer);
+		} else {
+			animationTime += tick;
+		}
 	}
 });
 
@@ -473,13 +481,13 @@ function updateRink() {
 		})
 	markers.select("text").text(function(d) { return d.label; });
 
-	// Only update position of players with 1 or more defined timepoints
-	markers.filter(function(d) { return d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }).length > 0; })
-		.attr("transform", function(d) {
-			// Get the coordinates from the first defined timepoint
-			var firstTimepoint = d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; })[0];
-			return "translate(" + x(firstTimepoint.x) + "," + y(firstTimepoint.y) + ")";
-		});
+	// Move markers to the first defined timepoint's position
+	markers.attr("transform", function(d) {
+		var definedTimepoints = d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; });
+		if (definedTimepoints.length > 0) {
+			return "translate(" + x(definedTimepoints[0].x) + "," + y(definedTimepoints[0].y) + ")";
+		} else { return ""; }
+	});
 
 	/*
 	*

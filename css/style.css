@@ -45,19 +45,19 @@ g.player g.marker text {
 		fill: red;
 	}
 
-text.waypoint {
+text.timepoint {
 	font-size: 10px;
 	text-anchor: middle;
 	alignment-baseline: middle;
 }
 
-g.player.blue text.waypoint {
-	fill: lightskyblue;
-}
+	g.player.blue text.timepoint {
+		fill: lightskyblue;
+	}
 
-g.player.red text.waypoint {
-	fill: pink;
-}
+	g.player.red text.timepoint {
+		fill: pink;
+	}
 
 g.player path.skater {
 	stroke-opacity: 0.5;
