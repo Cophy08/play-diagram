@@ -198,7 +198,7 @@ d3.select("#play").on("click", function() {
 				.selectAll("g.marker")
 					.style("visibility", "visible")
 					.each(function(d) { translatePlayer(d, 0); })
-					.selectAll("*")
+					.select("text")
 					.transition()
 						.styleTween("opacity", function() { return d3.interpolate(0, 1); });
 		}
@@ -682,6 +682,12 @@ function appendPlayerTimepointListeners() {
 				dragData = null;
 				targetT = null;
 				return;
+			}
+
+			// If paths are currently hidden, display them
+			if (!arePathsVisible) {
+				d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "visible");
+				arePathsVisible = true;
 			}
 
 			// Get valid targets - all undefined times
