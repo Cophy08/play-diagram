@@ -189,12 +189,18 @@ d3.select("#play").on("click", function() {
 		// Get players whose first waypoint is at animationTime
 		var startPlayers = startTimes.filter(function(s) { return s.t * 1000 === animationTime; })
 			.map(function(s) { return s.player; });
+
 		// Start player animation - when a player's animation starts, his marker becomes visible
+		// To combine the translation and opacity transitions, apply the translation transition to the parent g.marker, and apply opacity to the child elements
+		// http://bl.ocks.org/mbostock/6081914
 		if (startPlayers.length > 0) {
 			d3.selectAll("g.player").filter(function(d) { return startPlayers.indexOf(d.id) >= 0; })
 				.selectAll("g.marker")
 					.style("visibility", "visible")
-					.each(function(d) { translatePlayer(d, 0); });
+					.each(function(d) { translatePlayer(d, 0); })
+					.selectAll("*")
+					.transition()
+						.styleTween("opacity", function() { return d3.interpolate(0, 1); });
 		}
 
 		// PUCK ANIMATIONS
