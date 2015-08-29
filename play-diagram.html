@@ -11,6 +11,7 @@
 </head>
 <body>
 	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Play</a>
+	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<svg id="rink-svg" style="display: block;"></svg>
 	<div id="table" style="display: block;"></div>
 	</div>
@@ -47,14 +48,14 @@ var y = d3.scale.linear()
 // Initialize player data
 var playerData = [];
 var playerSeconds = d3.range(0, 20 + 1, 1);
-var playerIds = d3.range(1, 10 + 1, 1);
+var playerLabels = ["F1", "F2", "F3", "D1", "D2", "F1", "F2", "F3", "D1", "D2"];
 
-playerIds.forEach(function(p) {
+playerLabels.forEach(function(p, i) {
 	var colour = "blue";
-	if (p > 5) { colour = "red"; }
+	if (i > 4) { colour = "red"; }
 	playerData.push({
-		id: p,
-		label: "F" + p,
+		id: i + 1,
+		label: p,
 		colour: colour,
 		timepoints: [],
 		paths: []
@@ -127,16 +128,28 @@ d3.select("#rink-svg")
 initRink();
 initTimeline();
 
+
+
+var arePathsVisible = true;
+d3.select("#paths").on("click", function() {
+	if (arePathsVisible) {
+		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "hidden");
+		arePathsVisible = false;
+	} else {
+		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "visible");
+		arePathsVisible = true;
+	}
+});
+
 /*
 *
-* Start transitions
+* Player movement transitions
 *
 */
 
 var animationTimer;
 var animationTime;
 var tick = 500;
-
 d3.select("#play").on("click", function() {
 	// Record the time of each player's first timepoint
 	var startTimes = [];
@@ -148,11 +161,12 @@ d3.select("#play").on("click", function() {
 	});
 
 	// Clear timer and reset marker positions - use a transition to clear existing transitions
-	// Hide all player markers - each player's marker will be displayed at his first timepoint
 	clearInterval(animationTimer);
-	d3.select("#rink").selectAll("g.player").selectAll("g.marker").transition().duration(0)
-		.style("visibility", "hidden");
+	d3.select("#rink").selectAll("g.player").selectAll("g.marker").transition().duration(0);
 	updateRink();
+
+	// Hide all player markers - each player's marker will be displayed at his first timepoint
+	d3.select("#rink").selectAll("g.player").selectAll("g.marker").style("visibility", "hidden");
 
 	// Restart animation timer
 	animationTime = 0;
@@ -474,20 +488,22 @@ function updateRink() {
 		.text(function(d) { return d.t; });
 
 	// Update markers - hide markers for players with no waypoints
+	// Move markers to the first defined timepoint's position
+	// Set marker text
 	var markers = players.select("g.marker");
 	markers.style("visibility", function(d) {
-			if (d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }).length === 0) { return "hidden"; }
-			else { return "visible"; }
+			var definedTimepoints = d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; });
+			if (definedTimepoints.length > 0) { return "visible"; }
+			else { return "hidden"; }
 		})
-	markers.select("text").text(function(d) { return d.label; });
-
-	// Move markers to the first defined timepoint's position
-	markers.attr("transform", function(d) {
-		var definedTimepoints = d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; });
-		if (definedTimepoints.length > 0) {
-			return "translate(" + x(definedTimepoints[0].x) + "," + y(definedTimepoints[0].y) + ")";
-		} else { return ""; }
-	});
+		.attr("transform", function(d) {
+			var definedTimepoints = d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; });
+			if (definedTimepoints.length > 0) {
+				return "translate(" + x(definedTimepoints[0].x) + "," + y(definedTimepoints[0].y) + ")";
+			} else { return ""; }
+		})
+		.select("text")
+			.text(function(d) { return d.label; });
 
 	/*
 	*
@@ -807,6 +823,16 @@ function clearActiveTimepoint() {
 }
 
 function openPicker() {
+
+	// Clear animations
+	clearInterval(animationTimer);
+	d3.select("#rink").selectAll("g.player").selectAll("g.marker").transition().duration(0);
+
+	// If paths are currently hidden, display them
+	if (!arePathsVisible) {
+		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "visible");
+		arePathsVisible = true;
+	}
 
 	// Make picker elements visible
 	d3.selectAll("#picker-marker, #picker-mask")
