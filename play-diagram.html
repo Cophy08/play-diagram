@@ -47,7 +47,7 @@ var y = d3.scale.linear()
 
 // Initialize player data
 var playerData = [];
-var playerSeconds = d3.range(0, 20 + 1, 1);
+var playerSeconds = d3.range(0, 15 + 1, 1);
 var playerLabels = ["F1", "F2", "F3", "D1", "D2", "F1", "F2", "F3", "D1", "D2"];
 
 playerLabels.forEach(function(p, i) {
@@ -74,7 +74,7 @@ playerData.forEach(function(p) {
 });
 
 // Puck data
-var puckSeconds = d3.range(0, 20 + 0.5, 0.5);
+var puckSeconds = d3.range(0, d3.max(playerSeconds) + 0.5, 0.5);
 var puckTimepoints = [];
 puckSeconds.forEach(function(s) {
 	puckTimepoints.push({
@@ -169,7 +169,7 @@ d3.select("#play").on("click", function() {
 	d3.select("#rink").selectAll("g.player").selectAll("g.marker").transition().duration(0);
 	updateRink();
 
-	// Hide all player markers - each player's marker will be displayed at his first timepoint
+	// Hide all player markers - startAnimations() will make markers visible at each player's first defined timepoint
 	d3.select("#rink").selectAll("g.player").selectAll("g.marker").style("visibility", "hidden");
 
 	// Restart animation timer
@@ -177,12 +177,11 @@ d3.select("#play").on("click", function() {
 	startAnimations(); // Initial call so that it starts right away
 	animationTimer = setInterval(function() { startAnimations(); }, tick); // Delays before calling startAnimation for the first time
 
-	// thumb animation
-	d3.select("#thumb").attr("x1", tX.range()[0])
-		.attr("x2", tX.range()[0])
-		.transition().duration(20 * 1000).ease("linear")
-			.attr("x1", tX.range()[1])
-			.attr("x2", tX.range()[1]);
+	// Using attrTween and interpolate, set the thumb to t = 0 before restarting the transition
+	// http://bost.ocks.org/mike/transition/#animation
+	d3.select("#thumb").transition().duration(d3.max(puckSeconds) * 1000).ease("linear")
+		.attrTween("x1", function() { return d3.interpolate(tX.range()[0], tX.range()[1]); })
+		.attrTween("x2", function() { return d3.interpolate(tX.range()[0], tX.range()[1]); });
 
 	function startAnimations() {
 
@@ -232,13 +231,15 @@ d3.select("#play").on("click", function() {
 					.attr("cy", y(y2))
 					.style("visibility", "visible");
 				puckLine.attr("x2", x(x2))
-					.attr("y2", y(y2));
+					.attr("y2", y(y2))
+					.transition().styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
 			} else {
 				puck.attr("cx", x2)
 					.attr("cy", y2)
 					.style("visibility", "visible");
 				puckLine.attr("x2", x2)
-					.attr("y2", y2);
+					.attr("y2", y2)
+					.transition().styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
 			}
 		}
 
@@ -742,7 +743,7 @@ function appendPlayerTimepointListeners() {
 					dragData = null;
 					targetT = null;
 					undefinedTimes = null;
-				});
+				})
 		});
 
 	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").call(dragListener);
