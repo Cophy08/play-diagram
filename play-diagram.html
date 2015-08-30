@@ -152,6 +152,17 @@ var animationTime;
 var tick = 500;
 d3.select("#play").on("click", function() {
 
+	var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
+	definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
+
+	var lastDefinedTimepoint = d3.max(playerData, function(d) {
+		return d3.max(
+			d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }),
+			function(pt) { return pt.t; }
+		);
+	});
+	lastDefinedTimepoint = d3.max([lastDefinedTimepoint, d3.max(definedPuckTimepoints, function(pt) { return pt.t; })]);
+
 	// Record the time of each player's first timepoint
 	var startTimes = [];
 	playerData.forEach(function(p) {
@@ -168,16 +179,16 @@ d3.select("#play").on("click", function() {
 	});
 
 	// Restart animation timer
-	stopAnimation();
+	stopAnimation(true);
 	animationTime = 0;
 	startAnimations(); // Initial call so that animations start right away
 	animationTimer = setInterval(function() { startAnimations(); }, tick); // Delays before calling startAnimation for the first time
 
 	// Using attrTween and interpolate, set the thumb to t = 0 before restarting the transition
 	// http://bost.ocks.org/mike/transition/#animation
-	d3.select("#thumb").transition().duration(d3.max(puckSeconds) * 1000).ease("linear")
-		.attrTween("x1", function() { return d3.interpolate(tX.range()[0], tX.range()[1]); })
-		.attrTween("x2", function() { return d3.interpolate(tX.range()[0], tX.range()[1]); });
+	d3.select("#thumb").transition().duration(lastDefinedTimepoint * 1000).ease("linear")
+		.attrTween("x1", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); })
+		.attrTween("x2", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); });
 
 	function startAnimations() {
 
@@ -207,8 +218,6 @@ d3.select("#play").on("click", function() {
 		*/
 
 		// Get timepoints
-		var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
-		definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
 		var targetTimepoint = definedPuckTimepoints.filter(function(pt) { return pt.t * 1000 === animationTime && pt.type != null; })[0];
 		var targetTimepointIdx = definedPuckTimepoints.map(function(pt) { return pt.t * 1000; }).indexOf(animationTime);
 		var sourceTimepoint = definedPuckTimepoints[targetTimepointIdx - 1];
@@ -257,8 +266,11 @@ d3.select("#play").on("click", function() {
 		}
 
 		// Stop starting animations or increment animationTime
-		if (animationTime === d3.max(playerSeconds) * 1000) { clearInterval(animationTimer); }
-		else { animationTime += tick; }
+		if (animationTime === d3.max(playerSeconds) * 1000 || animationTime === lastDefinedTimepoint * 1000) {
+			stopAnimation(false);
+		} else {
+			animationTime += tick;
+		}
 	}
 
 	function getCoords(timepoint) {
@@ -288,14 +300,14 @@ d3.select("#play").on("click", function() {
 *
 */
 
-function stopAnimation() {
+function stopAnimation(reset) {
 	clearInterval(animationTimer);
 	var completedTransitions = 0;
 	var dummyTransitions = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle")
 		.transition().duration(0)
 			.each("end", function() {
 				completedTransitions++;
-				if (completedTransitions === dummyTransitions.size()) { updateRinkAndTimeline(); }
+				if (completedTransitions === dummyTransitions.size() && reset === true) { updateRinkAndTimeline(); }
 			});
 }
 
@@ -447,8 +459,7 @@ function initTimeline() {
 		.attr("y1", 0)
 		.attr("y2", puckTimelineHeight)
 		.attr("x1", tX.range()[0])
-		.attr("x2", tX.range()[0])
-		.style("stroke", "lime");
+		.attr("x2", tX.range()[0]);
 
 	// Append highlight for the active element behind timepoints
 	table.selectAll("svg.timeline").append("circle")
@@ -741,7 +752,7 @@ function appendPlayerTimepointListeners() {
 				return;
 			}
 
-			stopAnimation();
+			stopAnimation(true);
 
 			// If paths are currently hidden, display them
 			if (!arePathsVisible) {
@@ -975,7 +986,7 @@ function clearActiveTimepoint() {
 
 function openPicker() {
 
-	stopAnimation();
+	stopAnimation(true);
 
 	// If paths are currently hidden, display them
 	if (!arePathsVisible) {

@@ -1,5 +1,5 @@
 body, svg {
-	font-family: Roboto, san-serif;
+	font-family: Roboto, sans-serif;
 	font-size: 12px;
 }
 
@@ -156,11 +156,14 @@ circle.timepoint {
 		stroke: red;
 	}
 
-
 text.carrier {
 	fill: red;
 	font-size: 10px;
 	alignment-baseline: middle;
+}
+
+#thumb {
+	stroke: gold;
 }
 
 .button.delete {
