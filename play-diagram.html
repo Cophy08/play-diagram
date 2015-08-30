@@ -225,7 +225,7 @@ d3.select("#play").on("click", function() {
 			targetPlayer = d3.selectAll("g.player").filter(function(p) { return p.id === targetTimepoint.player; }).select("g.marker");
 		}
 
-		if (sourceTimepoint && targetTimepoint) {
+		if (targetTimepoint) {
 			// Get target
 			var x2;
 			var y2;
@@ -238,16 +238,17 @@ d3.select("#play").on("click", function() {
 					// get target player coordinates
 					var targetTransform = targetPlayer.attr("transform");
 					if (!targetTransform || targetTransform.indexOf("translate") < 0) {
-						// If the player doesn't have a position translation attribute, then keep the puck at its current position TO DO
-						x2 = x1;
-						y2 = y1;
+						x2 = null;
+						y2 = null;
 					} else {
 						x2 = +targetTransform.substring(targetTransform.indexOf("(") + 1, targetTransform.indexOf(","));
 						y2 = +targetTransform.substring(targetTransform.indexOf(",") + 1, targetTransform.indexOf(")"));
 					}
 				}
 			}
+		}
 
+		if (sourceTimepoint) {
 			// Get source
 			var x1;
 			var y1;
@@ -261,9 +262,8 @@ d3.select("#play").on("click", function() {
 					var sourcePlayer = d3.selectAll("g.player").filter(function(p) { return p.id === sourceTimepoint.player; }).select("g.marker");
 					var sourceTransform = sourcePlayer.attr("transform");
 					if (!sourceTransform || sourceTransform.indexOf("translate") < 0) {
-						// If the player doesn't have a position translation attribute, then TO DO
-						x1 = 0;
-						y1 = 0;
+						x1 = null;
+						y1 = null;
 					} else {
 						x1 = +sourceTransform.substring(sourceTransform.indexOf("(") + 1, sourceTransform.indexOf(","));
 						y1 = +sourceTransform.substring(sourceTransform.indexOf(",") + 1, sourceTransform.indexOf(")"));
@@ -271,10 +271,6 @@ d3.select("#play").on("click", function() {
 				}
 			}
 
-			// Move puck
-			puck.attr("cx", x2)
-				.attr("cy", y2)
-				.transition().styleTween("fill-opacity", function() { return d3.interpolate(1, 0); });
 			puckTrail.attr("x1", x1)
 				.attr("y1", y1)
 				.attr("x2", x2)
@@ -287,9 +283,16 @@ d3.select("#play").on("click", function() {
 		if (targetTimepoint) {
 			d3.selectAll("g.player").select("circle").transition().style("stroke-opacity", 0);
 
-			// Highlight puck carrier
+			puck.attr("cx", x2)
+				.attr("cy", y2);
+
 			if (targetTimepoint.type === "player") {
+				// Highlight puck carrier and fade-out puck
 				targetPlayer.select("circle").transition().styleTween("stroke-opacity", function() { return d3.interpolate(0, 1); });
+				puck.transition().styleTween("fill-opacity", function() { return d3.interpolate(1, 0); });
+			} else if (targetTimepoint.type === "position") {
+				// Keep puck visible if targetTimepoint is position
+				puck.style("fill-opacity", 1);
 			}
 		}
 
