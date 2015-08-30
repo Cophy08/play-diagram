@@ -152,8 +152,12 @@ var animationTime;
 var tick = 500;
 d3.select("#play").on("click", function() {
 
+	// Remove puck carrier highlights from players without puck
+	d3.selectAll("g.player").select("circle").style("stroke-opacity", 0);
+
 	// Record defined puck timepoints
 	var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
+	definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
 
 	// Record the time of each player's first timepoint
 	var startTimes = [];
@@ -203,49 +207,89 @@ d3.select("#play").on("click", function() {
 						.styleTween("opacity", function() { return d3.interpolate(0, 1); });
 		}
 
-		// PUCK ANIMATIONS
-		var puckTimepoint = definedPuckTimepoints.filter(function(pt) { return pt.t * 1000 === animationTime; })[0];
-		if (puckTimepoint) {
-			// Get current puck position
-			var puck = d3.select("#puck").select("circle");
-			var x1 = +puck.attr("cx");
-			var y1 = +puck.attr("cy");
+		/*
+		*
+		* PUCK ANIMATIONS
+		*
+		*/
 
-			// Get target position
-			var x2 = puckTimepoint.x;
-			var y2 = puckTimepoint.y;
-			if (puckTimepoint.type === "player") {
-				// get target player coordinates
-				var targetTransform = d3.selectAll("g.player").filter(function(p) { return p.id === puckTimepoint.player; }).select("g.marker").attr("transform");
-				if (!targetTransform) {
-					// If the player doesn't have a position, then just keep the puck at its current position
-					// Should also include the case where there's no translate string
-					console.log("null");
-				} else {
-					x2 = +targetTransform.substring(targetTransform.indexOf("(") + 1, targetTransform.indexOf(","));
-					y2 = +targetTransform.substring(targetTransform.indexOf(",") + 1, targetTransform.indexOf(")"));
+		var puck = d3.select("#puck").select("circle");
+		var puckTrail = d3.select("#puck").select("line");
+
+		// Get timepoints
+		var targetTimepoint = definedPuckTimepoints.filter(function(pt) { return pt.t * 1000 === animationTime; })[0];
+		var targetTimepointIdx = definedPuckTimepoints.map(function(pt) { return pt.t * 1000; }).indexOf(animationTime);
+		var sourceTimepoint = definedPuckTimepoints[targetTimepointIdx - 1];
+		var targetPlayer;
+		if (targetTimepoint) {
+			targetPlayer = d3.selectAll("g.player").filter(function(p) { return p.id === targetTimepoint.player; }).select("g.marker");
+		}
+
+		if (sourceTimepoint && targetTimepoint) {
+			// Get target
+			var x2;
+			var y2;
+			if (targetTimepoint) {
+				// Get target position
+				if (targetTimepoint.type === "position") {
+					x2 = x(targetTimepoint.x);
+					y2 = y(targetTimepoint.y);
+				} else if (targetTimepoint.type === "player") {
+					// get target player coordinates
+					var targetTransform = targetPlayer.attr("transform");
+					if (!targetTransform || targetTransform.indexOf("translate") < 0) {
+						// If the player doesn't have a position translation attribute, then keep the puck at its current position TO DO
+						x2 = x1;
+						y2 = y1;
+					} else {
+						x2 = +targetTransform.substring(targetTransform.indexOf("(") + 1, targetTransform.indexOf(","));
+						y2 = +targetTransform.substring(targetTransform.indexOf(",") + 1, targetTransform.indexOf(")"));
+					}
 				}
 			}
 
-			var puckLine = d3.select("#puck").select("line")
-				.attr("x1", x1)
-				.attr("y1", y1);
+			// Get source
+			var x1;
+			var y1;
+			if (sourceTimepoint) {
+				// Get target position
+				if (sourceTimepoint.type === "position") {
+					x1 = x(sourceTimepoint.x);
+					y1 = y(sourceTimepoint.y);
+				} else if (sourceTimepoint.type === "player") {
+					// get source player coordinates
+					var sourcePlayer = d3.selectAll("g.player").filter(function(p) { return p.id === sourceTimepoint.player; }).select("g.marker");
+					var sourceTransform = sourcePlayer.attr("transform");
+					if (!sourceTransform || sourceTransform.indexOf("translate") < 0) {
+						// If the player doesn't have a position translation attribute, then TO DO
+						x1 = 0;
+						y1 = 0;
+					} else {
+						x1 = +sourceTransform.substring(sourceTransform.indexOf("(") + 1, sourceTransform.indexOf(","));
+						y1 = +sourceTransform.substring(sourceTransform.indexOf(",") + 1, sourceTransform.indexOf(")"));
+					}
+				}
+			}
 
 			// Move puck
-			if (puckTimepoint.type === "position") {
-				puck.attr("cx", x(x2))
-					.attr("cy", y(y2))
-					.style("visibility", "visible");
-				puckLine.attr("x2", x(x2))
-					.attr("y2", y(y2))
-					.transition().styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
-			} else {
-				puck.attr("cx", x2)
-					.attr("cy", y2)
-					.style("visibility", "visible");
-				puckLine.attr("x2", x2)
-					.attr("y2", y2)
-					.transition().styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
+			puck.attr("cx", x2)
+				.attr("cy", y2)
+				.transition().styleTween("fill-opacity", function() { return d3.interpolate(1, 0); });
+			puckTrail.attr("x1", x1)
+				.attr("y1", y1)
+				.attr("x2", x2)
+				.attr("y2", y2)
+				.transition().styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
+		}
+
+		// If there's no target timepoint, then keep the puck carrier highlight as-is
+		// If there's a target timepoint hide puck carrier highlights from players without puck
+		if (targetTimepoint) {
+			d3.selectAll("g.player").select("circle").transition().style("stroke-opacity", 0);
+
+			// Highlight puck carrier
+			if (targetTimepoint.type === "player") {
+				targetPlayer.select("circle").transition().styleTween("stroke-opacity", function() { return d3.interpolate(0, 1); });
 			}
 		}
 
@@ -524,10 +568,11 @@ function initRink() {
 	// Append puck marker elements
 	d3.select("#puck").append("circle")
 		.attr("r", 2)
-		.style("visibility", "hidden");
+		.style("fill-opacity", 0);
 	d3.select("#puck").append("line")
 		.style("stroke", "black")
-		.style("stroke-dasharray", "2,3");
+		.style("stroke-dasharray", "2,3")
+		.style("stroke-opacity", 0);
 }
 
 function updateRink() {
