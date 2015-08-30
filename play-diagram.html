@@ -152,10 +152,6 @@ var animationTime;
 var tick = 500;
 d3.select("#play").on("click", function() {
 
-	// Record defined puck timepoints
-	var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
-	definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
-
 	// Record the time of each player's first timepoint
 	var startTimes = [];
 	playerData.forEach(function(p) {
@@ -174,7 +170,7 @@ d3.select("#play").on("click", function() {
 	// Restart animation timer
 	stopAnimation();
 	animationTime = 0;
-	startAnimations(); // Initial call so that it starts right away
+	startAnimations(); // Initial call so that animations start right away
 	animationTimer = setInterval(function() { startAnimations(); }, tick); // Delays before calling startAnimation for the first time
 
 	// Using attrTween and interpolate, set the thumb to t = 0 before restarting the transition
@@ -191,13 +187,11 @@ d3.select("#play").on("click", function() {
 		*
 		*/
 
-		// Get players whose first waypoint is at animationTime
-		var startPlayers = startTimes.filter(function(s) { return s.t * 1000 === animationTime; })
-			.map(function(s) { return s.player; });
-
 		// Start player animation - when a player's animation starts, his marker becomes visible
 		// To combine the translation and opacity transitions, apply the translation transition to the parent g.marker, and apply opacity to the child elements
 		// http://bl.ocks.org/mbostock/6081914
+		var startPlayers = startTimes.filter(function(s) { return s.t * 1000 === animationTime; })
+			.map(function(s) { return s.player; });
 		if (startPlayers.length > 0) {
 			d3.selectAll("g.player").filter(function(d) { return startPlayers.indexOf(d.id) >= 0; })
 				.selectAll("g.marker")
@@ -213,23 +207,23 @@ d3.select("#play").on("click", function() {
 		*/
 
 		// Get timepoints
-		var targetTimepoint = definedPuckTimepoints.filter(function(pt) { return pt.t * 1000 === animationTime; })[0];
+		var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
+		definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
+		var targetTimepoint = definedPuckTimepoints.filter(function(pt) { return pt.t * 1000 === animationTime && pt.type != null; })[0];
 		var targetTimepointIdx = definedPuckTimepoints.map(function(pt) { return pt.t * 1000; }).indexOf(animationTime);
 		var sourceTimepoint = definedPuckTimepoints[targetTimepointIdx - 1];
 		var x1, y1, x2, y2;
 
-		// Get target coordinates
-		if (targetTimepoint) {
-			var coords = getCoords(targetTimepoint);
-			x2 = coords[0];
-			y2 = coords[1];
-		}
-
-		// Get source timepoints
+		// Get source target coordinates
 		if (sourceTimepoint) {
 			var coords = getCoords(sourceTimepoint);
 			x1 = coords[0];
 			y1 = coords[1];
+		}
+		if (targetTimepoint) {
+			var coords = getCoords(targetTimepoint);
+			x2 = coords[0];
+			y2 = coords[1];
 		}
 
 		// Draw puck trail
@@ -243,35 +237,28 @@ d3.select("#play").on("click", function() {
 					.styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
 		}
 
-		// If there's no target timepoint, then keep the puck carrier highlight as-is
 		// If there's a target timepoint hide puck carrier highlights from players without puck
 		if (targetTimepoint) {
-
 			d3.selectAll("g.player").select("circle").transition().style("stroke-opacity", 0);
 
 			var puck = d3.select("#puck").select("circle")
 				.attr("cx", x2)
-				.attr("cy", y2);
+				.attr("cy", y2)
+				.style("fill-opacity", 1);
 
+			// If the puck goes to a player, highlight puck carrier and fade-out puck
 			if (targetTimepoint.type === "player") {
-				// Highlight puck carrier and fade-out puck
 				d3.selectAll("g.player").filter(function(p) { return p.id === targetTimepoint.player; })
 					.select("g.marker").select("circle")
 						.transition().style("stroke-opacity", 1);
 				puck.transition().ease("ease-in")
 					.styleTween("fill-opacity", function() { return d3.interpolate(1, 0); });
-			} else if (targetTimepoint.type === "position") {
-				// Keep puck visible if targetTimepoint is position
-				puck.style("fill-opacity", 1);
 			}
 		}
 
 		// Stop starting animations or increment animationTime
-		if (animationTime === d3.max(playerSeconds) * 1000) {
-			clearInterval(animationTimer);
-		} else {
-			animationTime += tick;
-		}
+		if (animationTime === d3.max(playerSeconds) * 1000) { clearInterval(animationTimer); }
+		else { animationTime += tick; }
 	}
 
 	function getCoords(timepoint) {
@@ -308,7 +295,7 @@ function stopAnimation() {
 		.transition().duration(0)
 			.each("end", function() {
 				completedTransitions++;
-				if (completedTransitions === dummyTransitions.size()) { updateRink(); }
+				if (completedTransitions === dummyTransitions.size()) { updateRinkAndTimeline(); }
 			});
 }
 
@@ -569,6 +556,7 @@ function initRink() {
 
 	["paths", "timepoints", "marker"].forEach(function(name) {
 		players.append("g").attr("class", name);
+		d3.select("#puck").append("g").attr("class", name);
 	});
 
 	// Append player marker elements
@@ -589,12 +577,10 @@ function initRink() {
 		.attr("r", 2)
 		.style("fill-opacity", 0);
 	d3.select("#puck").append("line")
-		.style("stroke", "black")
-		.style("stroke-dasharray", "2,3")
 		.style("stroke-opacity", 0);
 }
 
-function updateRink() {
+function updateRinkAndTimeline() {
 
 	// Bind updated data to player groups
 	// Since playerData was initialized to always have 10 players, player groups will never enter or exit
@@ -1060,7 +1046,7 @@ function updatePlayerTimepoint(player, t, x, y) {
 	playerToUpdate.timepoints[existingIdx] = {t: t, x: x, y: y};
 	playerToUpdate.timepoints = playerToUpdate.timepoints.sort(function(a, b) { return a.t - b.t; });
 	generateDStrings(playerToUpdate.id - 1);
-	updateRink();
+	updateRinkAndTimeline();
 }
 
 function updatePuckTimepoint(type, t, x, y, player) {
@@ -1072,19 +1058,19 @@ function updatePuckTimepoint(type, t, x, y, player) {
 	}
 	puckTimepoints[updateIdx] = { type: type, t: t, x: x, y: y, player: player };
 	puckTimepoints = puckTimepoints.sort(function(a, b) { return a.t - b.t; });
-	updateRink();
+	updateRinkAndTimeline();
 }
 
 function updatePlayerColour(player, newColour) {
 	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
 	playerToUpdate.colour = newColour;
-	updateRink();
+	updateRinkAndTimeline();
 }
 
 function updatePlayerLabel(player, newLabel) {
 	var playerToUpdate = playerData.filter(function(d) { return d.id === player; })[0];
 	playerToUpdate.label = newLabel;
-	updateRink();
+	updateRinkAndTimeline();
 }
 
 function generateDStrings(playerIdx) {
