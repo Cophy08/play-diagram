@@ -174,7 +174,8 @@ d3.select("#play").on("click", function() {
 	updateRink();
 
 	// Hide all player markers - startAnimations() will make markers visible at each player's first defined timepoint
-	d3.select("#rink").selectAll("g.player").selectAll("g.marker").style("visibility", "hidden");
+	d3.select("#rink").selectAll("g.player").selectAll("g.marker").select("text").style("fill-opacity", 0);
+	d3.select("#rink").selectAll("g.player").selectAll("g.marker").select("circle").style("stroke-opacity", 0);
 
 	// Restart animation timer
 	animationTime = 0;
@@ -189,7 +190,12 @@ d3.select("#play").on("click", function() {
 
 	function startAnimations() {
 
-		// PLAYER ANIMATIONS
+		/*
+		*
+		* Player animation
+		*
+		*/
+
 		// Get players whose first waypoint is at animationTime
 		var startPlayers = startTimes.filter(function(s) { return s.t * 1000 === animationTime; })
 			.map(function(s) { return s.player; });
@@ -200,86 +206,55 @@ d3.select("#play").on("click", function() {
 		if (startPlayers.length > 0) {
 			d3.selectAll("g.player").filter(function(d) { return startPlayers.indexOf(d.id) >= 0; })
 				.selectAll("g.marker")
-					.style("visibility", "visible")
 					.each(function(d) { translatePlayer(d, 0); })
 					.select("text")
-					.transition()
-						.styleTween("opacity", function() { return d3.interpolate(0, 1); });
+						.transition().styleTween("fill-opacity", function() { return d3.interpolate(0, 1); });
 		}
 
 		/*
 		*
-		* PUCK ANIMATIONS
+		* Puck animation
 		*
 		*/
-
-		var puck = d3.select("#puck").select("circle");
-		var puckTrail = d3.select("#puck").select("line");
 
 		// Get timepoints
 		var targetTimepoint = definedPuckTimepoints.filter(function(pt) { return pt.t * 1000 === animationTime; })[0];
 		var targetTimepointIdx = definedPuckTimepoints.map(function(pt) { return pt.t * 1000; }).indexOf(animationTime);
 		var sourceTimepoint = definedPuckTimepoints[targetTimepointIdx - 1];
-		var targetPlayer;
+
+		var x1;
+		var y1;
+		var x2;
+		var y2;
+
+		// Get target coordinates
 		if (targetTimepoint) {
-			targetPlayer = d3.selectAll("g.player").filter(function(p) { return p.id === targetTimepoint.player; }).select("g.marker");
+			var coords = getCoords(targetTimepoint);
+			x2 = coords[0];
+			y2 = coords[1];
 		}
 
-		if (targetTimepoint) {
-			// Get target
-			var x2;
-			var y2;
-			if (targetTimepoint) {
-				// Get target position
-				if (targetTimepoint.type === "position") {
-					x2 = x(targetTimepoint.x);
-					y2 = y(targetTimepoint.y);
-				} else if (targetTimepoint.type === "player") {
-					// get target player coordinates
-					var targetTransform = targetPlayer.attr("transform");
-					if (!targetTransform || targetTransform.indexOf("translate") < 0) {
-						x2 = null;
-						y2 = null;
-					} else {
-						x2 = +targetTransform.substring(targetTransform.indexOf("(") + 1, targetTransform.indexOf(","));
-						y2 = +targetTransform.substring(targetTransform.indexOf(",") + 1, targetTransform.indexOf(")"));
-					}
-				}
-			}
-		}
-
+		// Get source timepoints
 		if (sourceTimepoint) {
-			// Get source
-			var x1;
-			var y1;
-			if (sourceTimepoint) {
-				// Get target position
-				if (sourceTimepoint.type === "position") {
-					x1 = x(sourceTimepoint.x);
-					y1 = y(sourceTimepoint.y);
-				} else if (sourceTimepoint.type === "player") {
-					// get source player coordinates
-					var sourcePlayer = d3.selectAll("g.player").filter(function(p) { return p.id === sourceTimepoint.player; }).select("g.marker");
-					var sourceTransform = sourcePlayer.attr("transform");
-					if (!sourceTransform || sourceTransform.indexOf("translate") < 0) {
-						x1 = null;
-						y1 = null;
-					} else {
-						x1 = +sourceTransform.substring(sourceTransform.indexOf("(") + 1, sourceTransform.indexOf(","));
-						y1 = +sourceTransform.substring(sourceTransform.indexOf(",") + 1, sourceTransform.indexOf(")"));
-					}
-				}
-			}
+			var coords = getCoords(sourceTimepoint);
+			x1 = coords[0];
+			y1 = coords[1];
+		}
 
-			puckTrail.attr("x1", x1)
+		// Draw puck trail
+		if (targetTimepoint && sourceTimepoint) {
+			d3.select("#puck").select("line")
+				.attr("x1", x1)
 				.attr("y1", y1)
 				.attr("x2", x2)
 				.attr("y2", y2)
-				.transition().styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
+				.transition()
+					.styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
 		}
 
 		// If there's no target timepoint, then keep the puck carrier highlight as-is
 		// If there's a target timepoint hide puck carrier highlights from players without puck
+		var puck = d3.select("#puck").select("circle");
 		if (targetTimepoint) {
 			d3.selectAll("g.player").select("circle").transition().style("stroke-opacity", 0);
 
@@ -288,7 +263,9 @@ d3.select("#play").on("click", function() {
 
 			if (targetTimepoint.type === "player") {
 				// Highlight puck carrier and fade-out puck
-				targetPlayer.select("circle").transition().styleTween("stroke-opacity", function() { return d3.interpolate(0, 1); });
+				d3.selectAll("g.player").filter(function(p) { return p.id === targetTimepoint.player; })
+					.select("g.marker").select("circle")
+						.transition().styleTween("stroke-opacity", function() { return d3.interpolate(0, 1); });
 				puck.transition().styleTween("fill-opacity", function() { return d3.interpolate(1, 0); });
 			} else if (targetTimepoint.type === "position") {
 				// Keep puck visible if targetTimepoint is position
@@ -302,6 +279,24 @@ d3.select("#play").on("click", function() {
 		} else {
 			animationTime += tick;
 		}
+	}
+
+	function getCoords(timepoint) {
+		var coords = [];
+		if (timepoint.type === "position") {
+			coords[0] = x(timepoint.x);
+			coords[1] = y(timepoint.y);
+		} else if (timepoint.type === "player") {
+			var playerMarker = d3.selectAll("g.player").filter(function(p) { return p.id === timepoint.player; }).select("g.marker");
+			var transform = playerMarker.attr("transform");
+			if (!transform || transform.indexOf("translate") < 0) {
+				coords = [null, null];
+			} else {
+				coords[0] = +transform.substring(transform.indexOf("(") + 1, transform.indexOf(","));
+				coords[1] = +transform.substring(transform.indexOf(",") + 1, transform.indexOf(")"));
+			}
+		}
+		return coords;
 	}
 });
 
