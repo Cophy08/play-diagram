@@ -152,9 +152,6 @@ var animationTime;
 var tick = 500;
 d3.select("#play").on("click", function() {
 
-	// Remove puck carrier highlights from players without puck
-	d3.selectAll("g.player").select("circle").style("stroke-opacity", 0);
-
 	// Record defined puck timepoints
 	var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
 	definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
@@ -174,12 +171,8 @@ d3.select("#play").on("click", function() {
 		}
 	});
 
-	// Clear timer and reset marker positions - use a transition to clear existing transitions
-	clearInterval(animationTimer);
-	d3.select("#rink").selectAll("g.player").selectAll("g.marker").transition().duration(0);
-	updateRink();
-
 	// Restart animation timer
+	stopAnimation();
 	animationTime = 0;
 	startAnimations(); // Initial call so that it starts right away
 	animationTimer = setInterval(function() { startAnimations(); }, tick); // Delays before calling startAnimation for the first time
@@ -211,7 +204,6 @@ d3.select("#play").on("click", function() {
 					.each(function(d) { translatePlayer(d, 0); })
 					.select("text")
 						.transition().style("fill-opacity", 1);
-						//.transition().styleTween("fill-opacity", function() { return d3.interpolate(0, 1); });
 		}
 
 		/*
@@ -301,7 +293,34 @@ d3.select("#play").on("click", function() {
 	}
 });
 
+/*
+*
+* Clear animations and reset rink. To do this:
+* 1. Apply a dummy transition to all elements that might have a transition
+* 2. When all dummy transitions have completed (compare the number of completed transitions to the number of dummy transitions), reset the rink
+*
+*/
+
+function stopAnimation() {
+	clearInterval(animationTimer);
+	var completedTransitions = 0;
+	var dummyTransitions = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle")
+		.transition().duration(0)
+			.each("end", function() {
+				completedTransitions++;
+				if (completedTransitions === dummyTransitions.size()) { updateRink(); }
+			});
+}
+
+/*
+*
+* Moves a player's marker along the specified path
+* Specify a player by providing his data; specify the path by providing the path element's index in his data
+*
+*/
+
 function translatePlayer(data, pathIdx) {
+	// Applies transitions to player markers
 	if (pathIdx < data.paths.length) {
 		var animGroup = d3.selectAll("g.player").filter(function(d) { return d.id === data.id; });
 		var animPath = animGroup.selectAll("path").filter(function(d) { return d.order === pathIdx; });
@@ -313,17 +332,19 @@ function translatePlayer(data, pathIdx) {
 				translatePlayer(d, pathIdx + 1);
 			});
 	}
+	// Translates marker along a path based on the path's length and time t
+	function translateAlong(path) {
+		var l = path.getTotalLength();
+		return function(d, i, a) {
+			return function(t) {
+			  var p = path.getPointAtLength(t * l);
+			  return "translate(" + p.x + "," + p.y + ")";
+			};
+		};
+	}
 }
 
-function translateAlong(path) {
-	var l = path.getTotalLength();
-	return function(d, i, a) {
-		return function(t) {
-		  var p = path.getPointAtLength(t * l);
-		  return "translate(" + p.x + "," + p.y + ")";
-		};
-	};
-}
+
 
 function initTimeline() {
 
@@ -548,7 +569,6 @@ function initRink() {
 
 	["paths", "timepoints", "marker"].forEach(function(name) {
 		players.append("g").attr("class", name);
-		d3.select("#puck").append("g").attr("class", name);
 	});
 
 	// Append player marker elements
@@ -734,6 +754,8 @@ function appendPlayerTimepointListeners() {
 				targetT = null;
 				return;
 			}
+
+			stopAnimation();
 
 			// If paths are currently hidden, display them
 			if (!arePathsVisible) {
@@ -967,9 +989,7 @@ function clearActiveTimepoint() {
 
 function openPicker() {
 
-	// Clear animations
-	clearInterval(animationTimer);
-	d3.select("#rink").selectAll("g.player").selectAll("g.marker").transition().duration(0);
+	stopAnimation();
 
 	// If paths are currently hidden, display them
 	if (!arePathsVisible) {
