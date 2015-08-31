@@ -11,6 +11,7 @@
 </head>
 <body>
 	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Play</a>
+	<a href="#" id="reset" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Reset</a>
 	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<svg id="rink-svg" style="display: block;"></svg>
 	<div id="table" style="display: block;"></div>
@@ -134,9 +135,11 @@ var arePathsVisible = true;
 d3.select("#paths").on("click", function() {
 	if (arePathsVisible) {
 		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "hidden");
+		d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", 0);
 		arePathsVisible = false;
 	} else {
 		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "visible");
+		d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", 1);
 		arePathsVisible = true;
 	}
 });
@@ -147,14 +150,18 @@ d3.select("#paths").on("click", function() {
 *
 */
 
+d3.select("#reset").on("click", function() {
+	stopAnimation(true);
+});
+
 var animationTimer;
 var animationTime;
 var tick = 500;
 d3.select("#play").on("click", function() {
 
+	// Get defined timepoints and find last defined timepoint to determine animation length
 	var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
 	definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
-
 	var lastDefinedTimepoint = d3.max(playerData, function(d) {
 		return d3.max(
 			d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }),
@@ -189,6 +196,9 @@ d3.select("#play").on("click", function() {
 	d3.select("#thumb").transition().duration(lastDefinedTimepoint * 1000).ease("linear")
 		.attrTween("x1", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); })
 		.attrTween("x2", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); });
+
+	// Hide puck markers
+	d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", 0);
 
 	function startAnimations() {
 
@@ -309,6 +319,8 @@ function stopAnimation(reset) {
 				completedTransitions++;
 				if (completedTransitions === dummyTransitions.size() && reset === true) { updateRinkAndTimeline(); }
 			});
+	// Show puck markers if paths are enabled
+	if (arePathsVisible) { d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", 1); }
 }
 
 /*
@@ -585,7 +597,7 @@ function initRink() {
 
 	// Append puck marker elements
 	d3.select("#puck").append("circle")
-		.attr("r", 2)
+		.attr("r", 3)
 		.style("fill-opacity", 0);
 	d3.select("#puck").append("line")
 		.style("stroke-opacity", 0);
@@ -991,6 +1003,7 @@ function openPicker() {
 	// If paths are currently hidden, display them
 	if (!arePathsVisible) {
 		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "visible");
+		d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", 1);
 		arePathsVisible = true;
 	}
 
