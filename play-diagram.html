@@ -10,10 +10,9 @@
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
-	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Play</a>
-	<a href="#" id="reset" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Reset</a>
-	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<svg id="rink-svg" style="display: block;"></svg>
+	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Play</a>
+	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<div id="table" style="display: block;"></div>
 	</div>
 </body>
@@ -135,7 +134,6 @@ initTimeline();
 *
 */
 d3.select("#paths").on("click", function() { togglePaths(); });
-d3.select("#reset").on("click", function() { stopAnimation(true); });
 
 /*
 *
@@ -183,6 +181,9 @@ d3.select("#play").on("click", function() {
 		);
 	});
 	lastDefinedTimepoint = d3.max([lastDefinedTimepoint, d3.max(definedPuckTimepoints, function(pt) { return pt.t; })]);
+
+	// Skip animation if there are no defined timepoints
+	if (!lastDefinedTimepoint) { return; }
 
 	// Record the time of each player's first timepoint
 	var startTimes = [];

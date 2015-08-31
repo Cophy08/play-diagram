@@ -207,7 +207,7 @@ text.carrier {
 		fill: darkred;
 	}
 
-.button.carrier {
+.button.carrier, #play, #paths {
 	background: #777;
 	color: #fff;
 	border-radius: 2px;
