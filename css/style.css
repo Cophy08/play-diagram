@@ -75,18 +75,13 @@ g.player path.skater {
 		stroke: pink;
 	}
 
-#picker-marker {
-	fill: gold;
-	fill-opacity: 0.5;
-}
-
 #picker-mask {
 	fill: white; /* Need a fill to detect mouse events */
 	fill-opacity: 0;
 }
-
 	#picker-mask.active {
 		stroke: gold;
+		cursor: crosshair;
 	}
 
 #puck circle {
@@ -117,6 +112,10 @@ g.player path.skater {
 		width: 60px;
 	}
 
+		.player.row .cell.label {
+			padding-bottom: 18px;
+		}
+
 	.cell.give-puck {
 		width: 70px;
 	}
@@ -139,6 +138,10 @@ line.baseline {
 	stroke: #ddd;
 }
 
+circle.colour-picker {
+	cursor: pointer;
+}
+
 circle.highlight {
 	fill: gold;
 }
@@ -146,6 +149,7 @@ circle.highlight {
 circle.timepoint {
 	fill: white; /* Need a fill so that it's clickable */
 	stroke: #bbb;
+	cursor: pointer;
 }
 
 	circle.timepoint:hover {
@@ -155,6 +159,17 @@ circle.timepoint {
 	circle.timepoint.defined {
 		fill: pink;
 		stroke: red;
+		cursor: -webkit-grab;
+		cursor: -moz-grab;
+		cursor: grab;
+	}
+
+	#drag-point {
+		fill: gold;
+		fill-opacity: 0.5;
+		cursor: -webkit-grabbing;
+		cursor: -moz-grabbing;
+		cursor: grabbing;
 	}
 
 	circle.timepoint.defined:hover {
@@ -192,3 +207,15 @@ text.carrier {
 		fill: darkred;
 	}
 
+.button.carrier {
+	background: #777;
+	color: #fff;
+	border-radius: 2px;
+	cursor: pointer;
+	margin-right: 20px;
+	padding: 3px;
+}
+
+	.button.carrier:hover {
+		background: #333;
+	}

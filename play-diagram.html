@@ -566,14 +566,7 @@ function initTimeline() {
 		closePicker();
 	});
 
-	// Append a dot in the rink-svg for user to pick skater position
-	// Draw the rectangle above the dot so that all mousemove events register
-	d3.select("#rink").append("circle")
-		.attr("id", "picker-marker")
-		.attr("cx", 0)
-		.attr("cy", 0)
-		.attr("r", highlightCircleR)
-		.style("visibility", "hidden");
+	// Append a mask on the rink that will capture mouse events
 	d3.select("#rink").append("rect")
 		.attr("id", "picker-mask")
 		.attr("width", x.range()[1])
@@ -934,14 +927,14 @@ function appendPuckTimepointListeners() {
 				.attr("id", "drag-point")
 				.attr("r", highlightCircleR)
 				.attr("cy", puckTimelineHeight - 28)
-				.style("fill", "black")
-				.style("fill-opacity", 0.2);
+				.style("visibility", "hidden");
 		})
 		.on("drag", function() {
 			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
 
 			var mX = d3.mouse(this)[0];
-			d3.select("#drag-point").attr("cx", mX);
+			d3.select("#drag-point").attr("cx", mX)
+				.style("visibility", "visible");
 
 			// Check if user is within .15 seconds of a timepoint
 			var delta = 0.15;
@@ -1041,12 +1034,9 @@ function openPicker() {
 	togglePaths(true);
 
 	// Make picker elements visible
-	d3.selectAll("#picker-marker, #picker-mask")
+	d3.select("#picker-mask")
 		.attr("class", "active")
 		.style("visibility", "visible");
-	d3.select("#picker-marker")
-		.attr("cx", -100)
-		.attr("cy", -100);
 
 	// Move the picker marker; snap to the closest whole foot
 	var pxPerFt = cellSize / ftPerCell;
@@ -1055,8 +1045,6 @@ function openPicker() {
 		mPos = d3.mouse(this);
 		mX = Math.round(mPos[0] / pxPerFt) * pxPerFt;
 		mY = Math.round(mPos[1] / pxPerFt) * pxPerFt;
-		d3.select("#picker-marker").attr("cx", mX)
-			.attr("cy", mY);
 	});
 
 	// Update waypoint data with the picked position, then close the picker
@@ -1080,7 +1068,7 @@ function closePicker() {
 	// Hide picker elements on rink
 	d3.select("#picker-mask").on("mousemove", null);
 	d3.select("#picker-mask").on("click", null);
-	d3.selectAll("#picker-marker, #picker-mask")
+	d3.select("#picker-mask")
 		.attr("class", "")
 		.style("visibility", "hidden");
 
