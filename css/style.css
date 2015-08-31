@@ -59,6 +59,10 @@ text.timepoint {
 		fill: pink;
 	}
 
+	#puck text.timepoint {
+		fill: silver;
+	}
+
 g.player path.skater {
 	stroke-opacity: 0.5;
 }
