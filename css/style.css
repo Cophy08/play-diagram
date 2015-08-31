@@ -109,16 +109,18 @@ g.player path.skater {
 }
 
 	.cell.label {
-		width: 60px;
+		width: 50px;
 	}
 
 		.player.row .cell.label {
 			padding-bottom: 18px;
 		}
 
-	.cell.give-puck {
-		width: 70px;
+	.cell.colour-picker {
+		margin-left: 10px;
+		margin-right: 15px;
 	}
+
 
 
 input[type=text] {
@@ -138,9 +140,18 @@ line.baseline {
 	stroke: #ddd;
 }
 
-circle.colour-picker {
+.player.row circle.colour-picker {
 	cursor: pointer;
+	fill-opacity: 0.5;
 }
+
+	.puck.row circle.colour-picker {
+		display: none;
+	}
+
+	.player.row circle.colour-picker:hover {
+		fill-opacity: 1;
+	}
 
 circle.highlight {
 	fill: gold;
@@ -212,7 +223,7 @@ text.carrier {
 	color: #fff;
 	border-radius: 2px;
 	cursor: pointer;
-	margin-right: 20px;
+	margin-right: 10px;
 	padding: 3px;
 }
 

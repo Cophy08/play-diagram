@@ -141,21 +141,22 @@ d3.select("#paths").on("click", function() { togglePaths(); });
 *
 */
 
-var arePathsVisible = true;
+var arePathsVisible;
+togglePaths(true);
 function togglePaths(toBe) {
-
 	if (toBe == null) {
 		if (arePathsVisible) { toBe = false; }
 		else { toBe = true; }
 	}
-
 	if (toBe === true) {
 		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "visible");
 		d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", 1);
+		d3.select("#paths").text("Hide Paths");
 		arePathsVisible = true;
 	} else if (toBe === false) {
 		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "hidden");
 		d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", 0);
+		d3.select("#paths").text("Show Paths");
 		arePathsVisible = false;
 	}
 }
@@ -394,7 +395,7 @@ function initTimeline() {
 
 	// Append columns to each row
 	var rows = table.selectAll(".row");
-	["label", "colour-picker", "timeline"].forEach(function(name) {
+	["colour-picker", "label", "timeline"].forEach(function(name) {
 		rows.append("div")
 			.attr("class", name + " cell");
 	});
