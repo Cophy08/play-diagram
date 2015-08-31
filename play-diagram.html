@@ -207,9 +207,11 @@ d3.select("#play").on("click", function() {
 
 	// Using attrTween and interpolate, set the thumb to t = 0 before restarting the transition
 	// http://bost.ocks.org/mike/transition/#animation
-	d3.select("#thumb").transition().duration(lastDefinedTimepoint * 1000).ease("linear")
-		.attrTween("x1", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); })
-		.attrTween("x2", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); });
+	d3.select("#thumb")
+		.style("visibility", "visible")
+		.transition().duration(lastDefinedTimepoint * 1000).ease("linear")
+			.attrTween("x1", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); })
+			.attrTween("x2", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); });
 
 	function startAnimations() {
 
@@ -274,7 +276,7 @@ d3.select("#play").on("click", function() {
 			var puck = d3.select("#puck").select("circle")
 				.attr("cx", x2)
 				.attr("cy", y2)
-				.style("fill-opacity", 1);
+				.style("stroke-opacity", 1);
 
 			// If the puck goes to a player, highlight puck carrier, then show and fade-out puck
 			if (targetTimepoint.type === "player") {
@@ -286,9 +288,9 @@ d3.select("#play").on("click", function() {
 				// If at t = 0, the player starts with the puck, so we don't need to show the puck being passed
 				if (animationTime > 0) {
 					puck.transition().ease("ease-in")
-						.styleTween("fill-opacity", function() { return d3.interpolate(1, 0); });
+						.styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
 				} else {
-					puck.style("fill-opacity", 0);
+					puck.style("stroke-opacity", 0);
 				}
 			}
 		}
@@ -335,7 +337,10 @@ function stopAnimation(reset) {
 		.transition().duration(0).delay(500) // Delay to give a buffer for existing transitions to finish
 			.each("end", function() {
 				completedTransitions++;
-				if (completedTransitions === dummyTransitions.size() && reset === true) { updateRinkAndTimeline(); }
+				if (completedTransitions === dummyTransitions.size() && reset === true) {
+					d3.select("#thumb").style("visibility", "hidden")
+					updateRinkAndTimeline();
+				}
 			});
 }
 
@@ -485,7 +490,8 @@ function initTimeline() {
 		.attr("y1", 0)
 		.attr("y2", puckTimelineHeight)
 		.attr("x1", tX.range()[0])
-		.attr("x2", tX.range()[0]);
+		.attr("x2", tX.range()[0])
+		.style("visibility", "hidden");
 
 	// Append highlight for the active element behind timepoints
 	table.selectAll("svg.timeline").append("circle")
@@ -611,8 +617,7 @@ function initRink() {
 
 	// Append puck marker elements
 	d3.select("#puck").append("circle")
-		.attr("r", 3)
-		.style("fill-opacity", 0);
+		.style("stroke-opacity", 0);
 	d3.select("#puck").append("line")
 		.style("stroke-opacity", 0);
 }
@@ -677,7 +682,7 @@ function updateRinkAndTimeline() {
 	// Show the puck carrier highlight if there's a carrier at t = 0
 	// Or show the puck position if it has a position at t = 0
 	markers.select("circle").style("stroke-opacity", 0);
-	d3.select("#puck").select("circle").style("fill-opacity", 0);
+	d3.select("#puck").select("circle").style("stroke-opacity", 0);
 	if (puckTimepoints[0].type === "player") {
 		markers.filter(function(d) { return d.id === puckTimepoints[0].player; }).select("circle")
 			.style("stroke-opacity", 1);
@@ -685,7 +690,7 @@ function updateRinkAndTimeline() {
 		d3.select("#puck").select("circle")
 			.attr("cx", x(puckTimepoints[0].x))
 			.attr("cy", y(puckTimepoints[0].y))
-			.style("fill-opacity", 1);
+			.style("stroke-opacity", 1);
 	}
 
 	/*

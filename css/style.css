@@ -90,7 +90,9 @@ g.player path.skater {
 	}
 
 #puck circle {
-	fill: black;
+	fill: none;
+	stroke: black;
+	r: 5;
 }
 
 #puck line {
