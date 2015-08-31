@@ -45,7 +45,7 @@ g.player g.marker text {
 		fill: red;
 	}
 
-text.timepoint {
+text.timepoint, text.label {
 	font-size: 10px;
 	text-anchor: middle;
 	alignment-baseline: middle;

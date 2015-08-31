@@ -520,6 +520,19 @@ function initTimeline() {
 	appendPuckTimepointListeners();
 	appendPlayerTimepointListeners();
 
+	// Append time marker labels
+	d3.select(".puck.row").select("svg.timeline").selectAll("text.label")
+		.data(playerSeconds)
+		.enter().append("text")
+			.attr("class", "label")
+			.attr("x", function(d) { return tX(d); })
+			.attr("y", puckTimelineHeight - 6)
+			.text(function(d) {
+				if (d === 0) { return "t = 0" } // Use thinspaces
+				else { return d; }
+			});
+
+
 	// Append a delete link
 	var bW = 42;
 	var bH= 15;
