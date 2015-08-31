@@ -11,7 +11,7 @@
 </head>
 <body>
 	<svg id="rink-svg" style="display: block;"></svg>
-	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Play</a>
+	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Start Play</a>
 	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<div id="table" style="display: block;"></div>
 	</div>
@@ -530,8 +530,9 @@ function initTimeline() {
 			.attr("x", function(d) { return tX(d); })
 			.attr("y", puckTimelineHeight - 6)
 			.text(function(d) {
-				if (d === 0) { return "t = 0" } // Use thinspaces
-				else { return d; }
+				var outString = d;
+				if (d < 10) { outString = "0" + outString; }
+				return "0:" + outString;
 			});
 
 
