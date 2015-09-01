@@ -751,6 +751,8 @@ function updateRinkAndTimeline() {
 	// Update colour pickers
 	d3.select("#table").selectAll("svg.colour-picker").select("circle.colour-picker")
 		.style("fill", function(d) { return d.colour; });
+
+	updateUrl();
 };
 
 function appendPlayerTimepointListeners() {
@@ -1260,5 +1262,32 @@ function generateDStrings(playerIdx) {
 	}
 }
 
+function updateUrl() {
+	var resultString = "pk=";
+	puckTimepoints.filter(function(pt) { return pt.type != null; }).forEach(function(pt, i) {
+		var ptString = "";
+		if (i > 0) { ptString += "+"; }
+		ptString += pt.t + ",";
+		if (pt.type === "position") { ptString += "pos" + "," + pt.x + "," + pt.y; }
+		else if (pt.type === "player") { ptString += "plyr" + "," + pt.player; }
+		resultString += ptString;
+	});
+
+	playerData.forEach(function(p, i) {
+		var playerString = "&p" + p.id + ";" + p.label + ";" + p.colour + ";";
+		resultString += playerString;
+
+		p.timepoints.filter(function(pt) { return pt.x != null & pt.y != null; }).forEach(function(pt, j) {
+			var ptString = "";
+			if (j > 0) { ptString += "+"; }
+			ptString += pt.t + "," + pt.x + "," + pt.y;
+			resultString += ptString;
+		});
+	});
+
+	// Replace the current url without creating a new history state
+	var newUrl = "play-diagram.html?" + resultString
+	window.history.replaceState(resultString, "Title", newUrl);
+}
 </script>
 </html>
