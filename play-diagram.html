@@ -285,7 +285,6 @@ d3.select("#play").on("click", function() {
 				d3.selectAll("g.player").filter(function(p) { return p.id === targetTimepoint.player; })
 					.select("g.marker").select("circle")
 						.transition().style("stroke-opacity", 1);
-
 				// Only display the puck being passed if not at t = 0
 				// If at t = 0, the player starts with the puck, so we don't need to show the puck being passed
 				if (animationTime > 0) {
@@ -652,7 +651,7 @@ function updateRinkAndTimeline() {
 	var timepoints = players.select("g.timepoints").selectAll("text.timepoint")
 		.data(function(d) {
 			return d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }); }
-		, function(pt) { return pt.t; })
+		,function(pt) { return pt.t; })
 	timepoints.exit().remove();
 	timepoints.enter().append("text")
 		.attr("class", "timepoint");
@@ -1262,6 +1261,40 @@ function generateDStrings(playerIdx) {
 	}
 }
 
+function parseUrl() {
+
+	// Separate and store the url parameters
+	var urlParameters = window.location.search.substring(1).split("&");
+	urlParameters.forEach(function(p) {
+		var pId = p.substring(1, p.indexOf("="));
+		if (pId === "k") {
+			parsePuckParameters(p);
+		 } else if (+pId >= 1 && +pId <= 10) {
+		 	parsePlayerParameters(p);
+		 }
+	});
+
+	/*
+	*
+	* Process the puck portion of the url
+	*
+	*/
+	function parsePuckParameters(url) {
+		console.log(url);
+	}
+
+	/*
+	*
+	* Process the player portions of the url
+	*
+	*/
+	function parsePlayerParameters(url) {
+		console.log(url);
+	}
+
+	updateRinkAndTimeline();
+}
+
 function updateUrl() {
 	var resultString = "pk=";
 	puckTimepoints.filter(function(pt) { return pt.type != null; }).forEach(function(pt, i) {
@@ -1274,7 +1307,7 @@ function updateUrl() {
 	});
 
 	playerData.forEach(function(p, i) {
-		var playerString = "&p" + p.id + ";" + p.label + ";" + p.colour + ";";
+		var playerString = "&p" + p.id + "=" + p.label + ";" + p.colour + ";";
 		resultString += playerString;
 
 		p.timepoints.filter(function(pt) { return pt.x != null & pt.y != null; }).forEach(function(pt, j) {
