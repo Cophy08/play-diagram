@@ -128,6 +128,10 @@ d3.select("#rink-svg")
 initRink();
 initTimeline();
 
+// Load initial data
+parseUrl();
+updateRinkAndTimeline();
+
 /*
 *
 * Listeners for controls
@@ -1270,9 +1274,11 @@ function parseUrl() {
 		if (pId === "k") {
 			parsePuckParameters(p);
 		 } else if (+pId >= 1 && +pId <= 10) {
-		 	parsePlayerParameters(p);
+		 	parsePlayerParameters(p, +pId);
 		 }
 	});
+	console.log(puckTimepoints);
+	console.log(playerData);
 
 	/*
 	*
@@ -1280,7 +1286,30 @@ function parseUrl() {
 	*
 	*/
 	function parsePuckParameters(url) {
-		console.log(url);
+		// Split puck parameters into an array of timepoint strings
+		url = url.substring(url.indexOf("=") + 1);
+		var pts = url.split("+");
+		pts = pts.filter(function(d) { return d; }); // Filter out null values
+
+		// Update puckTimepoints with the url timepoint strings
+		pts.forEach(function(p, i) {
+
+			// Split each timepoint string into an array of individual elements
+			var ptData = p.split(",");
+
+			var targetPt = puckTimepoints.filter(function(d) { return d.t === +ptData[0]; })[0];
+			if (ptData[1] === "s") {
+				targetPt.type = "position";
+				targetPt.x = +ptData[2];
+				targetPt.y = +ptData[3];
+				targetPt.player = null;
+			} else if (ptData[1] === "y") {
+				targetPt.type = "player";
+				targetPt.x = null;
+				targetPt.y = null;
+				targetPt.player = +ptData[2];
+			}
+		});
 	}
 
 	/*
@@ -1288,11 +1317,30 @@ function parseUrl() {
 	* Process the player portions of the url
 	*
 	*/
-	function parsePlayerParameters(url) {
-		console.log(url);
-	}
+	function parsePlayerParameters(url, playerId) {
+		// Split puck parameters into an array of timepoint strings
+		url = url.substring(url.indexOf("=") + 1);
 
-	updateRinkAndTimeline();
+		var params = url.split(";");
+
+		var targetPlayer = playerData.filter(function(d) { return d.id === playerId; })[0];
+		targetPlayer.label = params[0];
+
+		if (params[1] === "r") { targetPlayer.colour = "red"; }
+		else { targetPlayer.colour = "blue"; }
+
+		var pts = params[2].split("+");
+		pts = pts.filter(function(d) { return d; }); // Filter out null values
+
+		pts.forEach(function(p, i) {
+
+			// Split each timepoint string into an array of individual elements
+			var ptData = p.split(",");
+			var targetPt = targetPlayer.timepoints.filter(function(d) { return d.t === +ptData[0]; })[0];
+			targetPt.x = +ptData[1];
+			targetPt.y = +ptData[2];
+		});
+	}
 }
 
 function updateUrl() {
@@ -1301,13 +1349,17 @@ function updateUrl() {
 		var ptString = "";
 		if (i > 0) { ptString += "+"; }
 		ptString += pt.t + ",";
-		if (pt.type === "position") { ptString += "pos" + "," + pt.x + "," + pt.y; }
-		else if (pt.type === "player") { ptString += "plyr" + "," + pt.player; }
+		if (pt.type === "position") { ptString += "s" + "," + pt.x + "," + pt.y; }
+		else if (pt.type === "player") { ptString += "y" + "," + pt.player; }
 		resultString += ptString;
 	});
 
 	playerData.forEach(function(p, i) {
-		var playerString = "&p" + p.id + "=" + p.label + ";" + p.colour + ";";
+
+		var colourString = "b";
+		if (p.colour === "red") { colourString = "r"; }
+
+		var playerString = "&p" + p.id + "=" + p.label + ";" + colourString + ";";
 		resultString += playerString;
 
 		p.timepoints.filter(function(pt) { return pt.x != null & pt.y != null; }).forEach(function(pt, j) {
