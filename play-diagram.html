@@ -11,6 +11,7 @@
 </head>
 <body>
 	<svg id="rink-svg" style="display: block;"></svg>
+	<div id="message"></div>
 	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Start Play</a>
 	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<div id="table" style="display: block;"></div>
@@ -38,6 +39,9 @@ var x = d3.scale.linear()
 var y = d3.scale.linear()
 	.domain([0, rinkHeight])
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
+
+var maxTimepoints = 100;
+var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " timepoints.";
 
 /*
 *
@@ -770,9 +774,15 @@ function appendPlayerTimepointListeners() {
 			activeTimepoint.timeline = "player";
 			activeTimepoint.t = clicked.t;
 			activeTimepoint.player = clickedPlayerId;
-			// Open the picker for the new active timepoint
-			highlightActiveTimepoint();
-			openPicker();
+
+			// Open the picker for the new active timepoint if the maximum number of timepoints hasn't been reached
+			// Also open the picker if a defined timepoint is clicked so the user can edit/delete it
+			if (getTotalDefinedTimepoints() < maxTimepoints || d3.select(this).classed("defined") === true) {
+				highlightActiveTimepoint();
+				openPicker();
+			} else {
+				d3.select("#message").text(msgMaxTimepoints);
+			}
 		}
 	});
 
@@ -895,9 +905,15 @@ function appendPuckTimepointListeners() {
 			activeTimepoint.timeline = "puck";
 			activeTimepoint.t = clicked.t;
 			activeTimepoint.player = null;
-			// Open the picker for the new active timepoint
-			highlightActiveTimepoint();
-			openPicker();
+
+			// Open the picker for the new active timepoint if the maximum number of timepoints hasn't been reached
+			// Also open the picker if a defined timepoint is clicked so the user can edit/delete it
+			if (getTotalDefinedTimepoints() < maxTimepoints || d3.select(this).classed("defined") === true) {
+				highlightActiveTimepoint();
+				openPicker();
+			} else {
+				d3.select("#message").text(msgMaxTimepoints);
+			}
 		}
 	});
 
@@ -1277,8 +1293,6 @@ function parseUrl() {
 		 	parsePlayerParameters(p, +pId);
 		 }
 	});
-	console.log(puckTimepoints);
-	console.log(playerData);
 
 	/*
 	*
@@ -1373,6 +1387,20 @@ function updateUrl() {
 	// Replace the current url without creating a new history state
 	var newUrl = "play-diagram.html?" + resultString
 	window.history.replaceState(resultString, "Title", newUrl);
+}
+
+// Gets the total number of defined timepoints for puck and all players
+function getTotalDefinedTimepoints() {
+	var total = 0;
+	// Count number of defined puck timepoints
+	var definedTimepoints = puckTimepoints.filter(function(d) { return d.type != null; }).length;
+	total += definedTimepoints;
+	// Count number of defined player timepoints
+	playerData.forEach(function(p) {
+		definedTimepoints = p.timepoints.filter(function(d) { return d.x != null && d.y != null; }).length;
+		total += definedTimepoints;
+	});
+	return total;
 }
 </script>
 </html>
