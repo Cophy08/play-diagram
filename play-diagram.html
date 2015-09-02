@@ -834,14 +834,15 @@ function appendPlayerTimepointListeners() {
 				.attr("r", highlightCircleR)
 				.attr("cx", mX)
 				.attr("cy", timelineHeight - 28)
-				.style("fill", "black")
-				.style("fill-opacity", 0.2);
+				.style("visibility", "hidden"); // Start off hidden so the timepoint click listener can fire
 		})
 		.on("drag", function() {
 			if (!isDefined || activeTimepoint == null) { return; } // Cancel drag events if the dragged timepoint is not defined. Also cancel if there's an active timepoint
 
 			var mX = d3.mouse(this)[0];
-			d3.select("#drag-point").attr("cx", mX);
+			d3.select("#drag-point")
+				.attr("cx", mX)
+				.style("visibility", "visible");
 
 			// Check if user is within .15 seconds of a timepoint
 			var rounded = Math.round(tX.invert(mX) * 100) / 100; // Round to the nearest .01 second
@@ -951,10 +952,12 @@ function appendPuckTimepointListeners() {
 			undefinedTimes = undefinedTimepoints.data().map(function(pt) { return pt.t; });
 
 			// Append a marker to dragged
+			var mX = d3.mouse(this)[0];
 			var dragPt = d3.select(this.parentNode).append("circle")
 				.attr("id", "drag-point")
 				.attr("r", highlightCircleR)
 				.attr("cy", puckTimelineHeight - 28)
+				.attr("cx", mX)
 				.style("visibility", "hidden");
 		})
 		.on("drag", function() {
