@@ -11,7 +11,7 @@
 </head>
 <body>
 	<svg id="rink-svg" style="display: block;"></svg>
-	<div id="message"></div>
+	<div id="message" style="display: block; height: 32px;"></div>
 	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Start Play</a>
 	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<div id="table" style="display: block;"></div>
@@ -40,7 +40,7 @@ var y = d3.scale.linear()
 	.domain([0, rinkHeight])
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
 
-var maxTimepoints = 100;
+var maxTimepoints = 5;
 var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " timepoints.";
 
 /*
@@ -781,7 +781,7 @@ function appendPlayerTimepointListeners() {
 				highlightActiveTimepoint();
 				openPicker();
 			} else {
-				d3.select("#message").text(msgMaxTimepoints);
+				displayMessage(msgMaxTimepoints, 2000);
 			}
 		}
 	});
@@ -912,7 +912,7 @@ function appendPuckTimepointListeners() {
 				highlightActiveTimepoint();
 				openPicker();
 			} else {
-				d3.select("#message").text(msgMaxTimepoints);
+				displayMessage(msgMaxTimepoints, 2000);
 			}
 		}
 	});
@@ -1401,6 +1401,16 @@ function getTotalDefinedTimepoints() {
 		total += definedTimepoints;
 	});
 	return total;
+}
+
+// If duration is not specified, then keep
+function displayMessage(msg, duration) {
+	d3.select("#message")
+		.style("opacity", 1)
+		.text(msg)
+		.transition().delay(duration)
+			.style("opacity", 0)
+			.each("end", function() { d3.select(this).text(""); });
 }
 </script>
 </html>
