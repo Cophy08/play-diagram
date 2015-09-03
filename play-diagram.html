@@ -40,7 +40,7 @@ var y = d3.scale.linear()
 	.domain([0, rinkHeight])
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
 
-var maxTimepoints = 5;
+var maxTimepoints = 10;
 var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " timepoints.";
 
 /*
@@ -347,7 +347,7 @@ function stopAnimation(reset) {
 			.each("end", function() {
 				completedTransitions++;
 				if (completedTransitions === dummyTransitions.size() && reset === true) {
-					d3.select("#thumb").style("visibility", "hidden")
+					d3.select("#thumb").style("visibility", "hidden");
 					updateRinkAndTimeline();
 				}
 			});
@@ -1121,7 +1121,7 @@ function updatePlayerTimepoint(player, t, x, y) {
 	}
 	playerToUpdate.timepoints[existingIdx] = {t: t, x: x, y: y};
 	playerToUpdate.timepoints = playerToUpdate.timepoints.sort(function(a, b) { return a.t - b.t; });
-	generateDStrings(playerToUpdate.id - 1);
+	generateDStrings(playerToUpdate.id);
 	updateRinkAndTimeline();
 }
 
@@ -1149,10 +1149,10 @@ function updatePlayerLabel(player, newLabel) {
 	updateRinkAndTimeline();
 }
 
-function generateDStrings(playerIdx) {
+function generateDStrings(playerId) {
 
 	// Create paths from defined timepoints
-	var definedTimepoints = playerData[playerIdx].timepoints.filter(function(d) { return d.x != null && d.y != null; });
+	var definedTimepoints = playerData.filter(function(d) { return d.id === playerId; })[0].timepoints.filter(function(d) { return d.x != null && d.y != null; });
 	var paths = [];
 	for (var i = 0; i < definedTimepoints.length - 1; i++) {
 		var nextPoint = [];
@@ -1252,7 +1252,7 @@ function generateDStrings(playerIdx) {
 		paths[i].dString = dString;
 	}
 
-	playerData[playerIdx].paths = paths;
+	playerData.filter(function(d) { return d.id === playerId; })[0].paths = paths;
 
 	// Check if a given point [x, y] is within the rink - coordinates should already be scaled to pixels (not feet)
 	function isPointInRink(point) {
@@ -1299,6 +1299,11 @@ function parseUrl() {
 		 } else if (+pId >= 1 && +pId <= 10) {
 		 	parsePlayerParameters(p, +pId);
 		 }
+	});
+
+	// Generate paths for players
+	playerData.forEach(function(d) {
+		generateDStrings(d.id);
 	});
 
 	/*
