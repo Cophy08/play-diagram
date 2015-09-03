@@ -27,7 +27,8 @@
 
 var margin = {top: 30, left: 30, right: 30, bottom: 30};
 
-var isPlaying = false;
+var isPlaying = false; // If animation is currently playing
+
 var rinkWidth = 200;
 var rinkHeight = 85;
 var rinkRadius = 28;
@@ -316,8 +317,9 @@ function startPlay() {
 			}
 		}
 
-		// Stop animations when the last timepoint is reached. Delay 500ms so the last animations can finish
-		if (animationTime === lastDefinedTimepoint * 1000) { setTimeout(function() { stopAnimation(false, false); }, 500); }
+		// Stop animations when the last timepoint is exceeded. Delay 500ms so the last animations can finish
+		// Use animationTime > lastDefinedTimepoint so that we get 1 extra tick before stopping the animation - this gives time for the last transitions to finish
+		if (animationTime > lastDefinedTimepoint * 1000) { stopAnimation(false, false); }
 		animationTime += tick;
 	}
 
