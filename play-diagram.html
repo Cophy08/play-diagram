@@ -27,8 +27,6 @@
 
 var margin = {top: 30, left: 30, right: 30, bottom: 30};
 
-var isPlaying = false; // If animation is currently playing
-
 var rinkWidth = 200;
 var rinkHeight = 85;
 var rinkRadius = 28;
@@ -214,9 +212,8 @@ d3.select("#play").on("click", function() {
 		}
 	});
 
-	// Restart animation - if an animation is already in progess, then stop the existing animation first
-	if (!isPlaying) { animatePlay(); }
-	else { stopAnimation(true, true); }
+	// Reset and restart the animation
+	stopAnimation(true, true);
 });
 
 function animatePlay() {
@@ -224,7 +221,6 @@ function animatePlay() {
 	updateRinkAndTimeline();
 
 	animationTime = 0;
-	isPlaying = true;
 	startAnimationsAtTimepoint(); // Initial call so that animations start right away
 	animationTimer = setInterval(function() { startAnimationsAtTimepoint(); }, tick); // Delays before calling startAnimation for the first time
 
@@ -351,7 +347,6 @@ function animatePlay() {
 */
 
 function stopAnimation(reset, restartAnim) {
-	isPlaying = false;
 	clearInterval(animationTimer);
 	var completedTransitions = 0;
 	var animatedElements = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle");
