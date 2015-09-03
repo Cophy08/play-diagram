@@ -27,6 +27,7 @@
 
 var margin = {top: 30, left: 30, right: 30, bottom: 30};
 
+var isPlaying = false;
 var rinkWidth = 200;
 var rinkHeight = 85;
 var rinkRadius = 28;
@@ -178,12 +179,15 @@ function togglePaths(toBe) {
 var animationTimer;
 var animationTime;
 var tick = 500;
+var startTimes;
+var definedPuckTimepoints;
+var lastDefinedTimepoint;
 d3.select("#play").on("click", function() {
 
 	// Get defined timepoints and find last defined timepoint to determine animation length
-	var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
+	definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
 	definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
-	var lastDefinedTimepoint = d3.max(playerData, function(d) {
+	lastDefinedTimepoint = d3.max(playerData, function(d) {
 		return d3.max(
 			d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }),
 			function(pt) { return pt.t; }
@@ -195,7 +199,7 @@ d3.select("#play").on("click", function() {
 	if (!lastDefinedTimepoint) { return; }
 
 	// Record the time of each player's first timepoint
-	var startTimes = [];
+	startTimes = [];
 	playerData.forEach(function(p) {
 		var firstTimepoint = p.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; })[0];
 		if (firstTimepoint) {
@@ -209,9 +213,17 @@ d3.select("#play").on("click", function() {
 		}
 	});
 
-	// Restart animation timer
-	stopAnimation(true);
+	// Restart animation - if an animation is already in progess, then stop the existing animation first
+	if (!isPlaying) { startPlay(); }
+	else { stopAnimation(true, true); }
+});
+
+function startPlay() {
+
+	updateRinkAndTimeline();
+
 	animationTime = 0;
+	isPlaying = true;
 	startAnimations(); // Initial call so that animations start right away
 	animationTimer = setInterval(function() { startAnimations(); }, tick); // Delays before calling startAnimation for the first time
 
@@ -304,12 +316,9 @@ d3.select("#play").on("click", function() {
 			}
 		}
 
-		// Stop starting animations or increment animationTime
-		if (animationTime === d3.max(playerSeconds) * 1000 || animationTime === lastDefinedTimepoint * 1000) {
-			stopAnimation(false);
-		} else {
-			animationTime += tick;
-		}
+		// Stop animations when the last timepoint is reached. Delay 500ms so the last animations can finish
+		if (animationTime === lastDefinedTimepoint * 1000) { setTimeout(function() { stopAnimation(false, false); }, 500); }
+		animationTime += tick;
 	}
 
 	function getCoords(timepoint) {
@@ -329,7 +338,7 @@ d3.select("#play").on("click", function() {
 		}
 		return coords;
 	}
-});
+}
 
 /*
 *
@@ -339,18 +348,20 @@ d3.select("#play").on("click", function() {
 *
 */
 
-function stopAnimation(reset) {
+function stopAnimation(reset, restartAnim) {
+	isPlaying = false;
 	clearInterval(animationTimer);
 	var completedTransitions = 0;
-	var dummyTransitions = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle")
-		.transition().duration(0).delay(500) // Delay to give a buffer for existing transitions to finish
-			.each("end", function() {
-				completedTransitions++;
-				if (completedTransitions === dummyTransitions.size() && reset === true) {
-					d3.select("#thumb").style("visibility", "hidden");
-					updateRinkAndTimeline();
-				}
-			});
+	var animatedElements = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle");
+
+	animatedElements.transition().duration(0)
+		.each("end", function() {
+			completedTransitions++;
+			if (completedTransitions === animatedElements.size() && reset === true) {
+				d3.select("#thumb").style("visibility", "hidden");
+				if (restartAnim === true) { startPlay(); }
+			}
+		});
 }
 
 /*
@@ -699,6 +710,7 @@ function updateRinkAndTimeline() {
 	// Or show the puck position if it has a position at t = 0
 	markers.select("circle").style("stroke-opacity", 0);
 	d3.select("#puck").select("circle").style("stroke-opacity", 0);
+	d3.select("#puck").select("line").style("stroke-opacity", 0);
 	if (puckTimepoints[0].type === "player") {
 		markers.filter(function(d) { return d.id === puckTimepoints[0].player; }).select("circle")
 			.style("stroke-opacity", 1);
@@ -815,7 +827,7 @@ function appendPlayerTimepointListeners() {
 				return;
 			}
 
-			stopAnimation(true);
+			stopAnimation(true, false);
 
 			// If paths are currently hidden, display them
 			if (!arePathsVisible) {
@@ -1061,7 +1073,7 @@ function clearActiveTimepoint() {
 
 function openPicker() {
 
-	stopAnimation(true);
+	stopAnimation(true, false);
 	togglePaths(true);
 
 	// Make picker elements visible
