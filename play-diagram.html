@@ -215,18 +215,18 @@ d3.select("#play").on("click", function() {
 	});
 
 	// Restart animation - if an animation is already in progess, then stop the existing animation first
-	if (!isPlaying) { startPlay(); }
+	if (!isPlaying) { animatePlay(); }
 	else { stopAnimation(true, true); }
 });
 
-function startPlay() {
+function animatePlay() {
 
 	updateRinkAndTimeline();
 
 	animationTime = 0;
 	isPlaying = true;
-	startAnimations(); // Initial call so that animations start right away
-	animationTimer = setInterval(function() { startAnimations(); }, tick); // Delays before calling startAnimation for the first time
+	startAnimationsAtTimepoint(); // Initial call so that animations start right away
+	animationTimer = setInterval(function() { startAnimationsAtTimepoint(); }, tick); // Delays before calling startAnimation for the first time
 
 	// Using attrTween and interpolate, set the thumb to t = 0 before restarting the transition
 	// http://bost.ocks.org/mike/transition/#animation
@@ -236,7 +236,7 @@ function startPlay() {
 			.attrTween("x1", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); })
 			.attrTween("x2", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); });
 
-	function startAnimations() {
+	function startAnimationsAtTimepoint() {
 
 		/*
 		*
@@ -361,7 +361,7 @@ function stopAnimation(reset, restartAnim) {
 			completedTransitions++;
 			if (completedTransitions === animatedElements.size() && reset === true) {
 				d3.select("#thumb").style("visibility", "hidden");
-				if (restartAnim === true) { startPlay(); }
+				if (restartAnim === true) { animatePlay(); }
 			}
 		});
 }
