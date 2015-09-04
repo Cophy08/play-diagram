@@ -4,6 +4,7 @@
 	<meta charset="utf-8">
 	<title>Play Diagram</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+	<script type="text/javascript" src="formatter.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet" type="text/css">
 	<script type="text/javascript" src="js/rinkPlot.js"></script>
 	<link rel="stylesheet" type="text/css" href="css/rink-style.css">
@@ -107,15 +108,11 @@ var tX = d3.scale.linear()
 	.range([20, timelineWidth - 20]);
 
 // Stores the active element in the timeline
-// timeline: puck, player
-// player: an id from playerData
-// time: a value from puckSeconds or playerSeconds
 var activeTimepoint = {
-	timeline: null,
-	player: null,
-	t: null
+	timeline: null, // timeline: puck, player
+	player: null, // player: an id from playerData
+	t: null // time: a value from puckSeconds or playerSeconds
 }
-
 
 /*
 *
@@ -339,7 +336,7 @@ function animatePlay() {
 
 /*
 *
-* Clear animations and reset rink. To do this:
+* Clear animations and reset rink by:
 * 1. Apply a dummy transition to all elements that might have a transition
 * 2. When all dummy transitions have completed (compare the number of completed transitions to the number of dummy transitions), reset the rink
 *
@@ -349,13 +346,13 @@ function stopAnimation(resetRink, restartAnim) {
 	clearInterval(animationTimer);
 	var completedTransitions = 0;
 	var animatedElements = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle");
-
 	animatedElements.transition().duration(0)
 		.each("end", function() {
 			completedTransitions++;
 			if (completedTransitions === animatedElements.size() && resetRink === true) {
 				d3.select("#thumb").style("visibility", "hidden");
 				if (restartAnim === true) { animatePlay(); }
+				else { updateRinkAndTimeline(); }
 			}
 		});
 }
@@ -432,6 +429,12 @@ function initTimeline() {
 			var newLabel = document.getElementById("label-" + d.id).value;
 			if (d.label !== newLabel) { updatePlayerLabel(d.id, newLabel); }
 		});
+
+	// Append input masks
+	[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(function(i) {
+		initInputMask("label-" + i);
+	});
+
 
 	// Append puck carrier selector
 	table.selectAll(".player.row").select(".label.cell").append("div")
@@ -1435,5 +1438,19 @@ function displayMessage(msg, duration) {
 			.style("opacity", 0)
 			.each("end", function() { d3.select(this).text(""); });
 }
+
+/*
+*
+* Add input mask to the specified text field
+* Don't include the # character for the inputId
+*
+*/
+function initInputMask(inputId) {
+	new Formatter(document.getElementById(inputId), {
+		"pattern": "{{***}}",
+		"persistent": false
+	});
+}
+
 </script>
 </html>
