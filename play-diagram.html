@@ -133,6 +133,27 @@ updateRinkAndTimeline();
 
 /*
 *
+* Draw nets
+*
+*/
+
+
+var netWidth = (6.19792 / ftPerCell) * cellSize;
+var netDepth = (3.33333 / ftPerCell) * cellSize;
+var netX = (11/ ftPerCell) * cellSize - netDepth;
+var netY = 0.5 * ((rinkHeight / ftPerCell) * cellSize) - netWidth / 2;
+var netR = (1.66667 / ftPerCell) * cellSize;
+
+// Draw left net and right net
+d3.select("#rink-map").append("path")
+	.attr("class", "net")
+	.attr("d", function() { return rounded_rect(netX, netY, netDepth, netWidth, netR, true, false, true, false); });
+d3.select("#rink-map").append("path")
+	.attr("class", "net")
+	.attr("d", function() { return rounded_rect(x.range()[1] - netX - netDepth, netY, netDepth, netWidth, netR, false, true, false, true); });
+
+/*
+*
 * Listeners for controls
 *
 */
@@ -1444,11 +1465,38 @@ function displayMessage(msg, duration) {
 * Don't include the # character for the inputId
 *
 */
+
 function initInputMask(inputId) {
 	new Formatter(document.getElementById(inputId), {
 		"pattern": "{{***}}",
 		"persistent": false
 	});
+}
+
+/*
+*
+* Draw rounded rectangle
+* http://stackoverflow.com/a/13505624
+*
+*
+*/
+
+function rounded_rect(x, y, w, h, r, tl, tr, bl, br) {
+	var retval;
+	retval  = "M" + (x + r) + "," + y;
+	retval += "h" + (w - 2*r);
+	if (tr) { retval += "a" + r + "," + r + " 0 0 1 " + r + "," + r; }
+	else { retval += "h" + r; retval += "v" + r; }
+	retval += "v" + (h - 2*r);
+	if (br) { retval += "a" + r + "," + r + " 0 0 1 " + -r + "," + r; }
+	else { retval += "v" + r; retval += "h" + -r; }
+	retval += "h" + (2*r - w);
+	if (bl) { retval += "a" + r + "," + r + " 0 0 1 " + -r + "," + -r; }
+	else { retval += "h" + -r; retval += "v" + -r; }
+	retval += "v" + (2*r - h);
+	if (tl) { retval += "a" + r + "," + r + " 0 0 1 " + r + "," + -r; }
+	else { retval += "v" + -r; retval += "h" + r; }
+	return retval += "z";
 }
 
 </script>

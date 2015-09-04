@@ -278,5 +278,10 @@ circle.red-line {
 }
 
 .danger-line {
-    stroke: gray;
+    stroke: #ccc;
+}
+
+path.net {
+	fill: none;
+	stroke: black;
 }
