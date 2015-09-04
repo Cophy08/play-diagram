@@ -4,6 +4,7 @@
 	<meta charset="utf-8">
 	<title>Play Diagram</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+	<script type="text/javascript" src="formatter.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet" type="text/css">
 	<script type="text/javascript" src="js/rinkPlot.js"></script>
 	<link rel="stylesheet" type="text/css" href="css/rink-style.css">
@@ -11,6 +12,7 @@
 </head>
 <body>
 	<svg id="rink-svg" style="display: block;"></svg>
+	<div id="message" style="display: block; height: 32px;"></div>
 	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Start Play</a>
 	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<div id="table" style="display: block;"></div>
@@ -38,6 +40,9 @@ var x = d3.scale.linear()
 var y = d3.scale.linear()
 	.domain([0, rinkHeight])
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
+
+var maxTimepoints = 10;
+var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " timepoints.";
 
 /*
 *
@@ -103,20 +108,19 @@ var tX = d3.scale.linear()
 	.range([20, timelineWidth - 20]);
 
 // Stores the active element in the timeline
-// timeline: puck, player
-// player: an id from playerData
-// time: a value from puckSeconds or playerSeconds
 var activeTimepoint = {
-	timeline: null,
-	player: null,
-	t: null
+	timeline: null, // timeline: puck, player
+	player: null, // player: an id from playerData
+	t: null // time: a value from puckSeconds or playerSeconds
 }
 
 /*
 *
-* Initialize SVG
+* Load initial data before initializing rink and timeline
 *
 */
+
+parseUrl();
 
 d3.select("#rink-svg")
 	.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
@@ -124,9 +128,9 @@ d3.select("#rink-svg")
 	.append("g")
 		.attr("id", "rink")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
 initRink();
 initTimeline();
+updateRinkAndTimeline();
 
 /*
 *
@@ -170,12 +174,15 @@ function togglePaths(toBe) {
 var animationTimer;
 var animationTime;
 var tick = 500;
+var startTimes;
+var definedPuckTimepoints;
+var lastDefinedTimepoint;
 d3.select("#play").on("click", function() {
 
 	// Get defined timepoints and find last defined timepoint to determine animation length
-	var definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
+	definedPuckTimepoints = puckTimepoints.filter(function(pt) { return pt.type != null; });
 	definedPuckTimepoints = definedPuckTimepoints.sort(function(a, b) { return a.t - b.t; });
-	var lastDefinedTimepoint = d3.max(playerData, function(d) {
+	lastDefinedTimepoint = d3.max(playerData, function(d) {
 		return d3.max(
 			d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }),
 			function(pt) { return pt.t; }
@@ -187,7 +194,7 @@ d3.select("#play").on("click", function() {
 	if (!lastDefinedTimepoint) { return; }
 
 	// Record the time of each player's first timepoint
-	var startTimes = [];
+	startTimes = [];
 	playerData.forEach(function(p) {
 		var firstTimepoint = p.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; })[0];
 		if (firstTimepoint) {
@@ -201,11 +208,17 @@ d3.select("#play").on("click", function() {
 		}
 	});
 
-	// Restart animation timer
-	stopAnimation(true);
+	// Reset and restart the animation
+	stopAnimation(true, true);
+});
+
+function animatePlay() {
+
+	updateRinkAndTimeline();
+
 	animationTime = 0;
-	startAnimations(); // Initial call so that animations start right away
-	animationTimer = setInterval(function() { startAnimations(); }, tick); // Delays before calling startAnimation for the first time
+	startAnimationsAtTimepoint(); // Initial call so that animations start right away
+	animationTimer = setInterval(function() { startAnimationsAtTimepoint(); }, tick); // Delays before calling startAnimation for the first time
 
 	// Using attrTween and interpolate, set the thumb to t = 0 before restarting the transition
 	// http://bost.ocks.org/mike/transition/#animation
@@ -215,7 +228,7 @@ d3.select("#play").on("click", function() {
 			.attrTween("x1", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); })
 			.attrTween("x2", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); });
 
-	function startAnimations() {
+	function startAnimationsAtTimepoint() {
 
 		/*
 		*
@@ -285,7 +298,6 @@ d3.select("#play").on("click", function() {
 				d3.selectAll("g.player").filter(function(p) { return p.id === targetTimepoint.player; })
 					.select("g.marker").select("circle")
 						.transition().style("stroke-opacity", 1);
-
 				// Only display the puck being passed if not at t = 0
 				// If at t = 0, the player starts with the puck, so we don't need to show the puck being passed
 				if (animationTime > 0) {
@@ -297,12 +309,10 @@ d3.select("#play").on("click", function() {
 			}
 		}
 
-		// Stop starting animations or increment animationTime
-		if (animationTime === d3.max(playerSeconds) * 1000 || animationTime === lastDefinedTimepoint * 1000) {
-			stopAnimation(false);
-		} else {
-			animationTime += tick;
-		}
+		// Stop animations when the last timepoint is exceeded
+		// Use animationTime > lastDefinedTimepoint so that we get 1 extra tick before stopping the animation - this gives time for the last transitions to finish
+		if (animationTime > lastDefinedTimepoint * 1000) { stopAnimation(false, false); }
+		animationTime += tick;
 	}
 
 	function getCoords(timepoint) {
@@ -322,28 +332,29 @@ d3.select("#play").on("click", function() {
 		}
 		return coords;
 	}
-});
+}
 
 /*
 *
-* Clear animations and reset rink. To do this:
+* Clear animations and reset rink by:
 * 1. Apply a dummy transition to all elements that might have a transition
 * 2. When all dummy transitions have completed (compare the number of completed transitions to the number of dummy transitions), reset the rink
 *
 */
 
-function stopAnimation(reset) {
+function stopAnimation(resetRink, restartAnim) {
 	clearInterval(animationTimer);
 	var completedTransitions = 0;
-	var dummyTransitions = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle")
-		.transition().duration(0).delay(500) // Delay to give a buffer for existing transitions to finish
-			.each("end", function() {
-				completedTransitions++;
-				if (completedTransitions === dummyTransitions.size() && reset === true) {
-					d3.select("#thumb").style("visibility", "hidden")
-					updateRinkAndTimeline();
-				}
-			});
+	var animatedElements = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle");
+	animatedElements.transition().duration(0)
+		.each("end", function() {
+			completedTransitions++;
+			if (completedTransitions === animatedElements.size() && resetRink === true) {
+				d3.select("#thumb").style("visibility", "hidden");
+				if (restartAnim === true) { animatePlay(); }
+				else { updateRinkAndTimeline(); }
+			}
+		});
 }
 
 /*
@@ -418,6 +429,12 @@ function initTimeline() {
 			var newLabel = document.getElementById("label-" + d.id).value;
 			if (d.label !== newLabel) { updatePlayerLabel(d.id, newLabel); }
 		});
+
+	// Append input masks
+	[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(function(i) {
+		initInputMask("label-" + i);
+	});
+
 
 	// Append puck carrier selector
 	table.selectAll(".player.row").select(".label.cell").append("div")
@@ -652,7 +669,7 @@ function updateRinkAndTimeline() {
 	var timepoints = players.select("g.timepoints").selectAll("text.timepoint")
 		.data(function(d) {
 			return d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; }); }
-		, function(pt) { return pt.t; })
+		,function(pt) { return pt.t; })
 	timepoints.exit().remove();
 	timepoints.enter().append("text")
 		.attr("class", "timepoint");
@@ -692,6 +709,7 @@ function updateRinkAndTimeline() {
 	// Or show the puck position if it has a position at t = 0
 	markers.select("circle").style("stroke-opacity", 0);
 	d3.select("#puck").select("circle").style("stroke-opacity", 0);
+	d3.select("#puck").select("line").style("stroke-opacity", 0);
 	if (puckTimepoints[0].type === "player") {
 		markers.filter(function(d) { return d.id === puckTimepoints[0].player; }).select("circle")
 			.style("stroke-opacity", 1);
@@ -751,6 +769,8 @@ function updateRinkAndTimeline() {
 	// Update colour pickers
 	d3.select("#table").selectAll("svg.colour-picker").select("circle.colour-picker")
 		.style("fill", function(d) { return d.colour; });
+
+	updateUrl();
 };
 
 function appendPlayerTimepointListeners() {
@@ -765,9 +785,16 @@ function appendPlayerTimepointListeners() {
 			activeTimepoint.timeline = "player";
 			activeTimepoint.t = clicked.t;
 			activeTimepoint.player = clickedPlayerId;
-			// Open the picker for the new active timepoint
-			highlightActiveTimepoint();
-			openPicker();
+
+			// Open the picker for the new active timepoint if the maximum number of timepoints hasn't been reached
+			// Also open the picker if a defined timepoint is clicked so the user can edit/delete it
+			if (getTotalDefinedTimepoints() < maxTimepoints || d3.select(this).classed("defined") === true) {
+				highlightActiveTimepoint();
+				openPicker();
+			} else {
+				displayMessage(msgMaxTimepoints, 2000);
+				closePicker();
+			}
 		}
 	});
 
@@ -799,7 +826,7 @@ function appendPlayerTimepointListeners() {
 				return;
 			}
 
-			stopAnimation(true);
+			stopAnimation(true, false);
 
 			// If paths are currently hidden, display them
 			if (!arePathsVisible) {
@@ -812,18 +839,21 @@ function appendPlayerTimepointListeners() {
 			undefinedTimes = undefinedTimepoints.data().map(function(pt) { return pt.t; });
 
 			// Append a marker to drag
+			var mX = d3.mouse(this)[0];
 			var dragPt = d3.select(this.parentNode).append("circle")
 				.attr("id", "drag-point")
 				.attr("r", highlightCircleR)
+				.attr("cx", mX)
 				.attr("cy", timelineHeight - 28)
-				.style("fill", "black")
-				.style("fill-opacity", 0.2);
+				.style("visibility", "hidden"); // Start off hidden so the timepoint click listener can fire
 		})
 		.on("drag", function() {
 			if (!isDefined || activeTimepoint == null) { return; } // Cancel drag events if the dragged timepoint is not defined. Also cancel if there's an active timepoint
 
 			var mX = d3.mouse(this)[0];
-			d3.select("#drag-point").attr("cx", mX);
+			d3.select("#drag-point")
+				.attr("cx", mX)
+				.style("visibility", "visible");
 
 			// Check if user is within .15 seconds of a timepoint
 			var rounded = Math.round(tX.invert(mX) * 100) / 100; // Round to the nearest .01 second
@@ -890,9 +920,16 @@ function appendPuckTimepointListeners() {
 			activeTimepoint.timeline = "puck";
 			activeTimepoint.t = clicked.t;
 			activeTimepoint.player = null;
-			// Open the picker for the new active timepoint
-			highlightActiveTimepoint();
-			openPicker();
+
+			// Open the picker for the new active timepoint if the maximum number of timepoints hasn't been reached
+			// Also open the picker if a defined timepoint is clicked so the user can edit/delete it
+			if (getTotalDefinedTimepoints() < maxTimepoints || d3.select(this).classed("defined") === true) {
+				highlightActiveTimepoint();
+				openPicker();
+			} else {
+				displayMessage(msgMaxTimepoints, 2000);
+				closePicker();
+			}
 		}
 	});
 
@@ -926,10 +963,12 @@ function appendPuckTimepointListeners() {
 			undefinedTimes = undefinedTimepoints.data().map(function(pt) { return pt.t; });
 
 			// Append a marker to dragged
+			var mX = d3.mouse(this)[0];
 			var dragPt = d3.select(this.parentNode).append("circle")
 				.attr("id", "drag-point")
 				.attr("r", highlightCircleR)
 				.attr("cy", puckTimelineHeight - 28)
+				.attr("cx", mX)
 				.style("visibility", "hidden");
 		})
 		.on("drag", function() {
@@ -1033,7 +1072,7 @@ function clearActiveTimepoint() {
 
 function openPicker() {
 
-	stopAnimation(true);
+	stopAnimation(true, false);
 	togglePaths(true);
 
 	// Make picker elements visible
@@ -1093,7 +1132,7 @@ function updatePlayerTimepoint(player, t, x, y) {
 	}
 	playerToUpdate.timepoints[existingIdx] = {t: t, x: x, y: y};
 	playerToUpdate.timepoints = playerToUpdate.timepoints.sort(function(a, b) { return a.t - b.t; });
-	generateDStrings(playerToUpdate.id - 1);
+	generateDStrings(playerToUpdate.id);
 	updateRinkAndTimeline();
 }
 
@@ -1121,10 +1160,10 @@ function updatePlayerLabel(player, newLabel) {
 	updateRinkAndTimeline();
 }
 
-function generateDStrings(playerIdx) {
+function generateDStrings(playerId) {
 
 	// Create paths from defined timepoints
-	var definedTimepoints = playerData[playerIdx].timepoints.filter(function(d) { return d.x != null && d.y != null; });
+	var definedTimepoints = playerData.filter(function(d) { return d.id === playerId; })[0].timepoints.filter(function(d) { return d.x != null && d.y != null; });
 	var paths = [];
 	for (var i = 0; i < definedTimepoints.length - 1; i++) {
 		var nextPoint = [];
@@ -1224,7 +1263,7 @@ function generateDStrings(playerIdx) {
 		paths[i].dString = dString;
 	}
 
-	playerData[playerIdx].paths = paths;
+	playerData.filter(function(d) { return d.id === playerId; })[0].paths = paths;
 
 	// Check if a given point [x, y] is within the rink - coordinates should already be scaled to pixels (not feet)
 	function isPointInRink(point) {
@@ -1258,6 +1297,159 @@ function generateDStrings(playerIdx) {
 		}
 		return isInRink;
 	}
+}
+
+function parseUrl() {
+
+	// Separate and store the url parameters
+	var urlParameters = window.location.search.substring(1).split("&");
+	urlParameters.forEach(function(p) {
+		var pId = p.substring(1, p.indexOf("="));
+		if (pId === "k") {
+			parsePuckParameters(p);
+		 } else if (+pId >= 1 && +pId <= 10) {
+		 	parsePlayerParameters(p, +pId);
+		 }
+	});
+
+	// Generate paths for players
+	playerData.forEach(function(d) {
+		generateDStrings(d.id);
+	});
+
+	/*
+	*
+	* Process the puck portion of the url
+	*
+	*/
+	function parsePuckParameters(url) {
+		// Split puck parameters into an array of timepoint strings
+		url = url.substring(url.indexOf("=") + 1);
+		var pts = url.split("+");
+		pts = pts.filter(function(d) { return d; }); // Filter out null values
+
+		// Update puckTimepoints with the url timepoint strings
+		pts.forEach(function(p, i) {
+
+			// Split each timepoint string into an array of individual elements
+			var ptData = p.split(",");
+
+			var targetPt = puckTimepoints.filter(function(d) { return d.t === +ptData[0]; })[0];
+			if (ptData[1] === "s") {
+				targetPt.type = "position";
+				targetPt.x = +ptData[2];
+				targetPt.y = +ptData[3];
+				targetPt.player = null;
+			} else if (ptData[1] === "y") {
+				targetPt.type = "player";
+				targetPt.x = null;
+				targetPt.y = null;
+				targetPt.player = +ptData[2];
+			}
+		});
+	}
+
+	/*
+	*
+	* Process the player portions of the url
+	*
+	*/
+	function parsePlayerParameters(url, playerId) {
+		// Split puck parameters into an array of timepoint strings
+		url = url.substring(url.indexOf("=") + 1);
+
+		var params = url.split(";");
+
+		var targetPlayer = playerData.filter(function(d) { return d.id === playerId; })[0];
+
+		var label = params[0];
+		// if (!label) { console.log("Hi!"); label = "123"; }
+		targetPlayer.label = label;
+
+		if (params[1] === "r") { targetPlayer.colour = "red"; }
+		else { targetPlayer.colour = "blue"; }
+
+		var pts = params[2].split("+");
+		pts = pts.filter(function(d) { return d; }); // Filter out null values
+
+		pts.forEach(function(p, i) {
+
+			// Split each timepoint string into an array of individual elements
+			var ptData = p.split(",");
+			var targetPt = targetPlayer.timepoints.filter(function(d) { return d.t === +ptData[0]; })[0];
+			targetPt.x = +ptData[1];
+			targetPt.y = +ptData[2];
+		});
+	}
+}
+
+function updateUrl() {
+	var resultString = "pk=";
+	puckTimepoints.filter(function(pt) { return pt.type != null; }).forEach(function(pt, i) {
+		var ptString = "";
+		if (i > 0) { ptString += "+"; }
+		ptString += pt.t + ",";
+		if (pt.type === "position") { ptString += "s" + "," + pt.x + "," + pt.y; }
+		else if (pt.type === "player") { ptString += "y" + "," + pt.player; }
+		resultString += ptString;
+	});
+
+	playerData.forEach(function(p, i) {
+
+		var colourString = "b";
+		if (p.colour === "red") { colourString = "r"; }
+
+		var playerString = "&p" + p.id + "=" + p.label + ";" + colourString + ";";
+		resultString += playerString;
+
+		p.timepoints.filter(function(pt) { return pt.x != null & pt.y != null; }).forEach(function(pt, j) {
+			var ptString = "";
+			if (j > 0) { ptString += "+"; }
+			ptString += pt.t + "," + pt.x + "," + pt.y;
+			resultString += ptString;
+		});
+	});
+
+	// Replace the current url without creating a new history state
+	var newUrl = "play-diagram.html?" + resultString
+	window.history.replaceState(resultString, "Title", newUrl);
+}
+
+// Gets the total number of defined timepoints for puck and all players
+function getTotalDefinedTimepoints() {
+	var total = 0;
+	// Count number of defined puck timepoints
+	var definedTimepoints = puckTimepoints.filter(function(d) { return d.type != null; }).length;
+	total += definedTimepoints;
+	// Count number of defined player timepoints
+	playerData.forEach(function(p) {
+		definedTimepoints = p.timepoints.filter(function(d) { return d.x != null && d.y != null; }).length;
+		total += definedTimepoints;
+	});
+	return total;
+}
+
+// If duration is not specified, then keep
+function displayMessage(msg, duration) {
+	d3.select("#message")
+		.style("opacity", 1)
+		.text(msg)
+		.transition().delay(duration)
+			.style("opacity", 0)
+			.each("end", function() { d3.select(this).text(""); });
+}
+
+/*
+*
+* Add input mask to the specified text field
+* Don't include the # character for the inputId
+*
+*/
+function initInputMask(inputId) {
+	new Formatter(document.getElementById(inputId), {
+		"pattern": "{{***}}",
+		"persistent": false
+	});
 }
 
 </script>
