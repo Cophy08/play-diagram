@@ -10,10 +10,13 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
+	<p>Save your diagram for later by copying the URL - the URL changes each time you edit your diagram.</p>
+	<div>
+		<a href="#" id="play" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; margin-left: 10px;">Start Play</a>
+		<a href="#" id="paths" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; margin-left: 10px;">Paths</a>
+		<div id="message" style="display: inline-block; margin: 0; width: 700px; margin-left: 20px;"></div>
+	</div>
 	<svg id="rink-svg" style="display: block;"></svg>
-	<div id="message" style="display: block; height: 32px;"></div>
-	<a href="#" id="play" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Start Play</a>
-	<a href="#" id="paths" style="text-decoration: none; font-family: Roboto; margin-left: 20px;">Paths</a>
 	<div id="table" style="display: block;"></div>
 	</div>
 </body>
@@ -41,11 +44,12 @@ var y = d3.scale.linear()
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
 
 var maxTimepoints = 10;
-var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " timepoints.";
 
-var msgPickPuckTimepoint = "Click on the rink to put puck at the position. Click on a player label to give them the puck. Click the timepoint again to cancel the selection.";
-var msgPickPlayerTimepoint = "Click on the rink to put player at the position. Click the timepoint again to cancel the selection.";
-var msgDefault = "Click on a timepoint to add or change an event. Drag an existing event to change when it occurred. Click on a player's label or colour to change it. You can save your diagram for later by saving the URL - the URL updates after each edit.";
+
+var msgDefault = "Pick a timepoint to add or edit an event. Drag an event to change when it occurred. You can change a player's colour or label.";
+var msgPickPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player. Click the timepoint again to cancel the selection.";
+var msgPickPlayerTimepoint = "Send the player to a spot in the rink. Click the timepoint again to cancel the selection.";
+var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " events.";
 /*
 *
 * Data
@@ -133,7 +137,8 @@ d3.select("#rink-svg")
 initRink();
 initTimeline();
 updateRinkAndTimeline();
-d3.select("#message").text(msgDefault);
+d3.select("#message").html(msgDefault);
+
 /*
 *
 * Draw left net and right net
@@ -1114,6 +1119,7 @@ function openPicker() {
 	});
 
 	// Update waypoint data with the picked position, then close the picker
+	var isPickerMaskClicked = false;
 	d3.select("#picker-mask").on("click", function() {
 		if (activeTimepoint.timeline === "player") {
 			updatePlayerTimepoint(activeTimepoint.player, activeTimepoint.t, Math.round(x.invert(mX)), Math.round(y.invert(mY)));
@@ -1121,6 +1127,7 @@ function openPicker() {
 			updatePuckTimepoint("position", activeTimepoint.t, Math.round(x.invert(mX)), Math.round(y.invert(mY)), null);
 		}
 		closePicker();
+		isPickedMaskClicked = true;
 	});
 
 	// If the active timepoint is a puck timepoint or waypoint, display the puck carrier selectors and hide the label input fields
@@ -1128,9 +1135,29 @@ function openPicker() {
 		d3.select("#table").selectAll("input").style("display", "none");
 		d3.select("#table").selectAll(".carrier.button").style("display", "");
 	}
+
+	d3.select("html").on("click", function() {
+		var clicked = event.target;
+		var clickedClass = d3.select(clicked).attr("class");
+		var clickedId = d3.select(clicked).attr("id");
+		console.log(clicked);
+
+		if (clickedClass && clickedClass.indexOf("timepoint") >= 0) {
+			// This will fire when the timepoint was initially clicked to open the picker,
+			console.log("timepoint was clicked");
+		} else if (clickedId && clickedId === "rink-svg" && isPickerMaskClicked === false) {
+			console.log("clicked on #rink-svg, but outside picker mask");
+			closePicker();
+		} else {
+			console.log("invalid target");
+			closePicker();
+		}
+	});
 }
 
 function closePicker() {
+
+	d3.select("html").on("click", null);
 
 	// Hide picker elements on rink
 	d3.select("#picker-mask").on("mousemove", null);
@@ -1464,13 +1491,13 @@ function getTotalDefinedTimepoints() {
 */
 
 function displayMessage(msg) {
-	var currentMsg = d3.select("#message").text();
+	var currentMsg = d3.select("#message").html();
 	if (currentMsg !== msg) {
 		d3.select("#message").transition()
 			.style("opacity", 0)
 			.each("end", function() {
 				d3.select(this)
-					.text(msg)
+					.html(msg)
 					.transition()
 						.style("opacity", 1);
 			});
