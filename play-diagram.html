@@ -43,6 +43,9 @@ var y = d3.scale.linear()
 var maxTimepoints = 10;
 var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " timepoints.";
 
+var msgPickPuckTimepoint = "Click on the rink to put puck at the position. Click on a player label to give them the puck. Click the timepoint again to cancel the selection.";
+var msgPickPlayerTimepoint = "Click on the rink to put player at the position. Click the timepoint again to cancel the selection.";
+var msgDefault = "Click on a timepoint to add or change an event. Drag an existing event to change when it occurred. Click on a player's label or colour to change it. You can save your diagram for later by saving the URL - the URL updates after each edit.";
 /*
 *
 * Data
@@ -130,7 +133,7 @@ d3.select("#rink-svg")
 initRink();
 initTimeline();
 updateRinkAndTimeline();
-
+d3.select("#message").text(msgDefault);
 /*
 *
 * Draw left net and right net
@@ -807,8 +810,9 @@ function appendPlayerTimepointListeners() {
 				highlightActiveTimepoint();
 				openPicker();
 			} else {
-				displayMessage(msgMaxTimepoints, 2000);
 				closePicker();
+				displayMessage(msgMaxTimepoints);
+				setTimeout(function() { displayMessage(msgDefault); }, 2000);
 			}
 		}
 	});
@@ -942,8 +946,9 @@ function appendPuckTimepointListeners() {
 				highlightActiveTimepoint();
 				openPicker();
 			} else {
-				displayMessage(msgMaxTimepoints, 2000);
 				closePicker();
+				displayMessage(msgMaxTimepoints);
+				setTimeout(function() { displayMessage(msgDefault); }, 2000);
 			}
 		}
 	});
@@ -1090,6 +1095,10 @@ function openPicker() {
 	stopAnimation(true, false);
 	togglePaths(true);
 
+	// Update instructions
+	if (activeTimepoint.timeline === "puck") { displayMessage(msgPickPuckTimepoint); }
+	else if (activeTimepoint.timeline === "player") { displayMessage(msgPickPlayerTimepoint); }
+
 	// Make picker elements visible
 	d3.select("#picker-mask")
 		.attr("class", "active")
@@ -1122,6 +1131,7 @@ function openPicker() {
 }
 
 function closePicker() {
+
 	// Hide picker elements on rink
 	d3.select("#picker-mask").on("mousemove", null);
 	d3.select("#picker-mask").on("click", null);
@@ -1135,6 +1145,9 @@ function closePicker() {
 
 	// Clear active element
 	clearActiveTimepoint();
+
+	// Update instructions
+	displayMessage(msgDefault);
 }
 
 function updatePlayerTimepoint(player, t, x, y) {
@@ -1444,14 +1457,24 @@ function getTotalDefinedTimepoints() {
 	return total;
 }
 
-// If duration is not specified, then keep
-function displayMessage(msg, duration) {
-	d3.select("#message")
-		.style("opacity", 1)
-		.text(msg)
-		.transition().delay(duration)
+/*
+*
+* Transition between messages
+*
+*/
+
+function displayMessage(msg) {
+	var currentMsg = d3.select("#message").text();
+	if (currentMsg !== msg) {
+		d3.select("#message").transition()
 			.style("opacity", 0)
-			.each("end", function() { d3.select(this).text(""); });
+			.each("end", function() {
+				d3.select(this)
+					.text(msg)
+					.transition()
+						.style("opacity", 1);
+			});
+	}
 }
 
 /*
