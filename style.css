@@ -20,7 +20,6 @@ div {
 */
 
 g.marker text {
-	alignment-baseline: middle;
 	text-anchor: middle;
 }
 
@@ -48,7 +47,7 @@ g.player g.marker text {
 text.timepoint, text.label {
 	font-size: 10px;
 	text-anchor: middle;
-	alignment-baseline: middle;
+	dominant-baseline: middle;
 }
 
 	g.player.blue text.timepoint {
@@ -191,7 +190,7 @@ circle.timepoint {
 text.carrier {
 	fill: red;
 	font-size: 10px;
-	alignment-baseline: middle;
+	dominant-baseline: middle;
 }
 
 #thumb {

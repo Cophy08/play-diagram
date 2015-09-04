@@ -133,18 +133,14 @@ updateRinkAndTimeline();
 
 /*
 *
-* Draw nets
+* Draw left net and right net
 *
 */
-
-
 var netWidth = (6.19792 / ftPerCell) * cellSize;
 var netDepth = (3.33333 / ftPerCell) * cellSize;
 var netX = (11/ ftPerCell) * cellSize - netDepth;
 var netY = 0.5 * ((rinkHeight / ftPerCell) * cellSize) - netWidth / 2;
 var netR = (1.66667 / ftPerCell) * cellSize;
-
-// Draw left net and right net
 d3.select("#rink-map").append("path")
 	.attr("class", "net")
 	.attr("d", function() { return rounded_rect(netX, netY, netDepth, netWidth, netR, true, false, true, false); });
@@ -154,17 +150,11 @@ d3.select("#rink-map").append("path")
 
 /*
 *
-* Listeners for controls
-*
-*/
-d3.select("#paths").on("click", function() { togglePaths(); });
-
-/*
-*
 * Path toggle: true to show paths, false to hide paths, null to toggle state
 *
 */
 
+d3.select("#paths").on("click", function() { togglePaths(); });
 var arePathsVisible;
 togglePaths(true);
 function togglePaths(toBe) {
@@ -653,13 +643,16 @@ function initRink() {
 	d3.select("#players").selectAll("g.marker")
 		.append("circle")
 			.attr("cx", 0)
-			.attr("cy", -1) // To better center circle on player number
+			.attr("cy", 0)
 			.attr("r", 10)
 			.style("stroke-opacity", 0);
+
+	// Since the markers are so prominent, don't rely on alignment-baseline or dominant-baseline to vertically centre text
+	// because these properties are inconsistent across browsers. Apply a y-offset instead
 	d3.select("#players").selectAll("g.marker")
 		.append("text")
 			.attr("x", 0)
-			.attr("y", 0);
+			.attr("y", 4);
 
 	// Append puck marker elements
 	d3.select("#puck").append("circle")
