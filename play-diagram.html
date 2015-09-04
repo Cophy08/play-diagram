@@ -116,11 +116,14 @@ var activeTimepoint = {
 	t: null
 }
 
+
 /*
 *
-* Initialize SVG
+* Load initial data before initializing rink and timeline
 *
 */
+
+parseUrl();
 
 d3.select("#rink-svg")
 	.style("height", (rinkHeight / ftPerCell) * cellSize + margin.top + margin.bottom + "px")
@@ -128,12 +131,8 @@ d3.select("#rink-svg")
 	.append("g")
 		.attr("id", "rink")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
 initRink();
 initTimeline();
-
-// Load initial data
-parseUrl();
 updateRinkAndTimeline();
 
 /*
@@ -313,7 +312,7 @@ function animatePlay() {
 			}
 		}
 
-		// Stop animations when the last timepoint is exceeded. Delay 500ms so the last animations can finish
+		// Stop animations when the last timepoint is exceeded
 		// Use animationTime > lastDefinedTimepoint so that we get 1 extra tick before stopping the animation - this gives time for the last transitions to finish
 		if (animationTime > lastDefinedTimepoint * 1000) { stopAnimation(false, false); }
 		animationTime += tick;
@@ -346,7 +345,7 @@ function animatePlay() {
 *
 */
 
-function stopAnimation(reset, restartAnim) {
+function stopAnimation(resetRink, restartAnim) {
 	clearInterval(animationTimer);
 	var completedTransitions = 0;
 	var animatedElements = d3.selectAll("#thumb, #puck circle, #puck line, g.marker, g.marker text, g.marker circle");
@@ -354,7 +353,7 @@ function stopAnimation(reset, restartAnim) {
 	animatedElements.transition().duration(0)
 		.each("end", function() {
 			completedTransitions++;
-			if (completedTransitions === animatedElements.size() && reset === true) {
+			if (completedTransitions === animatedElements.size() && resetRink === true) {
 				d3.select("#thumb").style("visibility", "hidden");
 				if (restartAnim === true) { animatePlay(); }
 			}
@@ -1359,7 +1358,10 @@ function parseUrl() {
 		var params = url.split(";");
 
 		var targetPlayer = playerData.filter(function(d) { return d.id === playerId; })[0];
-		targetPlayer.label = params[0];
+
+		var label = params[0];
+		// if (!label) { console.log("Hi!"); label = "123"; }
+		targetPlayer.label = label;
 
 		if (params[1] === "r") { targetPlayer.colour = "red"; }
 		else { targetPlayer.colour = "blue"; }
