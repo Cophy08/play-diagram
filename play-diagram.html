@@ -581,8 +581,10 @@ function initTimeline() {
 	buttons.append("text")
 		.attr("x", 0)
 		.attr("y", function(d) {
-			if (d.id) { return timelineHeight - bH / 2 + 1; }
-			else { return puckTimelineHeight - bH / 2 + 1; }
+			// Apply an offset instead of relying on alignment-baseline or dominant-baseline
+			var offset = 4;
+			if (d.id) { return timelineHeight - bH / 2 + offset; }
+			else { return puckTimelineHeight - bH / 2 + offset; }
 		})
 		.text("DELETE");
 
