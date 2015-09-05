@@ -139,6 +139,18 @@ initTimeline();
 updateRinkAndTimeline();
 d3.select("#message").html(msgDefault);
 
+// Path toggle
+d3.select("#paths").on("click", function() { togglePaths(); });
+var arePathsVisible;
+togglePaths(true);
+
+
+// Use a listener on the html element to close the picker
+// The picker-mask, timepoint, etc. listeners will handle other operations like updating data
+d3.select("html").on("click", function() {
+	if (activeTimepoint.timeline != null) { closePicker(); };
+});
+
 /*
 *
 * Draw left net and right net
@@ -162,9 +174,6 @@ d3.select("#rink-map").append("path")
 *
 */
 
-d3.select("#paths").on("click", function() { togglePaths(); });
-var arePathsVisible;
-togglePaths(true);
 function togglePaths(toBe) {
 	if (toBe == null) {
 		if (arePathsVisible) { toBe = false; }
@@ -702,8 +711,7 @@ function updateRinkAndTimeline() {
 		.text(function(d) { return d.t; });
 
 	// Update markers - hide markers for players with no waypoints
-	// Move markers to the first defined timepoint's position
-	// Set marker text
+	// Set marker text and move markers to the first defined timepoint's position
 	var markers = players.select("g.marker");
 	markers.style("visibility", function(d) {
 			var definedTimepoints = d.timepoints.filter(function(pt) { return pt.x != null && pt.y != null; });
@@ -791,11 +799,11 @@ function appendPlayerTimepointListeners() {
 	// Click listeners
 	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").on("click", function(clicked) {
 		var clickedPlayerId = this.parentNode.__data__.id;
-		if (activeTimepoint.timeline === "player" && activeTimepoint.player === clickedPlayerId && activeTimepoint.t === clicked.t) {
-			// If the active timepoint is clicked again, then do nothing because
-			// the click will fire the onClick listener for the html element, which closes the picker
-		} else {
-			// Otherwise, clicking on a timepoint makes it active
+
+		// If a timepoint is clicked, and the timepoint is not already active, then open the picker
+		// Otherwise, let the onClick listener for the html element close the picker
+		if (activeTimepoint.timeline !== "player"
+			|| (activeTimepoint.timeline === "player" && (activeTimepoint.player !== clickedPlayerId || activeTimepoint.t !== clicked.t))) {
 			activeTimepoint.timeline = "player";
 			activeTimepoint.t = clicked.t;
 			activeTimepoint.player = clickedPlayerId;
@@ -929,15 +937,12 @@ function appendPlayerTimepointListeners() {
 
 function appendPuckTimepointListeners() {
 	d3.select("#table").select(".puck.row").selectAll("circle.timepoint").on("click", function(clicked) {
-		if (activeTimepoint.timeline === "puck" && activeTimepoint.t === clicked.t) {
-			// If the active timepoint is clicked again, then do nothing because
-			// the click will fire the onClick listener for the html element, which closes the picker
-		} else {
-			// Otherwise, clicking on a timepoint makes it active
+		// If a timepoint is clicked, and the timepoint is not already active, then open the picker
+		// Otherwise, let the onClick listener for the html element close the picker
+		if (activeTimepoint.timeline !== "puck" || (activeTimepoint.timeline === "puck" && activeTimepoint.t !== clicked.t)) {
 			activeTimepoint.timeline = "puck";
 			activeTimepoint.t = clicked.t;
 			activeTimepoint.player = null;
-
 			// Open the picker for the new active timepoint if the maximum number of timepoints hasn't been reached
 			// Also open the picker if a defined timepoint is clicked so the user can edit/delete it
 			if (getTotalDefinedTimepoints() < maxTimepoints || d3.select(this).classed("defined") === true) {
@@ -1127,37 +1132,31 @@ function openPicker() {
 		d3.select("#table").selectAll("input").style("display", "none");
 		d3.select("#table").selectAll(".carrier.button").style("display", "");
 	}
+}
 
-	// Use a listener on the html element to close the picker
-	// The picker-mask, timepoint, etc. listeners will handle other operations like updating data
-	d3.select("html").on("click", function() { closePicker(); });
+/*
+*
+* Closes the picker and clears the active element
+*
+*/
 
-	/*
-	*
-	* Closes the picker and clears the active element
-	*
-	*/
+function closePicker() {
+	console.log("close picker!");
 
-	function closePicker() {
+	// Hide picker elements on rink
+	d3.select("#picker-mask").on("mousemove", null);
+	d3.select("#picker-mask").on("click", null);
+	d3.select("#picker-mask")
+		.attr("class", "")
+		.style("visibility", "hidden");
 
-		// Remove click listener on html element that closes the picker
-		d3.select("html").on("click", null);
+	// Hide puck carreir selectors and display the label input fields
+	d3.select("#table").selectAll(".carrier.button").style("display", "none");
+	d3.select("#table").selectAll("input").style("display", "");
 
-		// Hide picker elements on rink
-		d3.select("#picker-mask").on("mousemove", null);
-		d3.select("#picker-mask").on("click", null);
-		d3.select("#picker-mask")
-			.attr("class", "")
-			.style("visibility", "hidden");
-
-		// Hide puck carreir selectors and display the label input fields
-		d3.select("#table").selectAll(".carrier.button").style("display", "none");
-		d3.select("#table").selectAll("input").style("display", "");
-
-		// Clear active element and update messaging
-		clearActiveTimepoint();
-		displayMessage(msgDefault);
-	}
+	// Clear active element and update messaging
+	clearActiveTimepoint();
+	displayMessage(msgDefault);
 }
 
 function updatePlayerTimepoint(player, t, x, y) {
