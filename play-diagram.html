@@ -820,6 +820,9 @@ function appendPlayerTimepointListeners() {
 			}
 			// Don't trigger the onClick listener for the html element, which closes the picker
 			d3.event.stopPropagation();
+		} else if (activeTimepoint.timeline === "player" && activeTimepoint.player === clickedPlayerId && activeTimepoint.t === clicked.t) {
+			// Don't trigger the onClick listener for the html element, so the user can drag the currently active and clicked timepoint
+			d3.event.stopPropagation();
 		}
 	});
 
@@ -841,9 +844,11 @@ function appendPlayerTimepointListeners() {
 			dragData = this.__data__;
 			targetT = dragData.t;
 
-			// Cancel drag events if the dragged timepoint is not defined. Also cancel if there's an active timepoint
+			// Cancel drag events if the dragged timepoint is not defined, or if the active timepoint is a puck timepoint
+			// If there's an active timepoint, then only the active timepoint can be dragged
 			isDefined = true;
-			if (dragData.x == null || dragData.y == null || activeTimepoint.timeline != null) {
+			if (dragData.x == null || dragData.y == null || activeTimepoint.timeline === "puck" ||
+			(activeTimepoint.timeline === "player" && (activeTimepoint.player !== dragPlayer || activeTimepoint.t !== dragData.t))) {
 				isDefined = false;
 				dragPlayer = null;
 				dragData = null;
@@ -974,9 +979,11 @@ function appendPuckTimepointListeners() {
 			dragData = this.__data__;
 			targetT = dragData.t;
 
-			// Cancel drag events if the dragged timepoint is not defined. Also cancel if there's an active timepoint
+			// Cancel drag events if the dragged timepoint is not defined, or if the active timepoint is a player timepoint
+			// If there's an active timepoint, then only the active timepoint can be dragged
 			isDefined = true;
-			if (dragData.type == null || activeTimepoint.timeline != null) {
+			if (dragData.type == null || activeTimepoint.timeline === "player" ||
+				(activeTimepoint.timeline === "puck" && activeTimepoint.t !== dragData.t)) {
 				isDefined = false;
 				dragData = null;
 				targetT = null;
