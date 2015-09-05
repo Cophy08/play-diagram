@@ -11,12 +11,12 @@
 </head>
 <body>
 	<h1>Play Diagram</h1>
-	<p>Pick a timepoint to add or edit an event. You can also change a player's colour or label.</p>
-	<div id="message" style="display: inline-block; text-align: right; margin: 0; width: 700px; margin-left: 20px;"></div>
+	<p style="line-height: 20px; margin: 0; margin-bottom: 5px;">Use the timeline to diagram player and puck locations. You can also change player colours and labels.</p>
+	<p style="line-height: 20px; margin: 0; margin-bottom: 30px;">Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
 	<div style="display: block;">
-		<a href="#" id="play" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; width: 90px; padding: 0; text-align: center; line-height: 28px;">Animate</a
-		><a href="#" id="paths" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; margin-left: 10px; width: 100px; padding: 0; text-align: center; line-height: 28px;">Paths</a
-		><div style="display: inline-block; text-align: right; margin: 0; width: 780px; line-height: 28px;">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
+		<a href="#" id="play" style="display: inline-block; text-decoration: none; margin: 0; width: 90px; padding: 0; text-align: center; line-height: 28px;">Animate</a
+		><a href="#" id="paths" style="display: inline-block; text-decoration: none; margin: 0; margin-left: 10px; width: 100px; padding: 0; text-align: center; line-height: 28px;">Paths</a
+		><div id="message" style="display: inline-block; text-align: right; margin: 0; width: 780px; line-height: 28px;">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
 	</div>
 	<svg id="rink-svg" style="display: block;"></svg>
 	<div id="table" style="display: block;"></div>
@@ -107,8 +107,8 @@ puckSeconds.forEach(function(s) {
 * Timeline configuration
 *
 */
-var highlightCircleR = 8;
-var timepointCircleR = 4;
+var highlightCircleR = 10;
+var timepointCircleR = 6;
 
 var timelineWidth = 900;
 var timelineHeight = 40;
