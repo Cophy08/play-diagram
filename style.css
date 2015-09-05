@@ -229,7 +229,7 @@ text.carrier {
 		text-anchor: middle;
 		font-size: 10px;
 		fill: firebrick;
-		font-weight: 700;
+		font-weight: 400;
 	}
 	.button.delete:hover rect {
 		fill: lightpink;

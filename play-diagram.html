@@ -5,13 +5,13 @@
 	<title>Play Diagram</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<script type="text/javascript" src="formatter.min.js"></script>
-	<link href="http://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet" type="text/css">
+	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
 	<script type="text/javascript" src="rinkPlot.js"></script>
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
 	<h1>Play Diagram</h1>
-	<p>Pick a timepoint to add or edit an event. Drag an event to change when it occurred. You can change a player's colour or label.</p>
+	<p>Pick a timepoint to add or edit an event. You can also change a player's colour or label.</p>
 	<div id="message" style="display: inline-block; text-align: right; margin: 0; width: 700px; margin-left: 20px;"></div>
 	<div style="display: block;">
 		<a href="#" id="play" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; width: 90px; padding: 0; text-align: center; line-height: 28px;">Animate</a
@@ -51,7 +51,9 @@ var maxTimepoints = 10;
 //var msgDefault = "Pick a timepoint to add or edit an event. Drag an event to change when it occurred. You can change a player's colour or label.";
 var msgDefault = "";
 var msgPickPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player.";
+var msgPickDragPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player. Drag to change when event occurred.";
 var msgPickPlayerTimepoint = "Send the player to a spot in the rink.";
+var msgPickDragPlayerTimepoint = "Send the player to a spot in the rink. Drag to change when event occurred.";
 var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " events.";
 /*
 *
@@ -807,6 +809,7 @@ function appendPlayerTimepointListeners() {
 		// Otherwise, let the onClick listener for the html element close the picker
 		if (activeTimepoint.timeline !== "player"
 			|| (activeTimepoint.timeline === "player" && (activeTimepoint.player !== clickedPlayerId || activeTimepoint.t !== clicked.t))) {
+
 			activeTimepoint.timeline = "player";
 			activeTimepoint.t = clicked.t;
 			activeTimepoint.player = clickedPlayerId;
@@ -822,9 +825,6 @@ function appendPlayerTimepointListeners() {
 				setTimeout(function() { displayMessage(msgDefault); }, 2000);
 			}
 			// Don't trigger the onClick listener for the html element, which closes the picker
-			d3.event.stopPropagation();
-		} else if (activeTimepoint.timeline === "player" && activeTimepoint.player === clickedPlayerId && activeTimepoint.t === clicked.t) {
-			// Don't trigger the onClick listener for the html element, so the user can drag the currently active and clicked timepoint
 			d3.event.stopPropagation();
 		}
 	});
@@ -843,6 +843,8 @@ function appendPlayerTimepointListeners() {
 	var dragListener = d3.behavior.drag()
 		.on("dragstart", function() {
 
+			stopAnimation(true, false);
+
 			dragPlayer = this.parentNode.__data__.id;
 			dragData = this.__data__;
 			targetT = dragData.t;
@@ -858,8 +860,6 @@ function appendPlayerTimepointListeners() {
 				targetT = null;
 				return;
 			}
-
-			stopAnimation(true, false);
 
 			// If paths are currently hidden, display them
 			if (!arePathsVisible) {
@@ -979,6 +979,8 @@ function appendPuckTimepointListeners() {
 	var dragListener = d3.behavior.drag()
 		.on("dragstart", function() {
 
+			stopAnimation(true, false);
+
 			dragData = this.__data__;
 			targetT = dragData.t;
 
@@ -1089,6 +1091,15 @@ function highlightActiveTimepoint() {
 			.attr("transform", "translate(" + tX(activeTimepoint.t) + ",0)")
 			.style("visibility", "visible");
 	}
+
+	// Update instructions
+	if (activeTimepoint.timeline === "puck") {
+		if (activeTimepointData.type != null) { displayMessage(msgPickDragPuckTimepoint); }
+		else { displayMessage(msgPickPuckTimepoint); }
+	} else if (activeTimepoint.timeline === "player") {
+		if (activeTimepointData.x != null && activeTimepointData.y != null) { displayMessage(msgPickDragPlayerTimepoint); }
+		else { displayMessage(msgPickPlayerTimepoint); }
+	}
 }
 
 function clearActiveTimepointHighlight() {
@@ -1109,10 +1120,6 @@ function openPicker() {
 
 	stopAnimation(true, false);
 	togglePaths(true);
-
-	// Update instructions
-	if (activeTimepoint.timeline === "puck") { displayMessage(msgPickPuckTimepoint); }
-	else if (activeTimepoint.timeline === "player") { displayMessage(msgPickPlayerTimepoint); }
 
 	// Make picker elements visible
 	d3.select("#picker-mask")
