@@ -1,6 +1,27 @@
-body, svg {
+html {
+	width: 100%;
+	padding: 0;
+	margin: 0;
+}
+
+body {
+	width: 990px;
+	margin: 0 auto;
+}
+
+body {
+	font-family: Roboto, sans-serif;
+	font-size: 14px;
+}
+
+svg, #table {
 	font-family: Roboto, sans-serif;
 	font-size: 12px;
+	line-height: 12px;
+}
+
+#rink-svg {
+	margin: 0 auto;
 }
 
 /* Disable highlighting so it doesn't show up while the user is clicking */

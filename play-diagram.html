@@ -10,11 +10,13 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-	<p>Save your diagram for later by copying the URL - the URL changes each time you edit your diagram.</p>
-	<div>
-		<a href="#" id="play" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; margin-left: 10px;">Start Play</a>
-		<a href="#" id="paths" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; margin-left: 10px;">Paths</a>
-		<div id="message" style="display: inline-block; margin: 0; width: 700px; margin-left: 20px;"></div>
+	<h1>Play Diagram</h1>
+	<p>Pick a timepoint to add or edit an event. Drag an event to change when it occurred. You can change a player's colour or label.</p>
+	<div id="message" style="display: inline-block; text-align: right; margin: 0; width: 700px; margin-left: 20px;"></div>
+	<div style="display: block;">
+		<a href="#" id="play" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; width: 90px; padding: 0; text-align: center; line-height: 28px;">Animate</a
+		><a href="#" id="paths" style="display: inline-block; text-decoration: none; font-family: Roboto; margin: 0; margin-left: 10px; width: 100px; padding: 0; text-align: center; line-height: 28px;">Paths</a
+		><div style="display: inline-block; text-align: right; margin: 0; width: 780px; line-height: 28px;">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
 	</div>
 	<svg id="rink-svg" style="display: block;"></svg>
 	<div id="table" style="display: block;"></div>
@@ -46,7 +48,8 @@ var y = d3.scale.linear()
 var maxTimepoints = 10;
 
 
-var msgDefault = "Pick a timepoint to add or edit an event. Drag an event to change when it occurred. You can change a player's colour or label.";
+//var msgDefault = "Pick a timepoint to add or edit an event. Drag an event to change when it occurred. You can change a player's colour or label.";
+var msgDefault = "";
 var msgPickPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player.";
 var msgPickPlayerTimepoint = "Send the player to a spot in the rink.";
 var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " events.";
@@ -1148,8 +1151,6 @@ function openPicker() {
 */
 
 function closePicker() {
-	console.log("close picker!");
-
 	// Hide picker elements on rink
 	d3.select("#picker-mask").on("mousemove", null);
 	d3.select("#picker-mask").on("click", null);
