@@ -459,9 +459,7 @@ function initTimeline() {
 		.attr("class", "carrier button")
 		.text(function(d) { return d.label; })
 		.style("display", "none")
-		.on("click", function(d) {
-			updatePuckTimepoint("player", activeTimepoint.t, null, null, d.id);
-		});
+		.on("click", function(d) { updatePuckTimepoint("player", activeTimepoint.t, null, null, d.id); });
 
 	/*
 	*
@@ -596,12 +594,8 @@ function initTimeline() {
 		.text("DELETE");
 
 	// Append delete listeners
-	table.select(".puck.row").select(".button.delete").on("click", function() {
-		updatePuckTimepoint(null, activeTimepoint.t, null, null, null);
-	});
-	table.selectAll(".player.row").select(".button.delete").on("click", function() {
-		updatePlayerTimepoint(activeTimepoint.player, activeTimepoint.t, null, null);
-	});
+	table.select(".puck.row").select(".button.delete").on("click", function() { updatePuckTimepoint(null, activeTimepoint.t, null, null, null);	});
+	table.selectAll(".player.row").select(".button.delete").on("click", function() { updatePlayerTimepoint(activeTimepoint.player, activeTimepoint.t, null, null); });
 
 	// Append a mask on the rink that will capture mouse events
 	d3.select("#rink").append("rect")
@@ -1136,33 +1130,34 @@ function openPicker() {
 
 	// Use a listener on the html element to close the picker
 	// The picker-mask, timepoint, etc. listeners will handle other operations like updating data
-	d3.select("html").on("click", function() {
-		console.log("html clicked!");
-		closePicker();
-	});
-}
+	d3.select("html").on("click", function() { closePicker(); });
 
-function closePicker() {
+	/*
+	*
+	* Closes the picker and clears the active element
+	*
+	*/
 
-	console.log("closePicker!");
-	d3.select("html").on("click", null);
+	function closePicker() {
 
-	// Hide picker elements on rink
-	d3.select("#picker-mask").on("mousemove", null);
-	d3.select("#picker-mask").on("click", null);
-	d3.select("#picker-mask")
-		.attr("class", "")
-		.style("visibility", "hidden");
+		// Remove click listener on html element that closes the picker
+		d3.select("html").on("click", null);
 
-	// Hide puck carreir selectors and display the label input fields
-	d3.select("#table").selectAll(".carrier.button").style("display", "none");
-	d3.select("#table").selectAll("input").style("display", "");
+		// Hide picker elements on rink
+		d3.select("#picker-mask").on("mousemove", null);
+		d3.select("#picker-mask").on("click", null);
+		d3.select("#picker-mask")
+			.attr("class", "")
+			.style("visibility", "hidden");
 
-	// Clear active element
-	clearActiveTimepoint();
+		// Hide puck carreir selectors and display the label input fields
+		d3.select("#table").selectAll(".carrier.button").style("display", "none");
+		d3.select("#table").selectAll("input").style("display", "");
 
-	// Update instructions
-	displayMessage(msgDefault);
+		// Clear active element and update messaging
+		clearActiveTimepoint();
+		displayMessage(msgDefault);
+	}
 }
 
 function updatePlayerTimepoint(player, t, x, y) {
