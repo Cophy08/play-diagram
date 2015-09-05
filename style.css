@@ -66,9 +66,10 @@ g.player g.marker text {
 	}
 
 text.timepoint, text.label {
-	font-size: 10px;
+	font-size: 12px;
 	text-anchor: middle;
 	dominant-baseline: middle;
+	fill: #bbb;
 }
 
 	g.player.blue text.timepoint {
@@ -121,6 +122,10 @@ g.player path.skater {
 *
 */
 
+.puck.row {
+	margin-bottom: 10px;
+}
+
 .cell {
 	display: inline-block;
 	vertical-align: middle;
@@ -132,6 +137,10 @@ g.player path.skater {
 		width: 50px;
 	}
 
+		.puck.row .cell.label {
+			padding-top: 9px; /* To vertically align label with timeline */
+		}
+
 		.player.row .cell.label {
 			padding-bottom: 18px;
 		}
@@ -142,11 +151,12 @@ g.player path.skater {
 	}
 
 
-
 input[type=text] {
 	margin: 0;
+	margin-top: 4px;
 	border: none;
 	border-bottom: 1px solid #ccc;
+	font-size: 12px;
 	padding-bottom: 4px;
 }
 
@@ -210,8 +220,7 @@ circle.timepoint {
 	}
 
 text.carrier {
-	fill: red;
-	font-size: 10px;
+	font-size: 12px;
 	dominant-baseline: middle;
 }
 
@@ -244,6 +253,8 @@ text.carrier {
 	border-radius: 2px;
 	cursor: pointer;
 	margin-right: 10px;
+	margin-top: 4px;
+	margin-bottom: 3px;
 	padding: 3px;
 }
 

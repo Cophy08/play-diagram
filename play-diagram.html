@@ -112,7 +112,7 @@ var timepointCircleR = 6;
 
 var timelineWidth = 900;
 var timelineHeight = 40;
-var puckTimelineHeight = 60;
+var puckTimelineHeight = 80;
 
 var tX = d3.scale.linear()
 	.domain(d3.extent(puckSeconds))
@@ -529,8 +529,8 @@ function initTimeline() {
 		.attr("y1", timelineHeight - 28)
 		.attr("y2", timelineHeight - 28);
 	d3.select(".puck.row").select("line.baseline")
-		.attr("y1", puckTimelineHeight - 28)
-		.attr("y2", puckTimelineHeight - 28);
+		.attr("y1", puckTimelineHeight - 35)
+		.attr("y2", puckTimelineHeight - 35);
 
 	// Append time marker in the puck timeline
 	d3.select(".puck.row").select("svg.timeline").append("line")
@@ -546,7 +546,7 @@ function initTimeline() {
 		.attr("class", "highlight")
 		.attr("r", highlightCircleR);
 	table.select(".puck.row").select("circle.highlight")
-		.attr("cy", puckTimelineHeight - 28);
+		.attr("cy", puckTimelineHeight - 35);
 	table.selectAll(".player.row").select("circle.highlight")
 		.attr("cy", timelineHeight - 28);
 
@@ -555,7 +555,7 @@ function initTimeline() {
 		.data(function(d) { return d; }, function(d) { return d.t; })
 		.enter().append("circle")
 			.attr("class", "timepoint")
-			.attr("cy", puckTimelineHeight - 28);
+			.attr("cy", puckTimelineHeight - 35);
 	table.selectAll(".player.row").select("svg.timeline").selectAll("circle.timepoint")
 		.data(function(d) { return d.timepoints; }, function(d) { return d.t; })
 		.enter().append("circle")
@@ -781,10 +781,10 @@ function updateRinkAndTimeline() {
 	labels.exit().remove();
 	labels.enter().append("text")
 		.attr("class", "carrier")
-		.attr("y", puckTimelineHeight - 28);
+		.attr("y", puckTimelineHeight - 40);
 	labels.attr("x", function(d) { return tX(d.t); })
 		.attr("transform", function(d) {
-			return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 28) + ")";
+			return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 40) + ")";
 		})
 		.style("fill", function(d) {
 			return playerData.filter(function(p) { return p.id === d.player; })[0].colour;
