@@ -47,8 +47,8 @@ var maxTimepoints = 10;
 
 
 var msgDefault = "Pick a timepoint to add or edit an event. Drag an event to change when it occurred. You can change a player's colour or label.";
-var msgPickPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player. Click the timepoint again to cancel the selection.";
-var msgPickPlayerTimepoint = "Send the player to a spot in the rink. Click the timepoint again to cancel the selection.";
+var msgPickPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player.";
+var msgPickPlayerTimepoint = "Send the player to a spot in the rink.";
 var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " events.";
 /*
 *
@@ -461,7 +461,6 @@ function initTimeline() {
 		.style("display", "none")
 		.on("click", function(d) {
 			updatePuckTimepoint("player", activeTimepoint.t, null, null, d.id);
-			closePicker();
 		});
 
 	/*
@@ -599,11 +598,9 @@ function initTimeline() {
 	// Append delete listeners
 	table.select(".puck.row").select(".button.delete").on("click", function() {
 		updatePuckTimepoint(null, activeTimepoint.t, null, null, null);
-		closePicker();
 	});
 	table.selectAll(".player.row").select(".button.delete").on("click", function() {
 		updatePlayerTimepoint(activeTimepoint.player, activeTimepoint.t, null, null);
-		closePicker();
 	});
 
 	// Append a mask on the rink that will capture mouse events
@@ -801,8 +798,8 @@ function appendPlayerTimepointListeners() {
 	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").on("click", function(clicked) {
 		var clickedPlayerId = this.parentNode.__data__.id;
 		if (activeTimepoint.timeline === "player" && activeTimepoint.player === clickedPlayerId && activeTimepoint.t === clicked.t) {
-			// If the active timepoint is clicked again, then close the picker
-			closePicker();
+			// If the active timepoint is clicked again, then do nothing because
+			// the click will fire the onClick listener for the html element, which closes the picker
 		} else {
 			// Otherwise, clicking on a timepoint makes it active
 			activeTimepoint.timeline = "player";
@@ -815,10 +812,12 @@ function appendPlayerTimepointListeners() {
 				highlightActiveTimepoint();
 				openPicker();
 			} else {
-				closePicker();
+				clearActiveTimepoint();
 				displayMessage(msgMaxTimepoints);
 				setTimeout(function() { displayMessage(msgDefault); }, 2000);
 			}
+			// Don't trigger the onClick listener for the html element, which closes the picker
+			d3.event.stopPropagation();
 		}
 	});
 
@@ -937,8 +936,8 @@ function appendPlayerTimepointListeners() {
 function appendPuckTimepointListeners() {
 	d3.select("#table").select(".puck.row").selectAll("circle.timepoint").on("click", function(clicked) {
 		if (activeTimepoint.timeline === "puck" && activeTimepoint.t === clicked.t) {
-			// If the active timepoint is clicked again, then close the picker
-			closePicker();
+			// If the active timepoint is clicked again, then do nothing because
+			// the click will fire the onClick listener for the html element, which closes the picker
 		} else {
 			// Otherwise, clicking on a timepoint makes it active
 			activeTimepoint.timeline = "puck";
@@ -951,10 +950,12 @@ function appendPuckTimepointListeners() {
 				highlightActiveTimepoint();
 				openPicker();
 			} else {
-				closePicker();
+				clearActiveTimepoint();
 				displayMessage(msgMaxTimepoints);
 				setTimeout(function() { displayMessage(msgDefault); }, 2000);
 			}
+			// Don't trigger the onClick listener for the html element, which closes the picker
+			d3.event.stopPropagation();
 		}
 	});
 
@@ -1118,16 +1119,13 @@ function openPicker() {
 		mY = Math.round(mPos[1] / pxPerFt) * pxPerFt;
 	});
 
-	// Update waypoint data with the picked position, then close the picker
-	var isPickerMaskClicked = false;
+	// Update waypoint data with the picked position
 	d3.select("#picker-mask").on("click", function() {
 		if (activeTimepoint.timeline === "player") {
 			updatePlayerTimepoint(activeTimepoint.player, activeTimepoint.t, Math.round(x.invert(mX)), Math.round(y.invert(mY)));
 		} else if (activeTimepoint.timeline === "puck") {
 			updatePuckTimepoint("position", activeTimepoint.t, Math.round(x.invert(mX)), Math.round(y.invert(mY)), null);
 		}
-		closePicker();
-		isPickedMaskClicked = true;
 	});
 
 	// If the active timepoint is a puck timepoint or waypoint, display the puck carrier selectors and hide the label input fields
@@ -1136,27 +1134,17 @@ function openPicker() {
 		d3.select("#table").selectAll(".carrier.button").style("display", "");
 	}
 
+	// Use a listener on the html element to close the picker
+	// The picker-mask, timepoint, etc. listeners will handle other operations like updating data
 	d3.select("html").on("click", function() {
-		var clicked = event.target;
-		var clickedClass = d3.select(clicked).attr("class");
-		var clickedId = d3.select(clicked).attr("id");
-		console.log(clicked);
-
-		if (clickedClass && clickedClass.indexOf("timepoint") >= 0) {
-			// This will fire when the timepoint was initially clicked to open the picker,
-			console.log("timepoint was clicked");
-		} else if (clickedId && clickedId === "rink-svg" && isPickerMaskClicked === false) {
-			console.log("clicked on #rink-svg, but outside picker mask");
-			closePicker();
-		} else {
-			console.log("invalid target");
-			closePicker();
-		}
+		console.log("html clicked!");
+		closePicker();
 	});
 }
 
 function closePicker() {
 
+	console.log("closePicker!");
 	d3.select("html").on("click", null);
 
 	// Hide picker elements on rink
