@@ -13,13 +13,14 @@
 	<h1>Play Diagram</h1>
 	<p style="line-height: 20px; margin: 0; margin-bottom: 5px;">Use the timeline to diagram player and puck locations. You can also change player colours and labels.</p>
 	<p style="line-height: 20px; margin: 0; margin-bottom: 30px;">Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
-	<div style="display: block;">
+	<div style="display: block; margin-bottom: 30px;">
 		<a href="#" id="play" style="display: inline-block; text-decoration: none; margin: 0; width: 90px; padding: 0; text-align: center; line-height: 28px;">Animate</a
 		><a href="#" id="paths" style="display: inline-block; text-decoration: none; margin: 0; margin-left: 10px; width: 100px; padding: 0; text-align: center; line-height: 28px;">Paths</a
-		><div id="message" style="display: inline-block; text-align: right; margin: 0; width: 780px; line-height: 28px;">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
+		><div id="message" style="display: inline-block; text-align: right; margin: 0; width: 730px; line-height: 28px;">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
 	</div>
 	<svg id="rink-svg" style="display: block;"></svg>
 	<div id="table" style="display: block;"></div>
+	<p style="margin-top: 30px;">Made by @datarink</p>
 	</div>
 </body>
 <script>
@@ -30,7 +31,7 @@
 *
 */
 
-var margin = {top: 30, left: 30, right: 30, bottom: 30};
+var margin = {top: 1, left: 1, right: 1, bottom: 1};
 
 var rinkWidth = 200;
 var rinkHeight = 85;
@@ -111,13 +112,13 @@ puckSeconds.forEach(function(s) {
 var highlightCircleR = 10;
 var timepointCircleR = 6;
 
-var timelineWidth = 900;
+var timelineWidth = 850;
 var timelineHeight = 40;
 var puckTimelineHeight = 80;
 
 var tX = d3.scale.linear()
 	.domain(d3.extent(puckSeconds))
-	.range([20, timelineWidth - 20]);
+	.range([(timepointCircleR + 7), timelineWidth - (timepointCircleR + 7)]); // +6px so there's space to display time labels
 
 // Stores the active element in the timeline
 var activeTimepoint = {
@@ -484,18 +485,25 @@ function initTimeline() {
 
 	table.selectAll(".colour-picker.cell").append("svg")
 		.attr("class", "colour-picker")
-		.attr("width", (2 * timepointCircleR) + "px");
+		.attr("width", (2 * timepointCircleR + 2) + "px"); // +2px for stroke
 	table.selectAll(".player.row").select("svg.colour-picker")
 		.style("height", timelineHeight + "px")
 		.append("circle")
 			.attr("class", "colour-picker")
-			.attr("cx", timepointCircleR)
+			.attr("cx", timepointCircleR + 1)
 			.attr("cy", timelineHeight - 28)
 			.attr("r", timepointCircleR)
-			.style("fill", function(d) { return d.colour; })
+			.style("fill", function(d) {
+				if (d.colour === "red") { return red; }
+				else { return blue; }
+			})
+			.style("stroke", function(d) {
+				if (d.colour === "red") { return red; }
+				else { return blue; }
+			})
 			.on("click", function(d) {
-				var newColour = blue;
-				if (d.colour === blue) { newColour = red; }
+				var newColour = "blue";
+				if (d.colour === "blue") { newColour = "red"; }
 				updatePlayerColour(d.id, newColour);
 			});
 	table.select(".puck.row").select("svg.colour-picker")
@@ -790,7 +798,14 @@ function updateRinkAndTimeline() {
 
 	// Update colour pickers
 	d3.select("#table").selectAll("svg.colour-picker").select("circle.colour-picker")
-		.style("fill", function(d) { return d.colour; });
+		.style("fill", function(d) {
+			if (d.colour === "red") { return red; }
+			else { return blue; }
+		})
+		.style("stroke", function(d) {
+			if (d.colour === "red") { return red; }
+			else { return blue; }
+		});
 
 	updateUrl();
 };
@@ -1412,8 +1427,8 @@ function parseUrl() {
 		var label = params[0];
 		targetPlayer.label = label;
 
-		if (params[1] === "r") { targetPlayer.colour = red; }
-		else { targetPlayer.colour = blue; }
+		if (params[1] === "r") { targetPlayer.colour = "red"; }
+		else { targetPlayer.colour = "blue"; }
 
 		var pts = params[2].split("+");
 		pts = pts.filter(function(d) { return d; }); // Filter out null values
@@ -1443,7 +1458,7 @@ function updateUrl() {
 	playerData.forEach(function(p, i) {
 
 		var colourString = "b";
-		if (p.colour === red) { colourString = "r"; }
+		if (p.colour === "red") { colourString = "r"; }
 
 		var playerString = "&p" + p.id + "=" + p.label + ";" + colourString + ";";
 		resultString += playerString;
