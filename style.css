@@ -179,6 +179,7 @@ input[type=text] {
 	margin-top: 4px;
 	border: none;
 	border-bottom: 1px solid #ccc;
+	border-radius: 0;
 	font-size: 12px;
 	padding-bottom: 4px;
 }
@@ -307,9 +308,13 @@ text.carrier {
 	line-height: 28px;
 }
 
+#paths {
+	display: none;
+}
+
 #message {
 	display: inline-block;
-	text-align: right;
+	text-align: center;
 	margin: 0;
 	width: 720px;
 	line-height: 28px;

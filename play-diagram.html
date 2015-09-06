@@ -11,12 +11,11 @@
 </head>
 <body>
 	<h1>Play Diagram</h1>
-	<p>Use the timeline to diagram player and puck locations. You can also change player colours and labels.</p>
-	<p>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
+	<p>Use the timeline to diagram player and puck locations. You can also change player colours and labels.<br>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
 	<div>
 		<a href="javascript:;" id="play">Animate</a
 		><a href="javascript:;" id="paths">Paths</a
-		><div id="message">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
+		><div id="message"></div>
 	</div>
 	<svg id="rink-svg"></svg>
 	<div id="table"></div>
@@ -52,10 +51,10 @@ var red = "red";
 var blue = "blue";
 
 var msgDefault = "";
-var msgPickPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player.";
-var msgPickDragPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player. Drag to change when event occurred.";
-var msgPickPlayerTimepoint = "Send the player to a spot in the rink.";
-var msgPickDragPlayerTimepoint = "Send the player to a spot in the rink. Drag to change when event occurred.";
+var msgPickPuckTimepoint = "Pick a spot in the rink, or pick a player.";
+var msgPickDragPuckTimepoint = "Pick a spot in the rink, or pick a player. Drag the event to change when it occurred.";
+var msgPickPlayerTimepoint = "Pick a spot in the rink.";
+var msgPickDragPlayerTimepoint = "Pick a spot in the rink. Drag the event to change when it occurred.";
 var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " events.";
 /*
 *
