@@ -14,8 +14,8 @@
 	<p>Use the timeline to diagram player and puck locations. You can also change player colours and labels.</p>
 	<p>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
 	<div>
-		<a href="#" id="play">Animate</a
-		><a href="#" id="paths">Paths</a
+		<a href="javascript:;" id="play">Animate</a
+		><a href="javascript:;" id="paths">Paths</a
 		><div id="message">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
 	</div>
 	<svg id="rink-svg"></svg>
@@ -147,7 +147,9 @@ updateRinkAndTimeline();
 d3.select("#message").html(msgDefault);
 
 // Path toggle
-d3.select("#paths").on("click", function() { togglePaths(); });
+d3.select("#paths").on("click", function() {
+		togglePaths();
+	});
 var arePathsVisible;
 togglePaths(true);
 
