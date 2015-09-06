@@ -109,8 +109,8 @@ puckSeconds.forEach(function(s) {
 * Timeline configuration
 *
 */
-var highlightCircleR = 10;
-var timepointCircleR = 6;
+var highlightCircleR = 9;
+var timepointCircleR = 5;
 
 var timelineWidth = 850;
 var timelineHeight = 40;
@@ -588,7 +588,7 @@ function initTimeline() {
 		.attr("x", -bW / 2)
 		.attr("y", function(d) {
 			if (d.id) { return timelineHeight - bH; }
-			else { return puckTimelineHeight - bH; }
+			else { return puckTimelineHeight - bH - 7; }
 		})
 		.attr("rx", 2)
 		.attr("ry", 2)
@@ -600,7 +600,7 @@ function initTimeline() {
 			// Apply an offset instead of relying on alignment-baseline or dominant-baseline
 			var offset = 4;
 			if (d.id) { return timelineHeight - bH / 2 + offset; }
-			else { return puckTimelineHeight - bH / 2 + offset; }
+			else { return puckTimelineHeight - bH / 2 + offset - 7; }
 		})
 		.text("DELETE");
 
