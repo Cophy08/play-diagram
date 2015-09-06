@@ -915,15 +915,18 @@ function appendPlayerTimepointListeners() {
 				} else if (rounded !== targetT) {
 					// If the timepoint at t = rounded is undefined, and rounded != the current targetT, then update targetT to rounded
 					targetT = rounded;
-					// Clear existing purple highlights and apply purple highlight to new target
+					// Clear existing highlights and apply highlight to new target
 					d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
 					var target = d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").filter(function(pt) { return pt.t === targetT; });
-					target.style("stroke", "purple");
+					target.style("stroke-width", 2)
+						.style("stroke", "black");
 				}
 			} else if (!isClose) {
 				// If rounded is not a whole number (i.e., user is not near a timepoint), then reset targetT to the initial dragged timepoint
 				targetT = dragData.t;
-				d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
+				d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)")
+					.style("stroke-width", "")
+					.style("stroke", "");
 			}
 		})
 		.on("dragend", function() {
@@ -936,7 +939,9 @@ function appendPlayerTimepointListeners() {
 				.each("end", function() {
 					// Remove drag effects
 					d3.select(this).remove();
-					d3.select("#player-" + dragPlayer).selectAll("circle.timepoint").style("stroke", "");
+					d3.select("#player-" + dragPlayer).selectAll("circle.timepoint")
+						.style("stroke-width", "")
+						.style("stroke", "");
 
 					// Update data
 					updatePlayerTimepoint(dragPlayer, dragData.t, null, null);
@@ -1043,15 +1048,18 @@ function appendPuckTimepointListeners() {
 				} else if (rounded !== targetT) {
 					// If the timepoint at t = rounded is undefined, and rounded != the current targetT, then update targetT to rounded
 					targetT = rounded;
-					// Clear existing purple highlights and apply purple highlight to new target
+					// Clear existing highlights and apply highlight to new target
 					d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
 					var target = d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").filter(function(pt) { return pt.t === targetT; });
-					target.style("stroke", "purple");
+					target.style("stroke-width", 2)
+						.style("stroke", "black");
 				}
 			} else if (!isClose) {
 				// If rounded is not a whole number (i.e., user is not near a timepoint), then reset targetT to the initial dragged timepoint
 				targetT = dragData.t;
-				d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
+				d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)")
+					.style("stroke-width", "")
+					.style("stroke", "");
 			}
 		})
 		.on("dragend", function() {
@@ -1064,7 +1072,9 @@ function appendPuckTimepointListeners() {
 				.each("end", function() {
 					// Remove drag effects
 					d3.select(this).remove();
-					d3.select(".puck.row").selectAll("circle.timepoint").style("stroke", "");
+					d3.select(".puck.row").selectAll("circle.timepoint")
+						.style("stroke-width", "")
+						.style("stroke", "");
 
 					// Update data
 					updatePuckTimepoint(null, dragData.t, null, null, null);
