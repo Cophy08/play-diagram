@@ -7,11 +7,22 @@ html {
 body {
 	width: 940px;
 	margin: 0 auto;
-}
-
-body {
+	margin-bottom: 30px;
+	color: #111;
 	font-family: Roboto, sans-serif;
 	font-size: 14px;
+}
+
+h1 {
+	font-size: 24px;
+	line-height: 24px;
+	margin-bottom: 20px;
+}
+
+p {
+	line-height: 20px;
+	margin: 0;
+	margin-bottom: 5px;
 }
 
 svg, #table {
@@ -20,8 +31,14 @@ svg, #table {
 	line-height: 12px;
 }
 
+#table {
+	margin-bottom: 30px;
+}
+
 #rink-svg {
+	display: block;
 	margin: 0 auto;
+	margin-bottom: 10px;
 }
 
 /* Disable highlighting so it doesn't show up while the user is clicking */
@@ -46,7 +63,7 @@ g.marker text {
 
 g.marker circle {
 	fill: none;
-	stroke: black;
+	stroke: #111;
 }
 
 path.skater {
@@ -81,7 +98,7 @@ text.timepoint {
 	}
 
 	#puck text.timepoint {
-		fill: silver;
+		fill: #aaa;
 	}
 
 g.player path.skater {
@@ -106,14 +123,13 @@ g.player path.skater {
 	}
 
 #puck circle {
-	fill: none;
-	stroke: black;
-	r: 5;
+	fill: #111;
+	r: 3;
 }
 
 #puck line {
-	stroke: black;
-	stroke-dasharray: 2,3;
+	stroke: #111;
+	stroke-dasharray: 2,2;
 }
 
 /*
@@ -142,7 +158,7 @@ text.label {
 
 	.cell.label {
 		width: 40px;
-		margin-right: 15px;
+		margin-right: 10px;
 	}
 
 		.puck.row .cell.label {
@@ -169,7 +185,7 @@ input[type=text] {
 
 	input[type=text]:focus {
 		outline: none;
-		border-bottom: 3px solid #777;
+		border-bottom: 2px solid #aaa;
 		padding-bottom: 3px;
 	}
 
@@ -177,26 +193,35 @@ line.baseline {
 	stroke: #ddd;
 }
 
-.player.row circle.colour-picker {
+circle.colour-picker {
 	cursor: pointer;
-	fill-opacity: 0.5;
+	fill-opacity: 0.2;
+	stroke-opacity: 0.5;
 }
 
-	.puck.row circle.colour-picker {
-		display: none;
+	circle.colour-picker.red {
+		fill: red;
+		stroke: red;
 	}
 
-	.player.row circle.colour-picker:hover {
-		fill-opacity: 1;
+	circle.colour-picker.blue {
+		fill: blue;
+		stroke: blue;
+	}
+
+	circle.colour-picker:hover {
+		fill-opacity: 0.4;
 	}
 
 circle.highlight {
-	fill: gold;
+	fill: #ffef99;
+	stroke-width: 2;
+	stroke: gold;
 }
 
 circle.timepoint {
 	fill: white; /* Need a fill so that it's clickable */
-	stroke: #bbb;
+	stroke: #ccc;
 	cursor: pointer;
 }
 
@@ -206,7 +231,7 @@ circle.timepoint {
 	}
 
 	circle.timepoint.defined {
-		fill: #bbb;
+		fill: #ccc;
 		stroke: #777;
 		cursor: -webkit-grab;
 		cursor: -moz-grab;
@@ -255,19 +280,39 @@ text.carrier {
 	}
 
 .button.carrier, #play, #paths {
-	background: gold;
-	color: #fff;
+	background: #ffef99;
+	color: #111;
 	border-radius: 2px;
 	cursor: pointer;
-	margin-right: 10px;
 	margin-top: 4px;
 	margin-bottom: 3px;
 	padding: 3px;
 }
 
 	.button.carrier:hover , #play:hover, #paths:hover {
-		background: #333;
+		background: gold;
 	}
+
+#play, #paths {
+	display: inline-block;
+	text-decoration: none;
+	margin: 0;
+	margin-top: 30px;
+	margin-right: 10px;
+	margin-bottom: 30px;
+	width: 100px;
+	padding: 0;
+	text-align: center;
+	line-height: 28px;
+}
+
+#message {
+	display: inline-block;
+	text-align: right;
+	margin: 0;
+	width: 720px;
+	line-height: 28px;
+}
 
 /*
 *
@@ -315,11 +360,7 @@ circle.red-line {
     stroke: #ccc;
 }
 
-.danger-line {
-    stroke: #ccc;
-}
-
 path.net {
 	fill: none;
-	stroke: black;
+	stroke: #777;
 }

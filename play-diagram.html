@@ -11,16 +11,16 @@
 </head>
 <body>
 	<h1>Play Diagram</h1>
-	<p style="line-height: 20px; margin: 0; margin-bottom: 5px;">Use the timeline to diagram player and puck locations. You can also change player colours and labels.</p>
-	<p style="line-height: 20px; margin: 0; margin-bottom: 30px;">Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
-	<div style="display: block; margin-bottom: 30px;">
-		<a href="#" id="play" style="display: inline-block; text-decoration: none; margin: 0; width: 90px; padding: 0; text-align: center; line-height: 28px;">Animate</a
-		><a href="#" id="paths" style="display: inline-block; text-decoration: none; margin: 0; margin-left: 10px; width: 100px; padding: 0; text-align: center; line-height: 28px;">Paths</a
-		><div id="message" style="display: inline-block; text-align: right; margin: 0; width: 730px; line-height: 28px;">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
+	<p>Use the timeline to diagram player and puck locations. You can also change player colours and labels.</p>
+	<p>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
+	<div>
+		<a href="#" id="play">Animate</a
+		><a href="#" id="paths">Paths</a
+		><div id="message">Save your diagram for later by copying the URL — the URL changes each time you edit your diagram.</div>
 	</div>
-	<svg id="rink-svg" style="display: block;"></svg>
-	<div id="table" style="display: block;"></div>
-	<p style="margin-top: 30px;">Made by @datarink</p>
+	<svg id="rink-svg"></svg>
+	<div id="table"></div>
+	<p>Made by @datarink</p>
 	</div>
 </body>
 <script>
@@ -48,8 +48,8 @@ var y = d3.scale.linear()
 
 var maxTimepoints = 10;
 
-var red = "#dd0000";
-var blue = "#0000dd";
+var red = "red";
+var blue = "blue";
 
 var msgDefault = "";
 var msgPickPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player.";
@@ -118,7 +118,7 @@ var puckTimelineHeight = 80;
 
 var tX = d3.scale.linear()
 	.domain(d3.extent(puckSeconds))
-	.range([(timepointCircleR + 7), timelineWidth - (timepointCircleR + 7)]); // +6px so there's space to display time labels
+	.range([(timepointCircleR + 15), timelineWidth - (timepointCircleR + 15)]); // +15px so there's space to display time labels and delete buttons
 
 // Stores the active element in the timeline
 var activeTimepoint = {
@@ -325,7 +325,7 @@ function animatePlay() {
 			var puck = d3.select("#puck").select("circle")
 				.attr("cx", x2)
 				.attr("cy", y2)
-				.style("stroke-opacity", 1);
+				.style("opacity", 1);
 
 			// If the puck goes to a player, highlight puck carrier, then show and fade-out puck
 			if (targetTimepoint.type === "player") {
@@ -336,9 +336,9 @@ function animatePlay() {
 				// If at t = 0, the player starts with the puck, so we don't need to show the puck being passed
 				if (animationTime > 0) {
 					puck.transition().ease("ease-in")
-						.styleTween("stroke-opacity", function() { return d3.interpolate(1, 0); });
+						.styleTween("opacity", function() { return d3.interpolate(1, 0); });
 				} else {
-					puck.style("stroke-opacity", 0);
+					puck.style("opacity", 0);
 				}
 			}
 		}
@@ -489,18 +489,10 @@ function initTimeline() {
 	table.selectAll(".player.row").select("svg.colour-picker")
 		.style("height", timelineHeight + "px")
 		.append("circle")
-			.attr("class", "colour-picker")
+			.attr("class", function(d) { return "colour-picker " + d.colour; })
 			.attr("cx", timepointCircleR + 1)
 			.attr("cy", timelineHeight - 28)
 			.attr("r", timepointCircleR)
-			.style("fill", function(d) {
-				if (d.colour === "red") { return red; }
-				else { return blue; }
-			})
-			.style("stroke", function(d) {
-				if (d.colour === "red") { return red; }
-				else { return blue; }
-			})
 			.on("click", function(d) {
 				var newColour = "blue";
 				if (d.colour === "blue") { newColour = "red"; }
@@ -538,7 +530,7 @@ function initTimeline() {
 	// Append time marker in the puck timeline
 	d3.select(".puck.row").select("svg.timeline").append("line")
 		.attr("id", "thumb")
-		.attr("y1", 0)
+		.attr("y1", 10)
 		.attr("y2", puckTimelineHeight)
 		.attr("x1", tX.range()[0])
 		.attr("x2", tX.range()[0])
@@ -674,7 +666,7 @@ function initRink() {
 
 	// Append puck marker elements
 	d3.select("#puck").append("circle")
-		.style("stroke-opacity", 0);
+		.style("opacity", 0);
 	d3.select("#puck").append("line")
 		.style("stroke-opacity", 0);
 }
@@ -738,7 +730,7 @@ function updateRinkAndTimeline() {
 	// Show the puck carrier highlight if there's a carrier at t = 0
 	// Or show the puck position if it has a position at t = 0
 	markers.select("circle").style("stroke-opacity", 0);
-	d3.select("#puck").select("circle").style("stroke-opacity", 0);
+	d3.select("#puck").select("circle").style("opacity", 0);
 	d3.select("#puck").select("line").style("stroke-opacity", 0);
 	if (puckTimepoints[0].type === "player") {
 		markers.filter(function(d) { return d.id === puckTimepoints[0].player; }).select("circle")
@@ -747,7 +739,7 @@ function updateRinkAndTimeline() {
 		d3.select("#puck").select("circle")
 			.attr("cx", x(puckTimepoints[0].x))
 			.attr("cy", y(puckTimepoints[0].y))
-			.style("stroke-opacity", 1);
+			.style("opacity", 1);
 	}
 
 	/*
@@ -798,14 +790,7 @@ function updateRinkAndTimeline() {
 
 	// Update colour pickers
 	d3.select("#table").selectAll("svg.colour-picker").select("circle.colour-picker")
-		.style("fill", function(d) {
-			if (d.colour === "red") { return red; }
-			else { return blue; }
-		})
-		.style("stroke", function(d) {
-			if (d.colour === "red") { return red; }
-			else { return blue; }
-		});
+		.attr("class", function(d) { return "colour-picker " + d.colour; });
 
 	updateUrl();
 };
@@ -1509,12 +1494,12 @@ function getTotalDefinedTimepoints() {
 function displayMessage(msg) {
 	var currentMsg = d3.select("#message").html();
 	if (currentMsg !== msg) {
-		d3.select("#message").transition()
+		d3.select("#message").transition().duration(150)
 			.style("opacity", 0)
 			.each("end", function() {
 				d3.select(this)
 					.html(msg)
-					.transition()
+					.transition().duration(150)
 						.style("opacity", 1);
 			});
 	}
