@@ -47,8 +47,9 @@ var y = d3.scale.linear()
 
 var maxTimepoints = 10;
 
+var red = "#dd0000";
+var blue = "#0000dd";
 
-//var msgDefault = "Pick a timepoint to add or edit an event. Drag an event to change when it occurred. You can change a player's colour or label.";
 var msgDefault = "";
 var msgPickPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player.";
 var msgPickDragPuckTimepoint = "Send the puck to a spot in the rink, or pass it to a player. Drag to change when event occurred.";
@@ -67,8 +68,8 @@ var playerSeconds = d3.range(0, 15 + 1, 1);
 var playerLabels = ["F1", "F2", "F3", "D1", "D2", "F1", "F2", "F3", "D1", "D2"];
 
 playerLabels.forEach(function(p, i) {
-	var colour = "blue";
-	if (i > 4) { colour = "red"; }
+	var colour = blue;
+	if (i > 4) { colour = red; }
 	playerData.push({
 		id: i + 1,
 		label: p,
@@ -484,27 +485,21 @@ function initTimeline() {
 	table.selectAll(".colour-picker.cell").append("svg")
 		.attr("class", "colour-picker")
 		.attr("width", (2 * timepointCircleR) + "px");
+	table.selectAll(".player.row").select("svg.colour-picker")
+		.style("height", timelineHeight + "px")
+		.append("circle")
+			.attr("class", "colour-picker")
+			.attr("cx", timepointCircleR)
+			.attr("cy", timelineHeight - 28)
+			.attr("r", timepointCircleR)
+			.style("fill", function(d) { return d.colour; })
+			.on("click", function(d) {
+				var newColour = blue;
+				if (d.colour === blue) { newColour = red; }
+				updatePlayerColour(d.id, newColour);
+			});
 	table.select(".puck.row").select("svg.colour-picker")
 		.style("height", puckTimelineHeight + "px");
-	table.selectAll(".player.row").select("svg.colour-picker")
-		.style("height", timelineHeight + "px");
-	table.selectAll("svg.colour-picker").append("circle")
-		.attr("class", "colour-picker")
-		.attr("cx", timepointCircleR)
-		.attr("cy", function(d) {
-			if (d.id) { return timelineHeight - 28; }
-			else { return puckTimelineHeight - 28; }
-		})
-		.attr("r", timepointCircleR)
-		.style("fill", function(d) {
-			if (!d.colour) { return "black"; }
-			else { return d.colour; }
-		})
-		.on("click", function(d) {
-			var newColour = "blue";
-			if (d.colour === "blue") { newColour = "red"; }
-			updatePlayerColour(d.id, newColour);
-		});
 
 	/*
 	*
@@ -1004,7 +999,7 @@ function appendPuckTimepointListeners() {
 			var dragPt = d3.select(this.parentNode).append("circle")
 				.attr("id", "drag-point")
 				.attr("r", highlightCircleR)
-				.attr("cy", puckTimelineHeight - 28)
+				.attr("cy", puckTimelineHeight - 35)
 				.attr("cx", mX)
 				.style("visibility", "hidden");
 		})
@@ -1415,11 +1410,10 @@ function parseUrl() {
 		var targetPlayer = playerData.filter(function(d) { return d.id === playerId; })[0];
 
 		var label = params[0];
-		// if (!label) { console.log("Hi!"); label = "123"; }
 		targetPlayer.label = label;
 
-		if (params[1] === "r") { targetPlayer.colour = "red"; }
-		else { targetPlayer.colour = "blue"; }
+		if (params[1] === "r") { targetPlayer.colour = red; }
+		else { targetPlayer.colour = blue; }
 
 		var pts = params[2].split("+");
 		pts = pts.filter(function(d) { return d; }); // Filter out null values
@@ -1449,7 +1443,7 @@ function updateUrl() {
 	playerData.forEach(function(p, i) {
 
 		var colourString = "b";
-		if (p.colour === "red") { colourString = "r"; }
+		if (p.colour === red) { colourString = "r"; }
 
 		var playerString = "&p" + p.id + "=" + p.label + ";" + colourString + ";";
 		resultString += playerString;

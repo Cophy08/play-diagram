@@ -65,8 +65,8 @@ g.player g.marker text {
 		fill: red;
 	}
 
-text.timepoint, text.label {
-	font-size: 12px;
+text.timepoint {
+	font-size: 10px;
 	text-anchor: middle;
 	dominant-baseline: middle;
 	fill: #bbb;
@@ -124,6 +124,13 @@ g.player path.skater {
 
 .puck.row {
 	margin-bottom: 10px;
+}
+
+text.label {
+	font-size: 12px;
+	text-anchor: middle;
+	dominant-baseline: middle;
+	fill: #bbb;
 }
 
 .cell {
@@ -220,7 +227,7 @@ circle.timepoint {
 	}
 
 text.carrier {
-	font-size: 12px;
+	font-size: 10px;
 	dominant-baseline: middle;
 }
 
