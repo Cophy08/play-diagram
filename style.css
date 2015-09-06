@@ -264,20 +264,21 @@ text.carrier {
 	cursor: pointer;
 }
 	.button.delete rect {
-		fill: pink;
+		/*fill: #ffd9e0; */
+		fill: #ffef99;
 	}
 	.button.delete text {
 		text-anchor: middle;
 		font-size: 10px;
-		fill: firebrick;
+		/*fill: darkred;*/
+		fill: #111;
 		font-weight: 400;
 	}
 	.button.delete:hover rect {
-		fill: lightpink;
+		/*fill: pink;*/
+		fill: gold;
 	}
-	.button.delete:hover text {
-		fill: darkred;
-	}
+
 
 .button.carrier, #play, #paths {
 	background: #ffef99;
