@@ -1506,7 +1506,10 @@ function getTotalDefinedTimepoints() {
 function displayMessage(msg) {
 	var currentMsg = d3.select("#message").html();
 	if (currentMsg !== msg) {
-		d3.select("#message").transition().duration(150)
+		var fadeOutDuration = 150;
+		if (currentMsg === "") { fadeOutDuration = 0; }
+
+		d3.select("#message").transition().duration(fadeOutDuration)
 			.style("opacity", 0)
 			.each("end", function() {
 				d3.select(this)
