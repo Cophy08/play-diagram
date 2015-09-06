@@ -1,13 +1,11 @@
 html {
 	width: 100%;
 	padding: 0 10px;
-	margin: 0;
 }
 
 body {
 	width: 940px;
-	margin: 0 auto;
-	margin-bottom: 30px;
+	margin: 20px auto 40px auto;
 	color: #111;
 	font-family: Roboto, sans-serif;
 	font-size: 14px;
@@ -38,7 +36,7 @@ svg, #table {
 #rink-svg {
 	display: block;
 	margin: 0 auto;
-	margin-bottom: 10px;
+	margin-top: 60px;
 }
 
 /* Disable highlighting so it doesn't show up while the user is clicking */
@@ -118,7 +116,8 @@ g.player path.skater {
 	fill-opacity: 0;
 }
 	#picker-mask.active {
-		stroke: gold;
+		stroke: #ffef99;
+		stroke-width: 3px;
 		cursor: crosshair;
 	}
 
@@ -137,10 +136,6 @@ g.player path.skater {
 * Timeline elements
 *
 */
-
-.puck.row {
-	margin-bottom: 10px;
-}
 
 text.label {
 	font-size: 12px;
@@ -162,7 +157,8 @@ text.label {
 	}
 
 		.puck.row .cell.label {
-			padding-top: 9px; /* To vertically align label with timeline */
+			vertical-align: bottom;
+			padding-bottom: 24px;
 		}
 
 		.player.row .cell.label {
@@ -258,7 +254,8 @@ text.carrier {
 }
 
 #thumb {
-	stroke: gold;
+	stroke: #ffef99;
+	stroke-width: 4px;
 }
 
 .button.delete {
@@ -281,11 +278,14 @@ text.carrier {
 	}
 
 
-.button.carrier, #play, #paths {
+.button.carrier, #play {
 	background: #ffef99;
 	color: #111;
 	border-radius: 2px;
 	cursor: pointer;
+}
+
+.button.carrier {
 	margin-top: 4px;
 	margin-bottom: 3px;
 	padding: 3px;
@@ -295,28 +295,32 @@ text.carrier {
 		background: gold;
 	}
 
-#play, #paths {
-	display: inline-block;
-	text-decoration: none;
+.header {
 	margin: 0;
-	margin-top: 30px;
-	margin-right: 10px;
-	margin-bottom: 30px;
-	width: 100px;
 	padding: 0;
-	text-align: center;
-	line-height: 28px;
 }
 
-#paths {
-	display: none;
-}
+	.header svg {
+		vertical-align: middle;
+	}
+
+	#play {
+		display: inline-block;
+		text-decoration: none;
+		margin: 0;
+		padding: 0;
+		text-align: center;
+		line-height: 30px;
+		vertical-align: middle;
+		width: 76px;
+		margin-right: 8px;
+	}
 
 #message {
-	display: inline-block;
+	display: block;
 	text-align: center;
-	margin: 0;
-	width: 720px;
+	margin: 20px 0 20px 0;
+	height: 28px;
 	line-height: 28px;
 }
 

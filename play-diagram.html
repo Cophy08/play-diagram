@@ -10,17 +10,12 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-	<h1>Play Diagram</h1>
-	<p>Use the timeline to diagram player and puck locations. You can also change player colours and labels.<br>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
-	<div>
-		<a href="javascript:;" id="play">Animate</a
-		><a href="javascript:;" id="paths">Paths</a
-		><div id="message"></div>
-	</div>
+	<h1 style="display: inline-block; width: 50%;">Play Diagram</h1
+	><p style="display: inline-block; text-align: right; width: 50%; color: #aaa;">Made by @datarink</p>
+	<p style="border-bottom: 1px solid #ccc; padding-bottom: 30px;">Use the timeline to diagram player and puck locations. You can also change player colours and labels.<br>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
 	<svg id="rink-svg"></svg>
+	<div id="message"></div>
 	<div id="table"></div>
-	<p>Made by @datarink</p>
-	</div>
 </body>
 <script>
 
@@ -30,7 +25,7 @@
 *
 */
 
-var margin = {top: 1, left: 1, right: 1, bottom: 1};
+var margin = {top: 2, left: 2, right: 2, bottom: 2};
 
 var rinkWidth = 200;
 var rinkHeight = 85;
@@ -51,11 +46,12 @@ var red = "red";
 var blue = "blue";
 
 var msgDefault = "";
-var msgPickPuckTimepoint = "Pick a player or spot in the rink.";
-var msgPickDragPuckTimepoint = "Pick a player or a spot in the rink. Drag the event to change when it occurred.";
-var msgPickPlayerTimepoint = "Pick a spot in the rink.";
-var msgPickDragPlayerTimepoint = "Pick a spot in the rink. Drag the event to change when it occurred.";
+var msgPickPuckTimepoint = "Pick a player or location for the puck to travel to.";
+var msgPickDragPuckTimepoint = "Pick a player or location for the puck to travel to. You can also drag the event to change when it occurred.";
+var msgPickPlayerTimepoint = "Pick a location for the player.";
+var msgPickDragPlayerTimepoint = "Pick a location for the player. You can also drag the event to change when it occurred.";
 var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " events.";
+
 /*
 *
 * Data
@@ -113,7 +109,7 @@ var timepointCircleR = 5;
 
 var timelineWidth = 850;
 var timelineHeight = 40;
-var puckTimelineHeight = 80;
+var puckTimelineHeight = 70;
 
 var tX = d3.scale.linear()
 	.domain(d3.extent(puckSeconds))
@@ -428,6 +424,44 @@ function initTimeline() {
 
 	var table = d3.select("#table");
 
+	/*
+	*
+	* Append header row
+	*
+	*/
+
+	var header = table.append("div")
+		.attr("class", "header");
+	header.append("a")
+		.attr("id", "play")
+		.style("display", "inline-block")
+		.text("Animate");
+	header.append("svg")
+		.style("height", "28px")
+		.style("width", timelineWidth);
+
+	// Append time marker in the puck timeline
+	header.select("svg").append("line")
+		.attr("id", "thumb")
+		.attr("y1", 0)
+		.attr("y2", 28)
+		.attr("x1", tX.range()[0])
+		.attr("x2", tX.range()[0])
+		.style("visibility", "hidden");
+
+	// Append time marker labels
+	d3.select(".header").select("svg").selectAll("text.label")
+		.data(playerSeconds)
+		.enter().append("text")
+			.attr("class", "label")
+			.attr("x", function(d) { return tX(d); })
+			.attr("y", 15)
+			.text(function(d) {
+				var outString = d;
+				if (d < 10) { outString = "0" + outString; }
+				return "0:" + outString;
+			});
+
 	// Append a row for the puck and each player
 	table.selectAll("div.puck.row")
 		.data([puckTimepoints])
@@ -525,24 +559,15 @@ function initTimeline() {
 		.attr("y1", timelineHeight - 28)
 		.attr("y2", timelineHeight - 28);
 	d3.select(".puck.row").select("line.baseline")
-		.attr("y1", puckTimelineHeight - 35)
-		.attr("y2", puckTimelineHeight - 35);
-
-	// Append time marker in the puck timeline
-	d3.select(".puck.row").select("svg.timeline").append("line")
-		.attr("id", "thumb")
-		.attr("y1", 10)
-		.attr("y2", puckTimelineHeight)
-		.attr("x1", tX.range()[0])
-		.attr("x2", tX.range()[0])
-		.style("visibility", "hidden");
+		.attr("y1", puckTimelineHeight - 28)
+		.attr("y2", puckTimelineHeight - 28);
 
 	// Append highlight for the active element behind timepoints
 	table.selectAll("svg.timeline").append("circle")
 		.attr("class", "highlight")
 		.attr("r", highlightCircleR);
 	table.select(".puck.row").select("circle.highlight")
-		.attr("cy", puckTimelineHeight - 35);
+		.attr("cy", puckTimelineHeight - 28);
 	table.selectAll(".player.row").select("circle.highlight")
 		.attr("cy", timelineHeight - 28);
 
@@ -551,7 +576,7 @@ function initTimeline() {
 		.data(function(d) { return d; }, function(d) { return d.t; })
 		.enter().append("circle")
 			.attr("class", "timepoint")
-			.attr("cy", puckTimelineHeight - 35);
+			.attr("cy", puckTimelineHeight - 28);
 	table.selectAll(".player.row").select("svg.timeline").selectAll("circle.timepoint")
 		.data(function(d) { return d.timepoints; }, function(d) { return d.t; })
 		.enter().append("circle")
@@ -564,20 +589,6 @@ function initTimeline() {
 	appendPuckTimepointListeners();
 	appendPlayerTimepointListeners();
 
-	// Append time marker labels
-	d3.select(".puck.row").select("svg.timeline").selectAll("text.label")
-		.data(playerSeconds)
-		.enter().append("text")
-			.attr("class", "label")
-			.attr("x", function(d) { return tX(d); })
-			.attr("y", puckTimelineHeight - 6)
-			.text(function(d) {
-				var outString = d;
-				if (d < 10) { outString = "0" + outString; }
-				return "0:" + outString;
-			});
-
-
 	// Append a delete link
 	var bW = 42;
 	var bH= 15;
@@ -587,7 +598,7 @@ function initTimeline() {
 		.attr("x", -bW / 2)
 		.attr("y", function(d) {
 			if (d.id) { return timelineHeight - bH; }
-			else { return puckTimelineHeight - bH - 7; }
+			else { return puckTimelineHeight - bH; }
 		})
 		.attr("rx", 2)
 		.attr("ry", 2)
@@ -599,7 +610,7 @@ function initTimeline() {
 			// Apply an offset instead of relying on alignment-baseline or dominant-baseline
 			var offset = 4;
 			if (d.id) { return timelineHeight - bH / 2 + offset; }
-			else { return puckTimelineHeight - bH / 2 + offset - 7; }
+			else { return puckTimelineHeight - bH / 2 + offset; }
 		})
 		.text("DELETE");
 
@@ -777,10 +788,10 @@ function updateRinkAndTimeline() {
 	labels.exit().remove();
 	labels.enter().append("text")
 		.attr("class", "carrier")
-		.attr("y", puckTimelineHeight - 40);
+		.attr("y", puckTimelineHeight - 33);
 	labels.attr("x", function(d) { return tX(d.t); })
 		.attr("transform", function(d) {
-			return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 40) + ")";
+			return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 33) + ")";
 		})
 		.style("fill", function(d) {
 			return playerData.filter(function(p) { return p.id === d.player; })[0].colour;
@@ -1005,7 +1016,7 @@ function appendPuckTimepointListeners() {
 			var dragPt = d3.select(this.parentNode).append("circle")
 				.attr("id", "drag-point")
 				.attr("r", highlightCircleR)
-				.attr("cy", puckTimelineHeight - 35)
+				.attr("cy", puckTimelineHeight - 28)
 				.attr("cx", mX)
 				.style("visibility", "hidden");
 		})
