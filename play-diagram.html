@@ -30,6 +30,8 @@ var red = "red";
 var blue = "blue";
 var maxTimepoints = 100;
 
+var isDragging = false;
+
 var msgDefault = "";
 var msgPickPuckTimepoint = "Pick a player or location for the puck to travel to.";
 var msgPickDragPuckTimepoint = msgPickPuckTimepoint + " You can also drag the event to change when it occurred.";
@@ -140,7 +142,7 @@ updateRinkAndTimeline();
 d3.select("#message").html(msgDefault);
 
 // Path toggle
-d3.select("#paths").on("click", function() {
+d3.select("#paths").on("mouseup", function() {
 		togglePaths();
 	});
 var arePathsVisible;
@@ -150,8 +152,8 @@ togglePaths(true);
 // Use a listener on the html element to close the picker
 // The picker-mask, timepoint, etc. listeners will handle other operations like updating data
 d3.select("html").on("click", function() {
-	if (activeTimepoint.timeline != null) { closePicker(); };
-});
+		if (activeTimepoint.timeline != null) { closePicker(); };
+	});
 
 /*
 *
@@ -816,6 +818,7 @@ function updateRinkAndTimeline() {
 function appendPlayerTimepointListeners() {
 	// Click listeners
 	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").on("click", function(clicked) {
+
 		var clickedPlayerId = this.parentNode.__data__.id;
 
 		// If a timepoint is clicked, and the timepoint is not already active, then open the picker
@@ -855,7 +858,7 @@ function appendPlayerTimepointListeners() {
 	var undefinedTimes;
 	var dragListener = d3.behavior.drag()
 		.on("dragstart", function() {
-
+			isDragging = false;
 			stopAnimation(true, false);
 
 			dragPlayer = this.parentNode.__data__.id;
@@ -894,6 +897,8 @@ function appendPlayerTimepointListeners() {
 				.style("visibility", "hidden"); // Start off hidden so the timepoint click listener can fire
 		})
 		.on("drag", function() {
+			isDragging = true;
+
 			if (!isDefined || activeTimepoint == null) { return; } // Cancel drag events if the dragged timepoint is not defined. Also cancel if there's an active timepoint
 
 			var mX = d3.mouse(this)[0];
@@ -933,6 +938,10 @@ function appendPlayerTimepointListeners() {
 			}
 		})
 		.on("dragend", function() {
+			// Don't close the picker if the user clicked without really dragging - let the click listener show/hide the picker
+			if (isDragging) { closePicker(); }
+			isDragging = false;
+
 			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
 
 			// Transition drag-point to the target
@@ -955,9 +964,8 @@ function appendPlayerTimepointListeners() {
 					dragData = null;
 					targetT = null;
 					undefinedTimes = null;
-				})
+				});
 		});
-
 	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").call(dragListener);
 }
 
@@ -996,7 +1004,7 @@ function appendPuckTimepointListeners() {
 	var undefinedTimes;
 	var dragListener = d3.behavior.drag()
 		.on("dragstart", function() {
-
+			isDragging = false;
 			stopAnimation(true, false);
 
 			dragData = this.__data__;
@@ -1027,6 +1035,7 @@ function appendPuckTimepointListeners() {
 				.style("visibility", "hidden");
 		})
 		.on("drag", function() {
+			isDragging = true;
 			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
 
 			var mX = d3.mouse(this)[0];
@@ -1066,6 +1075,10 @@ function appendPuckTimepointListeners() {
 			}
 		})
 		.on("dragend", function() {
+			// Don't close the picker if the user clicked without really dragging - let the click listener show/hide the picker
+			if (isDragging) { closePicker(); }
+			isDragging = false;
+
 			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
 
 			// Transition drag-point to the target
@@ -1089,7 +1102,6 @@ function appendPuckTimepointListeners() {
 					undefinedTimes = null;
 				});
 		});
-
 	d3.select("#table").select(".puck.row").selectAll("circle.timepoint").call(dragListener);
 }
 
