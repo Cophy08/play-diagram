@@ -869,6 +869,9 @@ function appendPlayerTimepointListeners() {
 			isDragging = false;
 			stopAnimation(true, false);
 
+			// Remove any left over drag-point effects
+			d3.selectAll("#drag-point").remove();
+
 			dragPlayer = this.parentNode.__data__.id;
 			dragData = this.__data__;
 			targetT = dragData.t;
@@ -952,27 +955,22 @@ function appendPlayerTimepointListeners() {
 
 			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
 
-			// Transition drag-point to the target
-			// Especially needed to highlight the case where the drag-point returns to its starting point (because user chose an invalid target)
-			d3.select("#drag-point").transition()
+			// Transition drag-point to the target - especially needed to highlight the case where the drag-point returns to its starting point (because user chose an invalid target)
+			d3.select("#drag-point").transition().duration(125)
 				.attr("cx", tX(targetT))
-				.each("end", function() {
-					// Remove drag effects
-					d3.select(this).remove();
-					d3.select("#player-" + dragPlayer).selectAll("circle.timepoint")
-						.style("stroke-width", "")
-						.style("stroke", "");
-
-					// Update data
-					updatePlayerTimepoint(dragPlayer, dragData.t, null, null);
-					updatePlayerTimepoint(dragPlayer, targetT, dragData.x, dragData.y);
-
-					// Reset all the drag variables
-					dragPlayer = null;
-					dragData = null;
-					targetT = null;
-					undefinedTimes = null;
-				});
+				.each("end", function() { d3.select(this).remove(); });
+			// Remove highlight effect on target timepoint
+			d3.select("#player-" + dragPlayer).selectAll("circle.timepoint")
+				.style("stroke-width", "")
+				.style("stroke", "");
+			// Update data
+			updatePlayerTimepoint(dragPlayer, dragData.t, null, null);
+			updatePlayerTimepoint(dragPlayer, targetT, dragData.x, dragData.y);
+			// Reset all the drag variables
+			dragPlayer = null;
+			dragData = null;
+			targetT = null;
+			undefinedTimes = null;
 		});
 	d3.select("#table").selectAll(".player.row").selectAll("circle.timepoint").call(dragListener);
 }
@@ -1014,6 +1012,9 @@ function appendPuckTimepointListeners() {
 		.on("dragstart", function() {
 			isDragging = false;
 			stopAnimation(true, false);
+
+			// Remove any left over drag-point effects
+			d3.selectAll("#drag-point").remove();
 
 			dragData = this.__data__;
 			targetT = dragData.t;
@@ -1089,26 +1090,21 @@ function appendPuckTimepointListeners() {
 
 			if (!isDefined) { return; } // Cancel drag events if the dragged timepoint is not defined
 
-			// Transition drag-point to the target
-			// Especially needed to highlight the case where the drag-point returns to its starting point (because user chose an invalid target)
-			d3.select("#drag-point").transition()
+			// Transition drag-point to the target - especially needed to highlight the case where the drag-point returns to its starting point (because user chose an invalid target)
+			d3.select("#drag-point").transition().duration(125)
 				.attr("cx", tX(targetT))
-				.each("end", function() {
-					// Remove drag effects
-					d3.select(this).remove();
-					d3.select(".puck.row").selectAll("circle.timepoint")
-						.style("stroke-width", "")
-						.style("stroke", "");
-
-					// Update data
-					updatePuckTimepoint(null, dragData.t, null, null, null);
-					updatePuckTimepoint(dragData.type, targetT, dragData.x, dragData.y, dragData.player);
-
-					// Reset all the drag variables
-					dragData = null;
-					targetT = null;
-					undefinedTimes = null;
-				});
+				.each("end", function() { d3.select(this).remove(); });
+			// Remove highlight effect on target timepoint
+			d3.select(".puck.row").selectAll("circle.timepoint")
+				.style("stroke-width", "")
+				.style("stroke", "");
+			// Update data
+			updatePuckTimepoint(null, dragData.t, null, null, null);
+			updatePuckTimepoint(dragData.type, targetT, dragData.x, dragData.y, dragData.player);
+			// Reset all the drag variables
+			dragData = null;
+			targetT = null;
+			undefinedTimes = null;
 		});
 	d3.select("#table").select(".puck.row").selectAll("circle.timepoint").call(dragListener);
 }
