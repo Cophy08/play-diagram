@@ -256,6 +256,10 @@ function animatePlay() {
 			.attrTween("x1", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); })
 			.attrTween("x2", function() { return d3.interpolate(tX(0), tX(lastDefinedTimepoint)); });
 
+	// Hide timepoint labels in rink to clean up animation
+	d3.select("#rink").selectAll("text.timepoint")
+		.style("visibility", "hidden");
+
 	function startAnimationsAtTimepoint() {
 
 		/*
@@ -380,9 +384,13 @@ function stopAnimation(resetRink, restartAnim) {
 			if (completedTransitions === animatedElements.size() && resetRink === true) {
 				d3.select("#thumb").style("visibility", "hidden");
 				if (restartAnim === true) { animatePlay(); }
-				else { updateRinkAndTimeline(); }
+				else {
+					updateRinkAndTimeline();
+				}
 			}
 		});
+	// Restore timepoint labelsn
+	d3.select("#rink").selectAll("text.timepoint").style("visibility", "visible");
 }
 
 /*
