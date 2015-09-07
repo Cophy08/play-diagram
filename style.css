@@ -240,17 +240,19 @@ text.carrier {
 .button {
 	background: #ffef99;
 	border-radius: 2px;
+	border: 1px solid gold;
+	box-sizing: border-box;
 	color: #222;
 	cursor: pointer;
 	text-decoration: none;
-	line-height: 30px;
+	line-height: 28px;
 }
 	.button:hover {
 		background: gold;
 	}
 	.button.carrier {
 		/* To keep player label in place when text field is replaced by button */
-		line-height: 24px;
+		line-height: 22px;
 		margin-left: -5px;
 		padding-left: 5px;
 	}
@@ -278,6 +280,7 @@ input[type=text] {
 
 .button.delete rect {
 	fill: #ffef99;
+	stroke: gold;
 }
 	.button.delete:hover rect {
 		fill: gold;
