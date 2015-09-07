@@ -445,7 +445,7 @@ function initTimeline() {
 		.text("Animate");
 	header.append("svg")
 		.style("height", "28px")
-		.style("width", timelineWidth);
+		.style("width", timelineWidth + "px");
 
 	// Append time marker in the puck timeline
 	header.select("svg").append("line")
@@ -643,8 +643,7 @@ function initRink() {
 		d3.select("#rink").append("g").attr("id", name);
 	});
 
-	// Append and style rink
-	// Remove rinkPlot.js's translation and draw a full outline for the rink
+	// Append and style rink - remove rinkPlot.js's translation and draw a full outline for the rink
 	var drawRinkMap = new RINK_MAP({parent: d3.select("#rink-map"), fullRink: true, desiredWidth: (rinkHeight / ftPerCell) * cellSize, horizontal: true});
 	drawRinkMap();
 	d3.select("#rink-map").select("g.zones").attr("transform", "");
