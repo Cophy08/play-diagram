@@ -34,13 +34,14 @@ p {
 	margin: 0;
 }
 	p.made-by {
+		color: #aaa;
 		display: inline-block;
 		text-align: right;
 		width: 50%;
 	}
 	.made-by a {
-		text-decoration: none;
 		color: #aaa;
+		text-decoration: none;
 	}
 	.made-by a:hover {
 		color: #777;

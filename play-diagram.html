@@ -12,7 +12,7 @@
 </head>
 <body>
 	<h1>Play Diagram</h1
-	><p class="made-by"><a href="http://twitter.com/datarink">Made by @datarink</a></p>
+	><p class="made-by">Made by <a href="http://twitter.com/datarink" title="@datarink's Twitter profile">@datarink</a>, rink outline by <a href="http://twitter.com/alexgoogs" title="@alexgoog's Twitter profile">@alexgoogs</a></p>
 	<p class="intro">Use the timeline to diagram player and puck locations. You can also change player colours and labels.<br>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
 	<svg id="rink-svg"></svg>
 	<div id="message"></div>
@@ -451,6 +451,7 @@ function initTimeline() {
 	header.append("a")
 		.attr("id", "play")
 		.attr("class", "button")
+		.attr("title", "Animate the play")
 		.style("display", "inline-block")
 		.text("Animate");
 	header.append("svg")
