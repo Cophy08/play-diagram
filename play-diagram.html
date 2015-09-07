@@ -12,7 +12,7 @@
 <body>
 	<h1>Play Diagram</h1
 	><p class="made-by"><a href="http://twitter.com/datarink">Made by @datarink</a></p>
-	<p class="instructions">Use the timeline to diagram player and puck locations. You can also change player colours and labels.<br>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
+	<p class="intro">Use the timeline to diagram player and puck locations. You can also change player colours and labels.<br>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
 	<svg id="rink-svg"></svg>
 	<div id="message"></div>
 	<div id="table"></div>
@@ -33,7 +33,7 @@ var msgDefault = "";
 var msgPickPuckTimepoint = "Pick a player or location for the puck to travel to.";
 var msgPickDragPuckTimepoint = msgPickPuckTimepoint + " You can also drag the event to change when it occurred.";
 var msgPickPlayerTimepoint = "Pick a location for the player to skate to.";
-var msgPickDragPlayerTimepoint = msgPickDragPlayerTimepoint + " You can also drag the event to change when it occurred.";
+var msgPickDragPlayerTimepoint = msgPickPlayerTimepoint + " You can also drag the event to change when it occurred.";
 var msgMaxTimepoints = "This tool doesn't work with more than " + maxTimepoints + " events.";
 
 var margin = {top: 2, left: 2, right: 2, bottom: 2};

@@ -36,17 +36,17 @@ p {
 		display: inline-block;
 		text-align: right;
 		width: 50%;
-
 	}
 	.made-by a {
 		text-decoration: none;
 		color: #aaa;
 	}
 	.made-by a:hover {
-		color: blue;
+		color: #777;
+		background: #ffef99;
 	}
 
-	p.instructions {
+	p.intro {
 		border-bottom: 1px solid #ccc;
 		padding-bottom: 30px;
 	}
@@ -58,10 +58,10 @@ svg, #table {
 }
 
 #message {
-	color: #777;
+	color: #aaa;
 	height: 30px;
 	line-height: 30px;
-	margin: 20px 0;
+	margin: 30px 0;
 	text-align: center;
 }
 
@@ -122,8 +122,9 @@ g.player path.skater {
 	fill-opacity: 0;
 }
 	#picker-mask.active {
-		stroke: #ffef99;
-		stroke-width: 3px;
+		stroke: gold;
+		stroke-opacity: 0.25;
+		stroke-width: 4px;
 		cursor: crosshair;
 	}
 
@@ -254,10 +255,10 @@ text.carrier {
 	}
 	#play {
 		display: inline-block;
-		margin-right: 8px;
+		margin-right: 10px;
 		text-align: center;
 		vertical-align: middle;
-		width: 76px;
+		width: 72px;
 	}
 
 input[type=text] {
