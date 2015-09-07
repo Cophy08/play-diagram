@@ -39,24 +39,41 @@ var msgPickPlayerTimepoint = "Pick a location for the player to skate to.";
 var msgPickDragPlayerTimepoint = msgPickPlayerTimepoint + " You can also drag the event to change when it occurred.";
 var msgMaxTimepoints = "This tool doesn't work with more than " + maxTimepoints + " events.";
 
+//
+// Rink configuration
+//
+
+var puckR = 3;
 var margin = {top: 2, left: 2, right: 2, bottom: 2};
 var rinkWidth = 200;
 var rinkHeight = 85;
 var rinkRadius = 28;
 var ftPerCell = 5;
 var cellSize = 20;
-var x = d3.scale.linear()
-	.domain([0, rinkWidth])
-	.range([0, (rinkWidth / ftPerCell) * cellSize]);
-var y = d3.scale.linear()
-	.domain([0, rinkHeight])
-	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
+
+//
+// Timeline configuration
+//
+
+var highlightCircleR = 9;
+var timepointCircleR = 5;
+
+var timelineWidth = 850;
+var timelineHeight = 40;
+var puckTimelineHeight = 70;
 
 /*
 *
 * Data
 *
 */
+
+// Stores the active element in the timeline
+var activeTimepoint = {
+	timeline: null, // timeline: puck, player
+	player: null, // player: an id from playerData
+	t: null // time: a value from puckSeconds or playerSeconds
+}
 
 // Initialize player data
 var playerData = [];
@@ -99,28 +116,19 @@ puckSeconds.forEach(function(s) {
 	});
 });
 
-/*
-*
-* Timeline configuration
-*
-*/
-var highlightCircleR = 9;
-var timepointCircleR = 5;
+//
+// Scales
+//
 
-var timelineWidth = 850;
-var timelineHeight = 40;
-var puckTimelineHeight = 70;
-
+var x = d3.scale.linear()
+	.domain([0, rinkWidth])
+	.range([0, (rinkWidth / ftPerCell) * cellSize]);
+var y = d3.scale.linear()
+	.domain([0, rinkHeight])
+	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
 var tX = d3.scale.linear()
 	.domain(d3.extent(puckSeconds))
 	.range([(timepointCircleR + 17), timelineWidth - (timepointCircleR + 17)]); // +15px so there's space to display time labels and delete buttons
-
-// Stores the active element in the timeline
-var activeTimepoint = {
-	timeline: null, // timeline: puck, player
-	player: null, // player: an id from playerData
-	t: null // time: a value from puckSeconds or playerSeconds
-}
 
 /*
 *
@@ -185,7 +193,7 @@ function togglePaths(toBe) {
 	}
 	if (toBe === true) {
 		d3.select("#rink").selectAll("g.player").selectAll("g.paths, g.timepoints").style("visibility", "visible");
-		d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", 1);
+		d3.select("#puck").select("g.timepoints").selectAll("text").style("fill-opacity", "");
 		d3.select("#paths").text("Hide Paths");
 		arePathsVisible = true;
 	} else if (toBe === false) {
@@ -686,6 +694,7 @@ function initRink() {
 
 	// Append puck marker elements
 	d3.select("#puck").append("circle")
+		.attr("r", puckR)
 		.style("opacity", 0);
 	d3.select("#puck").append("line")
 		.style("stroke-opacity", 0);
