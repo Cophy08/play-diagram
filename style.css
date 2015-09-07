@@ -157,6 +157,13 @@ text.label {
 	fill: #aaa;
 }
 
+.row {
+	height: 42px;
+}
+	.puck.row {
+		height: 72px;
+	}
+
 .cell {
 	display: inline-block;
 	vertical-align: middle;
@@ -269,8 +276,11 @@ input[type=text] {
 	border: none;
 	border-bottom: 1px solid #ccc;
 	border-radius: 0;
+	box-sizing: content-box;
 	font-size: 12px;
+	padding: 0;
 	padding-bottom: 4px;
+	width: 40px;
 }
 	input[type=text]:focus {
 		outline: none;

@@ -507,7 +507,6 @@ function initTimeline() {
 	table.selectAll(".player.row").select(".label.cell").append("input")
 		.attr("id", function(d) { return "label-" + d.id; })
 		.attr("type", "text")
-		.attr("size", 5)
 		.attr("maxlength", 3)
 		.property("value", function(d) { return d.label; })
 		.on("blur", function(d) {
