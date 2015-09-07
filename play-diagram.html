@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" style="width: 100%; overflow-x: hidden;">
+<html lang="en">
 <head>
 	<meta charset="utf-8">
 	<title>Play Diagram</title>
@@ -10,9 +10,9 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-	<h1 style="display: inline-block; width: 50%;">Play Diagram</h1
-	><p style="display: inline-block; text-align: right; width: 50%; color: #aaa;">Made by @datarink</p>
-	<p style="border-bottom: 1px solid #ccc; padding-bottom: 30px;">Use the timeline to diagram player and puck locations. You can also change player colours and labels.<br>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
+	<h1>Play Diagram</h1
+	><p class="made-by"><a href="http://twitter.com/datarink">Made by @datarink</a></p>
+	<p class="instructions">Use the timeline to diagram player and puck locations. You can also change player colours and labels.<br>Save your diagram by copying the URL — the URL changes each time you edit your diagram.</p>
 	<svg id="rink-svg"></svg>
 	<div id="message"></div>
 	<div id="table"></div>
@@ -21,36 +21,33 @@
 
 /*
 *
-* Rink configuration
+* Configuration
 *
 */
 
-var margin = {top: 2, left: 2, right: 2, bottom: 2};
+var red = "red";
+var blue = "blue";
+var maxTimepoints = 100;
 
+var msgDefault = "";
+var msgPickPuckTimepoint = "Pick a player or location for the puck to travel to.";
+var msgPickDragPuckTimepoint = msgPickPuckTimepoint + " You can also drag the event to change when it occurred.";
+var msgPickPlayerTimepoint = "Pick a location for the player to skate to.";
+var msgPickDragPlayerTimepoint = msgPickDragPlayerTimepoint + " You can also drag the event to change when it occurred.";
+var msgMaxTimepoints = "This tool doesn't work with more than " + maxTimepoints + " events.";
+
+var margin = {top: 2, left: 2, right: 2, bottom: 2};
 var rinkWidth = 200;
 var rinkHeight = 85;
 var rinkRadius = 28;
 var ftPerCell = 5;
 var cellSize = 20;
-
 var x = d3.scale.linear()
 	.domain([0, rinkWidth])
 	.range([0, (rinkWidth / ftPerCell) * cellSize]);
 var y = d3.scale.linear()
 	.domain([0, rinkHeight])
 	.range([(rinkHeight / ftPerCell) * cellSize, 0]);
-
-var maxTimepoints = 10;
-
-var red = "red";
-var blue = "blue";
-
-var msgDefault = "";
-var msgPickPuckTimepoint = "Pick a player or location for the puck to travel to.";
-var msgPickDragPuckTimepoint = "Pick a player or location for the puck to travel to. You can also drag the event to change when it occurred.";
-var msgPickPlayerTimepoint = "Pick a location for the player.";
-var msgPickDragPlayerTimepoint = "Pick a location for the player. You can also drag the event to change when it occurred.";
-var msgMaxTimepoints = "You can't have more than " + maxTimepoints + " events.";
 
 /*
 *
@@ -113,7 +110,7 @@ var puckTimelineHeight = 70;
 
 var tX = d3.scale.linear()
 	.domain(d3.extent(puckSeconds))
-	.range([(timepointCircleR + 15), timelineWidth - (timepointCircleR + 15)]); // +15px so there's space to display time labels and delete buttons
+	.range([(timepointCircleR + 17), timelineWidth - (timepointCircleR + 17)]); // +15px so there's space to display time labels and delete buttons
 
 // Stores the active element in the timeline
 var activeTimepoint = {
@@ -434,6 +431,7 @@ function initTimeline() {
 		.attr("class", "header");
 	header.append("a")
 		.attr("id", "play")
+		.attr("class", "button")
 		.style("display", "inline-block")
 		.text("Animate");
 	header.append("svg")
@@ -788,10 +786,10 @@ function updateRinkAndTimeline() {
 	labels.exit().remove();
 	labels.enter().append("text")
 		.attr("class", "carrier")
-		.attr("y", puckTimelineHeight - 33);
+		.attr("y", puckTimelineHeight - 30);
 	labels.attr("x", function(d) { return tX(d.t); })
 		.attr("transform", function(d) {
-			return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 33) + ")";
+			return "translate(0 -10) rotate(-45 " + tX(d.t) + " " + (puckTimelineHeight - 30) + ")";
 		})
 		.style("fill", function(d) {
 			return playerData.filter(function(p) { return p.id === d.player; })[0].colour;
@@ -916,7 +914,7 @@ function appendPlayerTimepointListeners() {
 					d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").style("stroke", "");
 					var target = d3.select(this.parentNode).selectAll("circle.timepoint:not(.defined)").filter(function(pt) { return pt.t === targetT; });
 					target.style("stroke-width", 2)
-						.style("stroke", "black");
+						.style("stroke", "#222");
 				}
 			} else if (!isClose) {
 				// If rounded is not a whole number (i.e., user is not near a timepoint), then reset targetT to the initial dragged timepoint

@@ -4,43 +4,15 @@ html {
 }
 
 body {
-	width: 940px;
-	margin: 20px auto 40px auto;
-	color: #111;
+	color: #222;
 	font-family: Roboto, sans-serif;
 	font-size: 14px;
-}
-
-h1 {
-	font-size: 24px;
-	line-height: 24px;
-	margin-bottom: 20px;
-}
-
-p {
 	line-height: 20px;
-	margin: 0;
-	margin-bottom: 5px;
+	margin: 20px auto 40px auto;
+	width: 940px;
 }
 
-svg, #table {
-	font-family: Roboto, sans-serif;
-	font-size: 12px;
-	line-height: 12px;
-}
-
-#table {
-	margin-bottom: 30px;
-}
-
-#rink-svg {
-	display: block;
-	margin: 0 auto;
-	margin-top: 60px;
-}
-
-/* Disable highlighting so it doesn't show up while the user is clicking */
-div {
+#table, svg { /* Disable highlighting so it doesn't show up while the user is clicking */
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
 	-khtml-user-select: none;
@@ -49,66 +21,100 @@ div {
 	user-select: none;
 }
 
+h1 {
+	display: inline-block;
+	font-size: 24px;
+	line-height: 24px;
+	margin-bottom: 20px;
+	width: 50%;
+}
+
+p {
+	margin: 0;
+}
+	p.made-by {
+		display: inline-block;
+		text-align: right;
+		width: 50%;
+
+	}
+	.made-by a {
+		text-decoration: none;
+		color: #aaa;
+	}
+	.made-by a:hover {
+		color: blue;
+	}
+
+	p.instructions {
+		border-bottom: 1px solid #ccc;
+		padding-bottom: 30px;
+	}
+
+svg, #table {
+	font-family: Roboto, sans-serif;
+	font-size: 12px;
+	line-height: 12px;
+}
+
+#message {
+	color: #777;
+	height: 30px;
+	line-height: 30px;
+	margin: 20px 0;
+	text-align: center;
+}
+
+#rink-svg {
+	display: block;
+	margin: 60px auto 0 auto;
+}
+
 /*
 *
 * Rink elements
 *
 */
 
-g.marker text {
-	text-anchor: middle;
-}
-
-g.marker circle {
-	fill: none;
-	stroke: #111;
-}
-
-path.skater {
-	fill: none;
-}
-
 g.player g.marker text {
 	font-weight: 500;
+	text-anchor: middle;
 }
-
 	g.player.blue g.marker text {
 		fill: blue;
 	}
-
 	g.player.red g.marker text {
 		fill: red;
 	}
+
+g.player g.marker circle {
+	fill: none;
+	stroke: #222;
+	stroke-width: 1px;
+}
 
 text.timepoint {
 	font-size: 10px;
 	text-anchor: middle;
 	dominant-baseline: middle;
-	fill: #bbb;
+	fill-opacity: 0.4;
 }
-
 	g.player.blue text.timepoint {
-		fill: lightskyblue;
+		fill: blue;
 	}
-
 	g.player.red text.timepoint {
-		fill: pink;
-	}
-
-	#puck text.timepoint {
-		fill: #aaa;
+		fill: red;
 	}
 
 g.player path.skater {
-	stroke-opacity: 0.5;
+	fill: none;
+	stroke-opacity: 0.15;
 }
-
 	g.player.blue path.skater {
-		stroke: lightskyblue;
+		stroke: blue;
 	}
-
 	g.player.red path.skater {
-		stroke: pink;
+		stroke: red;
 	}
 
 #picker-mask {
@@ -122,14 +128,16 @@ g.player path.skater {
 	}
 
 #puck circle {
-	fill: #111;
+	fill: #222;
 	r: 3;
 }
-
-#puck line {
-	stroke: #111;
-	stroke-dasharray: 2,2;
-}
+	#puck text.timepoint {
+		fill: #222;
+	}
+	#puck line {
+		stroke: #222;
+		stroke-dasharray: 2,2;
+	}
 
 /*
 *
@@ -137,96 +145,64 @@ g.player path.skater {
 *
 */
 
+.header svg {
+	vertical-align: middle;
+}
+
 text.label {
-	font-size: 12px;
 	text-anchor: middle;
 	dominant-baseline: middle;
-	fill: #bbb;
+	fill: #aaa;
 }
 
 .cell {
 	display: inline-block;
 	vertical-align: middle;
-	padding: 0;
-	margin: 0;
 }
-
 	.cell.label {
 		width: 40px;
 		margin-right: 10px;
+		vertical-align: bottom;
+		padding-bottom: 24px;
 	}
-
-		.puck.row .cell.label {
-			vertical-align: bottom;
-			padding-bottom: 24px;
-		}
-
 		.player.row .cell.label {
-			padding-bottom: 18px;
+			padding-bottom: 18px; /* Reduce padding to account for extra input field and button height */
 		}
-
 	.cell.colour-picker {
 		margin-right: 20px;
 	}
 
-
-input[type=text] {
-	margin: 0;
-	margin-top: 4px;
-	border: none;
-	border-bottom: 1px solid #ccc;
-	border-radius: 0;
-	font-size: 12px;
-	padding-bottom: 4px;
-}
-
-	input[type=text]:focus {
-		outline: none;
-		border-bottom: 2px solid #aaa;
-		padding-bottom: 3px;
-	}
-
 line.baseline {
-	stroke: #ddd;
+	stroke: #ebebeb;
 }
 
 circle.colour-picker {
 	cursor: pointer;
 	fill-opacity: 0.2;
-	stroke-opacity: 0.5;
+	stroke-opacity: 0.4;
 }
-
 	circle.colour-picker.red {
 		fill: red;
 		stroke: red;
 	}
-
 	circle.colour-picker.blue {
 		fill: blue;
 		stroke: blue;
 	}
-
 	circle.colour-picker:hover {
 		fill-opacity: 0.4;
 	}
-
-circle.highlight {
-	fill: #ffef99;
-	stroke-width: 2;
-	stroke: gold;
-}
+	circle.highlight {
+		fill: #ffef99;
+		stroke-width: 2px;
+		stroke: gold;
+	}
 
 circle.timepoint {
 	fill: white; /* Need a fill so that it's clickable */
 	stroke: #ccc;
 	cursor: pointer;
 }
-
-	circle.timepoint:hover {
-		fill: #eee;
-		stroke: #111;
-	}
-
 	circle.timepoint.defined {
 		fill: #ccc;
 		stroke: #777;
@@ -234,12 +210,14 @@ circle.timepoint {
 		cursor: -moz-grab;
 		cursor: grab;
 	}
-
+	circle.timepoint:hover {
+		fill: #ebebeb;
+		stroke: #777;
+	}
 	circle.timepoint.defined:hover {
 		fill: #aaa;
-		stroke: #111;
+		stroke: #222;
 	}
-
 	#drag-point {
 		fill: gold;
 		fill-opacity: 0.5;
@@ -250,7 +228,6 @@ circle.timepoint {
 
 text.carrier {
 	font-size: 10px;
-	dominant-baseline: middle;
 }
 
 #thumb {
@@ -258,71 +235,55 @@ text.carrier {
 	stroke-width: 4px;
 }
 
-.button.delete {
-	cursor: pointer;
-}
-	.button.delete rect {
-		/*fill: #ffd9e0; */
-		fill: #ffef99;
-	}
-	.button.delete text {
-		text-anchor: middle;
-		font-size: 10px;
-		/*fill: darkred;*/
-		fill: #111;
-		font-weight: 400;
-	}
-	.button.delete:hover rect {
-		/*fill: pink;*/
-		fill: gold;
-	}
-
-
-.button.carrier, #play {
+.button {
 	background: #ffef99;
-	color: #111;
 	border-radius: 2px;
+	color: #222;
 	cursor: pointer;
+	text-decoration: none;
+	line-height: 30px;
 }
-
-.button.carrier {
-	margin-top: 4px;
-	margin-bottom: 3px;
-	padding: 3px;
-}
-
-	.button.carrier:hover , #play:hover, #paths:hover {
+	.button:hover {
 		background: gold;
 	}
-
-.header {
-	margin: 0;
-	padding: 0;
-}
-
-	.header svg {
-		vertical-align: middle;
+	.button.carrier {
+		/* To keep player label in place when text field is replaced by button */
+		line-height: 24px;
+		margin-left: -5px;
+		padding-left: 5px;
 	}
-
 	#play {
 		display: inline-block;
-		text-decoration: none;
-		margin: 0;
-		padding: 0;
+		margin-right: 8px;
 		text-align: center;
-		line-height: 30px;
 		vertical-align: middle;
 		width: 76px;
-		margin-right: 8px;
 	}
 
-#message {
-	display: block;
-	text-align: center;
-	margin: 20px 0 20px 0;
-	height: 28px;
-	line-height: 28px;
+input[type=text] {
+	border: none;
+	border-bottom: 1px solid #ccc;
+	border-radius: 0;
+	font-size: 12px;
+	padding-bottom: 4px;
 }
+	input[type=text]:focus {
+		outline: none;
+		border-bottom: 2px solid #aaa;
+		padding-bottom: 3px;
+	}
+
+.button.delete rect {
+	fill: #ffef99;
+}
+	.button.delete:hover rect {
+		fill: gold;
+	}
+	.button.delete text {
+		fill: #222;
+		font-size: 10px;
+		text-anchor: middle;
+	}
 
 /*
 *
@@ -330,47 +291,32 @@ text.carrier {
 *
 */
 
-/* Blue lines */
-.blue-line {
+.blue-line { /* Blue lines */
     fill: #ebebeb;
 }
-
-/* Goal crease */
-rect.red-line {
+rect.red-line { /* Goal crease */
     fill: #ccc;
 }
-
-/* Face off dots */
-circle.red-line {
+circle.red-line { /* Face off dots */
     fill: #ebebeb;
 }
-
-/* Face off circles */
-.red-faceoff {
+.red-faceoff { /* Face off circles */
     stroke: #ccc;
 }
-
-/* Use d3.js to draw a full rink-face instead */
-.rink-face {
+.rink-face { /* Use d3.js to draw a full rink-face instead */
     display: none;
 }
-
-/* Goal crease area */
-.goal-crease {
+.goal-crease { /* Goal crease area */
     fill: none;
     stroke: #ccc;
 }
-
 .center-line {
     fill: #ebebeb;
 }
-
-/* Center ice face off circle */
-.neutral-faceoff {
+.neutral-faceoff { /* Center ice face off circle */
     stroke: #ccc;
 }
-
-path.net {
+path.net { /* Net outline */
 	fill: none;
 	stroke: #777;
 }
