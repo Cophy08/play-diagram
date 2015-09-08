@@ -1393,8 +1393,14 @@ function generateDStrings(playerId) {
 
 function parseUrl() {
 
+	// Some link shortening services (t.co) trim trailing semi-colons, so re-add the semi-colon if it's not the last character of the URL
+	var urlString = window.location.search.substring(1);
+	if (urlString.slice(-1) !== ";") {
+		urlString += ";";
+	}
+
 	// Separate and store the url parameters
-	var urlParameters = window.location.search.substring(1).split("&");
+	var urlParameters = urlString.split("&");
 	urlParameters.forEach(function(p) {
 		var pId = p.substring(1, p.indexOf("="));
 		if (pId === "k") {
